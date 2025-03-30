@@ -1,0 +1,85 @@
+import ./oldcombat.mcbt
+import ./configmenu.mcbt
+
+function on_load minecraft:load{
+    # you can use MC-Build without its internal scoreboard but this will limit the available features
+    scoreboard objectives add mcb.internal dummy
+    tellraw @a "Loading Old Combat Datapack by AndrewGaming587"
+}
+
+function on_tick minecraft:tick {
+    execute as @a run {
+        function block_offhand
+        function disable_cooldown
+        function sword_blocking
+        function old_tool_damages
+    }
+}
+
+function config {
+    tellraw @s "Old Combat Configuration"
+    boolean_input <%"Sword Blocking"%> <%"If true, allows blocking using a sword. Sword blocking halves the damage taken for most damage types."%> OldCombatSettings SwordBlocking oldcombat:config
+    boolean_input <%"Disable Offhand Slot"%> <%"If true, completely disables the offhand slot. Any items in the offhand slot when this is true will be dropped on the ground."%> OldCombatSettings DisableOffhand oldcombat:config
+    boolean_input <%"Disable Attack Cooldown"%> <%"If true, completely disables the attack cooldown mechanic."%> OldCombatSettings DisableAttackCooldown oldcombat:config
+    boolean_input <%"Old Tool Damages"%> <%"If true, tools (mainly axes) will do their pre-1.9 attack damage. Note: the attack damage tooltip on the tool will still show the normal amount, but the tool will deal the old amount of damage."%> OldCombatSettings OldToolDamage oldcombat:config
+    tellraw @s [{text:"Critical hits while sprinting is currently not implemented. Use my other datapack, \"Sprinting Crits\", to enable critical hits while sprinting. You can find it at "},{text:"https://modrinth.com/datapack/sprinting-crits/",color:"aqua",click_event:{action:"open_url",url:"https://modrinth.com/datapack/sprinting-crits"}},"."]
+    REPEAT (1,20-9) as i {
+        tellraw @s ""
+    }
+}
+
+function defaults minecraft:load {
+    scoreboard objectives add OldCombatSettings dummy
+    tellraw @a "Old Combat: Loading Default Settings"
+    scoreboard players set DisableOffhand OldCombatSettings 1
+    scoreboard players set DisableAttackCooldown OldCombatSettings 1
+    scoreboard players set SwordBlocking OldCombatSettings 1
+    scoreboard players set OldToolDamage OldCombatSettings 1
+}
+
+function disable_cooldown {
+    execute if score DisableAttackCooldown OldCombatSettings matches 1 run {
+        attribute @s attack_speed modifier add oldcombat:removecooldown 100 add_value
+    } else execute run {
+        attribute @s attack_speed modifier remove oldcombat:removecooldown
+    }
+}
+
+function old_tool_damages {
+    execute if score OldToolDamage OldCombatSettings matches 1 if items entity @s weapon.mainhand #axes run {
+        attribute @s attack_damage modifier remove base_attack_damage
+        execute if items entity @s weapon.mainhand wooden_axe run attribute @s attack_damage modifier add base_attack_damage 2 add_value
+        execute if items entity @s weapon.mainhand stone_axe run attribute @s attack_damage modifier add base_attack_damage 3 add_value
+        execute if items entity @s weapon.mainhand iron_axe run attribute @s attack_damage modifier add base_attack_damage 4 add_value
+        execute if items entity @s weapon.mainhand golden_axe run attribute @s attack_damage modifier add base_attack_damage 2 add_value
+        execute if items entity @s weapon.mainhand diamond_axe run attribute @s attack_damage modifier add base_attack_damage 5 add_value
+        execute if items entity @s weapon.mainhand netherite_axe run attribute @s attack_damage modifier add base_attack_damage 6 add_value
+    } else execute run {
+        attribute @s attack_damage modifier remove oldcombat:olddamage
+    }
+}
+
+function sword_blocking {
+    execute if score SwordBlocking OldCombatSettings matches 1 if items entity @s weapon.mainhand #minecraft:swords[!blocks_attacks] run {
+        modify_held_components {"minecraft:blocks_attacks":{disable_cooldown_scale:0,damage_reductions:[{base:0,factor:0.5,horizontal_blocking_angle:180}],block_sound:"entity.player.hurt",item_damage:{threshold:0f,base:0f,factor:0f}}}
+    } else execute if score SwordBlocking OldCombatSettings matches 0 run {
+        remove_held_component "minecraft:blocks_attacks"
+    }
+}
+
+function block_offhand {
+    execute if score DisableOffhand OldCombatSettings matches 1 if items entity @s weapon.offhand * run {
+        execute at @s anchored eyes positioned ^ ^ ^ positioned ~ ~-0.1 ~ run function throw_offhand
+        tellraw @s {"color":"red","text":"Offhand is disabled. Your offhanded item(s) were dropped on the ground."}
+        item replace entity @s weapon.offhand with air
+    }
+}
+
+function throw_offhand {
+    throw_offhand_stack 0.4 80 250
+}
+
+function throw_held {
+    throw_held_stack 0.4 80 250
+}
+

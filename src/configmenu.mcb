@@ -1,0 +1,4 @@
+function run_and_return {
+    $$(cmd)
+    $$(return)
+}
