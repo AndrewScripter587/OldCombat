@@ -1,4 +1,5 @@
-# this template contains most of the code that the pack uses.
+
+# This template contains most of the code that the pack uses.
 
 template throw_held_stack {
     load {
@@ -115,5 +116,18 @@ template remove_held_component {
         data remove entity @n[type=armor_stand,tag=modify_slot] equipment.mainhand.components.<%data%>
         item replace entity @s weapon.mainhand from entity @n[type=armor_stand,tag=modify_slot] weapon.mainhand
         kill @e[type=armor_stand,tag=modify_slot]
+    }
+}
+
+template apply_velocity {
+    with x:float y:float z:float {
+        data modify entity @s Motion set value [<%x%>d,<%y%>d,<%z%>d]
+    }
+    with x:float z:float {
+        data modify entity @s Motion[0] set value <%x%>d
+        data modify entity @s Motion[2] set value <%z%>d
+    }
+    with y:float {
+        data modify entity @s Motion[1] set value <%y%>d
     }
 }

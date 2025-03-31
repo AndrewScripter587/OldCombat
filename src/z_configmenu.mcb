@@ -1,0 +1,22 @@
+#prefixed with a z to move these functions to the bottom of the /function autocomplete list in game
+
+import ./z_configmenu.mcbt
+
+tag functions on_config_button_press {
+    oldcombat:enforce_locked_settings
+}
+
+function run_and_return {
+    $$(cmd)
+    function #z_configmenu:on_config_button_press
+    $$(return)
+}
+
+function tests {
+    boolean_input <%"Sword Blocking"%> <%"Test"%> OldCombatSettings SwordBlocking z_configmenu:tests
+    boolean_input <%"Sword Blocking"%> <%"Test"%> OldCombatSettings SwordBlocking disabled true
+    boolean_input <%"Sword Blocking"%> <%"Test"%> OldCombatSettings SwordBlocking disabled false z_configmenu:tests
+    boolean_input <%"Sword Blocking"%> <%"Test"%> OldCombatSettings SwordBlocking disabled condition <%"unless entity @s"%> z_configmenu:tests
+    boolean_input <%"Sword Blocking"%> <%"Test"%> OldCombatSettings SwordBlocking disabled condition <%"if entity @s"%> z_configmenu:tests
+    numeric_input <%"Sword Blocking"%> <%"Test"%> OldCombatSettings SwordBlocking 1 z_configmenu:tests
+}

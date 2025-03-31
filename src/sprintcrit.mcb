@@ -1,0 +1,91 @@
+#Direct port from the Sprinting Crits datapack
+
+function crit {
+    playsound entity.player.attack.crit player @a ~ ~ ~ 1 1 0
+    #say ow
+    execute at @s anchored eyes positioned ^ ^ ^ run summon marker ~ ~ ~ {Tags:["Head","PositioningMarker"]}
+    execute at @s anchored feet positioned ^ ^ ^ run summon marker ~ ~ ~ {Tags:["Feet","PositioningMarker"]}
+
+    #Math to calculate center(-ish) of body
+    execute store result score HeadY Temp run data get entity @e[limit=1,sort=nearest,type=marker,tag=Head] Pos[1] 100
+    execute store result score FeetY Temp run data get entity @e[limit=1,sort=nearest,type=marker,tag=Feet] Pos[1] 100
+    scoreboard players set 2 Temp 2
+    scoreboard players operation BodyHeight Temp = HeadY Temp
+    scoreboard players operation BodyHeight Temp -= FeetY Temp
+    scoreboard players operation HalfBodyHeight Temp = BodyHeight Temp
+    scoreboard players operation HalfBodyHeight Temp /= 2 Temp
+    scoreboard players operation BodyY Temp = FeetY Temp
+    execute at @s run summon marker ~ ~ ~ {Tags:["Body","PositioningMarker"]}
+    execute store result entity @e[type=marker,tag=Body,limit=1] Pos[1] double 0.01 run scoreboard players operation BodyY Temp += HalfBodyHeight Temp
+
+    execute at @e[type=marker,limit=1,sort=nearest,tag=Body] run particle crit ~ ~0.05 ~ 0 0.4 0 0.6 30
+    $execute at @s if entity @e[tag=attacker] run damage @s $(damage) player_attack by @e[tag=attacker,limit=1]
+    $execute unless entity @e[tag=attacker] run damage @s $(damage) player_attack
+
+    kill @e[tag=PositioningMarker,type=marker]
+
+}
+
+function livingentity {
+    execute on attacker unless entity @s[type=player] run return fail
+    tag @s add this
+    #say Ow
+    execute on attacker run tag @s add attacker
+    #execute as @e[tag=attacker] run say I did it
+    scoreboard players set 15 Temp 15
+
+    #Debug text
+    #execute if score @e[limit=1,tag=attacker] WereSprinting matches 1.. run say they were sprinting
+    #execute unless score @e[limit=1,tag=attacker] WereSprinting matches 1.. run say they were not sprinting
+    #execute if score @e[limit=1,tag=attacker] WereFalling matches 1.. run say they were falling
+    #execute unless score @e[limit=1,tag=attacker] WereFalling matches 1.. run say they were not falling
+
+    scoreboard players operation CritDamage Temp = @e[tag=attacker,limit=1] TotalDamageDealt
+    execute store result storage temp damage float 0.001 run scoreboard players operation CritDamage Temp *= 15 Temp
+    execute if score @e[limit=1,tag=attacker] WereSprinting matches 1.. if score @e[limit=1,tag=attacker] WereFalling matches 1.. at @e[limit=1,tag=attacker] unless block ~ ~ ~ water unless block ~ ~ ~ lava at @s run function sprintcrit:crit with storage temp
+    tag @e remove this
+    tag @e remove attacker
+}
+
+function load minecraft:load {
+    scoreboard objectives add DamageDealt minecraft.custom:minecraft.damage_dealt
+    scoreboard objectives add DamageDealtAbsorbed minecraft.custom:minecraft.damage_dealt_absorbed
+    scoreboard objectives add DamageDealtResisted minecraft.custom:minecraft.damage_dealt_resisted
+    scoreboard objectives add TotalDamageDealt dummy
+    scoreboard objectives add Sprinting dummy
+    scoreboard objectives add WereSprinting dummy
+    scoreboard objectives add Falling dummy
+    scoreboard objectives add WereFalling dummy
+    scoreboard objectives add Settings dummy
+    scoreboard objectives add Temp dummy
+}
+
+function player {
+    scoreboard players operation @s WereSprinting = @s Sprinting
+    execute store result score @s Sprinting run attribute @s movement_speed modifier value get sprinting 100
+    scoreboard players operation @s WereFalling = @s Falling
+    scoreboard players set @s Falling 0
+    execute store result score YV Temp run data get entity @s Motion[1] 100
+    execute unless data entity @s {OnGround:1b} if score YV Temp matches ..-5 run scoreboard players set @s Falling 1
+    scoreboard players set @s TotalDamageDealt 0
+    execute store result score Base Temp run attribute @s attack_damage get 100
+    execute store result score Sharpness Temp run data get entity @s SelectedItem.components."minecraft:enchantments"."minecraft:sharpness" 50
+    execute if score Sharpness Temp matches 1.. run scoreboard players add Sharpness Temp 50
+    scoreboard players operation Base Temp += Sharpness Temp
+    execute store result score Smite Temp run data get entity @s SelectedItem.components."minecraft:enchantments"."minecraft:smite" 250
+    execute store result score Bane Temp run data get entity @s SelectedItem.components."minecraft:enchantments"."minecraft:bane_of_arthropods" 250
+    scoreboard players operation Base Temp += Bane Temp
+    scoreboard players operation Base Temp += Smite Temp
+    scoreboard players operation @s TotalDamageDealt = Base Temp
+}
+
+
+function tick minecraft:tick {
+    execute if score SprintingCrits OldCombatSettings matches 1 run {
+        execute as @a at @s run function sprintcrit:player
+        execute as @e[nbt={HurtTime:10s}] at @s run function sprintcrit:livingentity
+        scoreboard players reset @e DamageDealt
+        scoreboard players reset @e DamageDealtAbsorbed
+        scoreboard players reset @e DamageDealtResisted
+    }
+}
