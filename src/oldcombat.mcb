@@ -1,5 +1,9 @@
 import ./oldcombat.mcbt
 import ./z_configmenu.mcbt
+<%%
+    $1_21_4compile = 0
+    build_time = Date()
+%%>
 
 function on_load minecraft:load{
     # you can use MC-Build without its internal scoreboard but this will limit the available features
@@ -8,15 +12,16 @@ function on_load minecraft:load{
 }
 
 function on_tick minecraft:tick {
-    execute as @a run {
-        function block_offhand
-        function disable_cooldown
-        function sword_blocking
-        function old_tool_damages
-        function disable_sprinting
-        function air_knockback
-    }
-    execute as @e run {
+    execute if score StartDelay OldCombatTemp matches 1.. run {
+        scoreboard players remove StartDelay OldCombatTemp 1
+    } else execute as @e run {
+        execute if entity @s[type=player] run {
+            function block_offhand
+            function disable_cooldown
+            function sword_blocking
+            function old_tool_damages
+            function disable_sprinting
+        }
         function air_knockback
     }
     function disable_kb_resist
@@ -28,25 +33,49 @@ function enforce_locked_settings {
 }
 
 function config {
-    tellraw @s "Old Combat Configuration"
-    boolean_input <%"Sword Blocking"%> <%"If true, allows blocking using a sword. Sword blocking halves the damage taken for most damage types."%> OldCombatSettings SwordBlocking oldcombat:config
-    boolean_input <%"Disable Offhand Slot"%> <%"If true, completely disables the offhand slot. Any items in the offhand slot when this is true will be dropped on the ground."%> OldCombatSettings DisableOffhand oldcombat:config
-    boolean_input <%"Disable Attack Cooldown"%> <%"If true, completely disables the attack cooldown mechanic."%> OldCombatSettings DisableAttackCooldown oldcombat:config
-    boolean_input <%"Old Tool Damages"%> <%"If true, tools (mainly axes) will do their pre-1.9 attack damage. Note: the attack damage tooltip on the tool will still show the normal amount, but the tool will deal the old amount of damage."%> OldCombatSettings OldToolDamage oldcombat:config
-    boolean_input <%"Allow Critical Hits While Sprinting"%> <%"Enables getting critical hits while sprinting. After the combat update, you can no longer get a critical hit for your first hit during a sprint, you would just do a knockback attack instead. This setting, if true, allows players to crit for that first hit. This doesn't stop the knockback attack from happening, though, so you can get a crit and knockback attack at the same time. Due to technical restrictions, the critical hit will happen one tick after the player attacks a mob. Technical restrictions prevent the hitting a mob detection from happening on the same tick the attack happens. See https://modrinth.com/datapack/sprinting-crits for more about this mechanic."%> OldCombatSettings SprintingCrits disabled condition <%"if score DisableSprint OldCombatSettings matches 1"%> <%"This setting doesn't work when Disable Sprinting is true. Disable it to make this work again."%> oldcombat:config
-    boolean_input <%"Disable Sprinting"%> <%"NOTICE: This doesn't prevent certain sprinting-related actions from happening, such as knockback attacks, the exhaustion from sprinting, the sprint-jump speed-boost, etc. This tweak only removes the attribute modifier (minecraft:sprinting) that increases your speed while sprinting. This will, however, prevent the sprinting-crits setting from working since it relies on this attribute modifier being applied to detect sprinting"%> OldCombatSettings DisableSprint oldcombat:config
-    boolean_input <%"Disable Knockback Resistance"%> <%"Removes all forms of knockback resistance such as the partial knockback resistance provided by netherite armor, the full knockback resistance iron golems and wardens have, etc."%> OldCombatSettings DisableKBResist oldcombat:config
-    boolean_input <%"Knockback Effective In Air"%> <%"NOTICE: This will NOT apply to players, UNLESS you have a mod installed that allows editing of player NBT data. Makes knockback from attacks as effective in the air as it is on the ground."%> OldCombatSettings AirKB oldcombat:config
-    numeric_input <%"Air Knockback Strength"%> <%"Amount of vertical knockback applied to entities in the air by the above setting, in centimeters per tick. For reference, 1 cubic meter = 1 minecraft block, 100 cm = 1 meter, 20 ticks in 1 second."%> OldCombatSettings AirKBForce 10 disabled condition <%"if score AirKB OldCombatSettings matches 0"%> oldcombat:config
+    IF $1_21_4compile==1 {
+        tellraw @s "Old Combat Configuration"
+        boolean_input legacy <%"Sword Blocking"%> <%"If true, allows blocking using a sword. Sword blocking halves the damage taken for most damage types."%> OldCombatSettings SwordBlocking disabled true <%"You're playing on 1.21.4! This feature doesn't work here!"%>
+        boolean_input legacy <%"Disable Offhand Slot"%> <%"If true, completely disables the offhand slot. Any items in the offhand slot when this is true will be dropped on the ground."%> OldCombatSettings DisableOffhand oldcombat:config
+        boolean_input legacy <%"Disable Attack Cooldown"%> <%"If true, completely disables the attack cooldown mechanic."%> OldCombatSettings DisableAttackCooldown oldcombat:config
+        boolean_input legacy <%"Old Tool Damages"%> <%"If true, tools (mainly axes) will do their pre-1.9 attack damage. Note: the attack damage tooltip on the tool will still show the normal amount, but the tool will deal the old amount of damage."%> OldCombatSettings OldToolDamage oldcombat:config
+        boolean_input legacy <%"Allow Critical Hits While Sprinting"%> <%"Enables getting critical hits while sprinting. After the combat update, you can no longer get a critical hit for your first hit during a sprint, you would just do a knockback attack instead. This setting, if true, allows players to crit for that first hit. This doesn't stop the knockback attack from happening, though, so you can get a crit and knockback attack at the same time. Due to technical restrictions, the critical hit will happen one tick after the player attacks a mob. Technical restrictions prevent the hitting a mob detection from happening on the same tick the attack happens. See https://modrinth.com/datapack/sprinting-crits for more about this mechanic."%> OldCombatSettings SprintingCrits disabled condition <%"if score DisableSprint OldCombatSettings matches 1"%> <%"This setting doesn't work when Disable Sprinting is true. Disable it to make this work again."%> oldcombat:config
+        boolean_input legacy <%"Disable Sprinting"%> <%"NOTICE: This doesn't prevent certain sprinting-related actions from happening, such as knockback attacks, the exhaustion from sprinting, the sprint-jump speed-boost, etc. This tweak only removes the attribute modifier (minecraft:sprinting) that increases your speed while sprinting. This will, however, prevent the sprinting-crits setting from working since it relies on this attribute modifier being applied to detect sprinting"%> OldCombatSettings DisableSprint oldcombat:config
+        boolean_input legacy <%"Disable Knockback Resistance"%> <%"Removes all forms of knockback resistance such as the partial knockback resistance provided by netherite armor, the full knockback resistance iron golems and wardens have, etc."%> OldCombatSettings DisableKBResist oldcombat:config
+        boolean_input legacy <%"Knockback Effective In Air"%> <%"NOTICE: This will NOT apply to players, UNLESS you have a mod installed that allows editing of player NBT data. Makes knockback from attacks as effective in the air as it is on the ground."%> OldCombatSettings AirKB oldcombat:config
+        numeric_input legacy <%"Air Knockback Strength"%> <%"Amount of vertical knockback applied to entities in the air by the above setting, in centimeters per tick. For reference, 1 cubic meter = 1 minecraft block, 100 cm = 1 meter, 20 ticks in 1 second."%> OldCombatSettings AirKBForce 10 disabled condition <%"if score AirKB OldCombatSettings matches 0"%> oldcombat:config
 
-    REPEAT (10,19) as i {
-        tellraw @s ""
+        REPEAT (90,160,10) as i {
+            tellraw @s ""
+        }
+        value_display legacy <%"Config Data Version"%> <%"Internal variable that is used for compatibility reasons. Changing this will likely have negative consequences. As such, this cannot be changed using this config menu."%> score OldCombatSettings DataVersion
+        value_display legacy <%"Compatibility Mode"%> <%"The compatibility pack you're using. Not stored anywhere, it's just a constant value stored in the pack"%> constant 1.21.4 (legacy)
+    } ELSE {
+        tellraw @s "Old Combat Configuration"
+        boolean_input <%"Sword Blocking"%> <%"If true, allows blocking using a sword. Sword blocking halves the damage taken for most damage types."%> OldCombatSettings SwordBlocking oldcombat:config
+        boolean_input <%"Disable Offhand Slot"%> <%"If true, completely disables the offhand slot. Any items in the offhand slot when this is true will be dropped on the ground."%> OldCombatSettings DisableOffhand oldcombat:config
+        boolean_input <%"Disable Attack Cooldown"%> <%"If true, completely disables the attack cooldown mechanic."%> OldCombatSettings DisableAttackCooldown oldcombat:config
+        boolean_input <%"Old Tool Damages"%> <%"If true, tools (mainly axes) will do their pre-1.9 attack damage. Note: the attack damage tooltip on the tool will still show the normal amount, but the tool will deal the old amount of damage."%> OldCombatSettings OldToolDamage oldcombat:config
+        boolean_input <%"Allow Critical Hits While Sprinting"%> <%"Enables getting critical hits while sprinting. After the combat update, you can no longer get a critical hit for your first hit during a sprint, you would just do a knockback attack instead. This setting, if true, allows players to crit for that first hit. This doesn't stop the knockback attack from happening, though, so you can get a crit and knockback attack at the same time. Due to technical restrictions, the critical hit will happen one tick after the player attacks a mob. Technical restrictions prevent the hitting a mob detection from happening on the same tick the attack happens. See https://modrinth.com/datapack/sprinting-crits for more about this mechanic."%> OldCombatSettings SprintingCrits disabled condition <%"if score DisableSprint OldCombatSettings matches 1"%> <%"This setting doesn't work when Disable Sprinting is true. Disable it to make this work again."%> oldcombat:config
+        boolean_input <%"Disable Sprinting"%> <%"NOTICE: This doesn't prevent certain sprinting-related actions from happening, such as knockback attacks, the exhaustion from sprinting, the sprint-jump speed-boost, etc. This tweak only removes the attribute modifier (minecraft:sprinting) that increases your speed while sprinting. This will, however, prevent the sprinting-crits setting from working since it relies on this attribute modifier being applied to detect sprinting"%> OldCombatSettings DisableSprint oldcombat:config
+        boolean_input <%"Disable Knockback Resistance"%> <%"Removes all forms of knockback resistance such as the partial knockback resistance provided by netherite armor, the full knockback resistance iron golems and wardens have, etc."%> OldCombatSettings DisableKBResist oldcombat:config
+        boolean_input <%"Knockback Effective In Air"%> <%"NOTICE: This will NOT apply to players, UNLESS you have a mod installed that allows editing of player NBT data. Makes knockback from attacks as effective in the air as it is on the ground."%> OldCombatSettings AirKB oldcombat:config
+        numeric_input <%"Air Knockback Strength"%> <%"Amount of vertical knockback applied to entities in the air by the above setting, in centimeters per tick. For reference, 1 cubic meter = 1 minecraft block, 100 cm = 1 meter, 20 ticks in 1 second."%> OldCombatSettings AirKBForce 10 disabled condition <%"if score AirKB OldCombatSettings matches 0"%> oldcombat:config
+
+        REPEAT (90,160,10) as i {
+            tellraw @s ""
+        }
+        value_display <%"Config Data Version"%> <%"Internal variable that is used for compatibility reasons. Changing this will likely have negative consequences. As such, this cannot be changed using this config menu."%> score OldCombatSettings DataVersion
+        value_display <%"Compatibility Mode"%> <%"The compatibility pack you're using. Not stored anywhere, it's just a constant value stored in the pack"%> constant 1.21.5 (main)
     }
 }
 
 function defaults minecraft:load {
     scoreboard objectives add OldCombatSettings dummy
+    scoreboard objectives add OldCombatTemp dummy
     tellraw @a "Old Combat: Loading Default Settings"
+    # Add a start delay to ensure no issues arise while the world is loading, offhand items will turn into a single block of stone if this didn't exist
+    scoreboard players set StartDelay OldCombatTemp 60
     scoreboard players set DisableOffhand OldCombatSettings 1
     scoreboard players set DisableAttackCooldown OldCombatSettings 1
     scoreboard players set SwordBlocking OldCombatSettings 1
@@ -56,6 +85,7 @@ function defaults minecraft:load {
     scoreboard players set DisableKBResist OldCombatSettings 1
     scoreboard players set AirKB OldCombatSettings 1
     scoreboard players set AirKBForce OldCombatSettings 40
+    scoreboard players set DataVersion OldCombatSettings 0
 }
 
 function disable {
