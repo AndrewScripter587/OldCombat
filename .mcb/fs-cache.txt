@@ -27,7 +27,7 @@ data/oldcombat/function/zzz/22.mcfunction:13883281e4ba58c0c268febc42a9191e7c6b45
 data/oldcombat/function/zzz/23.mcfunction:2036a968a33b80e51ebd3e3806c7f8fb15db1401
 data/oldcombat/function/zzz/24.mcfunction:0defe11f261fffa5a4472266550bb279ff2ba151
 data/oldcombat/function/config.mcfunction:8a1db6e455d8028d448190990ac43d1409a35e39
-data/oldcombat/function/zzz/25.mcfunction:dd01070cb804955c9f1d7c3db4b686a088b2b482
+data/oldcombat/function/zzz/25.mcfunction:5387ad369c2fc8977cdc3dc7173e40d1fd3e6ad2
 data/oldcombat/function/changelog.mcfunction:5313b1b9013604e28bb64f924693c4c1bf52df45
 data/oldcombat/function/zzz/26.mcfunction:416c9e8264e12b63efe41f64364a8f7bd386204d
 data/oldcombat/function/zzz/27.mcfunction:ec56f85fce325c579319270e989af242211052a1

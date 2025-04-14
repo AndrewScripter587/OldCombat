@@ -1,3 +1,4 @@
 
 /data
 *.zip
+.mcb/fs-cache.txt
