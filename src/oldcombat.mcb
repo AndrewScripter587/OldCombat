@@ -3,6 +3,7 @@ import ./z_configmenu.mcbt
 <%%
     $1_21_4compile = 0
     build_time = Date()
+    data_version = 2
 %%>
 
 function on_load minecraft:load{
@@ -44,7 +45,6 @@ function config {
         boolean_input legacy <%"Disable Knockback Resistance"%> <%"Removes all forms of knockback resistance such as the partial knockback resistance provided by netherite armor, the full knockback resistance iron golems and wardens have, etc."%> OldCombatSettings DisableKBResist oldcombat:config
         boolean_input legacy <%"Knockback Effective In Air"%> <%"NOTICE: This will NOT apply to players, UNLESS you have a mod installed that allows editing of player NBT data. Makes knockback from attacks as effective in the air as it is on the ground."%> OldCombatSettings AirKB oldcombat:config
         numeric_input legacy <%"Air Knockback Strength"%> <%"Amount of vertical knockback applied to entities in the air by the above setting, in centimeters per tick. For reference, 1 cubic meter = 1 minecraft block, 100 cm = 1 meter, 20 ticks in 1 second."%> OldCombatSettings AirKBForce 10 disabled condition <%"if score AirKB OldCombatSettings matches 0"%> oldcombat:config
-
         REPEAT (90,160,10) as i {
             tellraw @s ""
         }
@@ -63,6 +63,7 @@ function config {
         numeric_input <%"Air Knockback Strength"%> <%"Amount of vertical knockback applied to entities in the air by the above setting, in centimeters per tick. For reference, 1 cubic meter = 1 minecraft block, 100 cm = 1 meter, 20 ticks in 1 second."%> OldCombatSettings AirKBForce 10 disabled condition <%"if score AirKB OldCombatSettings matches 0"%> oldcombat:config
 
         REPEAT (90,160,10) as i {
+            # One line of chat is 10px, this makes it easier to understand.
             tellraw @s ""
         }
         value_display <%"Config Data Version"%> <%"Internal variable that is used for compatibility reasons. Changing this will likely have negative consequences. As such, this cannot be changed using this config menu."%> score OldCombatSettings DataVersion
@@ -70,7 +71,26 @@ function config {
     }
 }
 
+function changelog {
+    tellraw @a "Old Combat Changelog:"
+    execute if score PreviousDataVersion OldCombatSettings matches ..1 run {
+        tellraw @a "With Config Data Version 2:"
+        tellraw @a "Reloading the pack or the world/server no longer resets the config; It now only resets after the pack updates"
+        tellraw @a "Technical: Config Data Version is now 2"
+        tellraw @a "Added a changelog (This!)"
+        tellraw @a "Warn players when the config was saved in a newer version of Old Combat"
+    }
+}
+
 function defaults minecraft:load {
+    execute unless score DataVersion OldCombatSettings matches 0.. run scoreboard players set DataVersion OldCombatSettings 1
+    execute if score DataVersion OldCombatSettings matches <%data_version%>.. unless entity @s run {
+        execute if score DataVersion OldCombatSettings matches <%data_version+1%>.. run tellraw @a "The config was saved in a newer version of Old Combat Datapack, this may cause some issues!"
+        return fail
+    } else execute if score DataVersion OldCombatSettings matches 0.. run {
+        say Old Combat: Configuration is from an older version of Old Combat Datapack. Resetting the configuration.
+        schedule function oldcombat:changelog 3s
+    }
     scoreboard objectives add OldCombatSettings dummy
     scoreboard objectives add OldCombatTemp dummy
     tellraw @a "Old Combat: Loading Default Settings"
@@ -85,11 +105,13 @@ function defaults minecraft:load {
     scoreboard players set DisableKBResist OldCombatSettings 1
     scoreboard players set AirKB OldCombatSettings 1
     scoreboard players set AirKBForce OldCombatSettings 40
-    scoreboard players set DataVersion OldCombatSettings 0
+    scoreboard players operation PreviousDataVersion OldCombatSettings = DataVersion OldCombatSettings
+    scoreboard players set DataVersion OldCombatSettings <%data_version%>
 }
 
 function disable {
     scoreboard objectives add OldCombatSettings dummy
+    scoreboard objectives add OldCombatTemp dummy
     tellraw @a "Old Combat: Disabling all settings"
     scoreboard players set DisableOffhand OldCombatSettings 0
     scoreboard players set DisableAttackCooldown OldCombatSettings 0
