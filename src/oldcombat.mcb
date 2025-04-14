@@ -1,9 +1,9 @@
 import ./oldcombat.mcbt
 import ./z_configmenu.mcbt
 <%%
-    $1_21_4compile = 0
+    $1_21_4compile = false
     build_time = Date()
-    data_version = 2
+    data_version = 4
 %%>
 
 function on_load minecraft:load{
@@ -27,14 +27,44 @@ function on_tick minecraft:tick {
     }
     function disable_kb_resist
     function enforce_locked_settings
+    function fishing_rod_kb
+    execute store result storage oldcombat:temp distx float 1 run scoreboard players get FishingBobberBoost.X OldCombatSettings
+    execute store result storage oldcombat:temp disty float 1 run scoreboard players get FishingBobberBoost.Y OldCombatSettings
+    function further_fishing_bobber with storage oldcombat:temp
+}
+
+function fishing_rod_kb {
+    execute if score FishingRodKnockback OldCombatSettings matches 1 run {
+        execute as @e[type=fishing_bobber,tag=!hit] at @s run {
+            execute on origin run tag @s add origin
+            tag @s add this
+            execute as @n[type=!fishing_bobber,type=!marker,tag=!origin,type=!item,type=!item_frame,type=!painting,type=!experience_orb] at @s anchored eyes positioned ^ ^ ^ if entity @n[tag=this,type=fishing_bobber,distance=..0.2] run {
+                tag @n[type=fishing_bobber,tag=this] add hit
+                damage @s 0.01 player_attack by @p[tag=origin]
+            }
+            tag @a remove origin
+            tag @e[type=fishing_bobber] remove this
+        }
+    }
 }
 
 function enforce_locked_settings {
     execute if score DisableSprint OldCombatSettings matches 1 run scoreboard players set SprintingCrits OldCombatSettings 0
 }
 
+function further_fishing_bobber {
+    $execute as @e[type=fishing_bobber,tag=!processed] run { {distx:$(distx), disty:$(disty)}
+        tag @s add processed
+        tag @s add this
+        REPEAT (0,2,1) as i {
+            $execute if score FurtherFishingBobber OldCombatSettings matches 1 store result entity @s Motion[<%i%>] double 0.01 run data get entity @s Motion[<%i%>] $(dist<%i != 1 ? "x" : "y"%>)
+        }
+        tag @s remove this
+    }
+}
+
 function config {
-    IF $1_21_4compile==1 {
+    IF $1_21_4compile==true {
         tellraw @s "Old Combat Configuration"
         boolean_input legacy <%"Sword Blocking"%> <%"If true, allows blocking using a sword. Sword blocking halves the damage taken for most damage types."%> OldCombatSettings SwordBlocking disabled true <%"You're playing on 1.21.4! This feature doesn't work here!"%>
         boolean_input legacy <%"Disable Offhand Slot"%> <%"If true, completely disables the offhand slot. Any items in the offhand slot when this is true will be dropped on the ground."%> OldCombatSettings DisableOffhand oldcombat:config
@@ -45,7 +75,12 @@ function config {
         boolean_input legacy <%"Disable Knockback Resistance"%> <%"Removes all forms of knockback resistance such as the partial knockback resistance provided by netherite armor, the full knockback resistance iron golems and wardens have, etc."%> OldCombatSettings DisableKBResist oldcombat:config
         boolean_input legacy <%"Knockback Effective In Air"%> <%"NOTICE: This will NOT apply to players, UNLESS you have a mod installed that allows editing of player NBT data. Makes knockback from attacks as effective in the air as it is on the ground."%> OldCombatSettings AirKB oldcombat:config
         numeric_input legacy <%"Air Knockback Strength"%> <%"Amount of vertical knockback applied to entities in the air by the above setting, in centimeters per tick. For reference, 1 cubic meter = 1 minecraft block, 100 cm = 1 meter, 20 ticks in 1 second."%> OldCombatSettings AirKBForce 10 disabled condition <%"if score AirKB OldCombatSettings matches 0"%> oldcombat:config
-        REPEAT (90,160,10) as i {
+        boolean_input legacy <%"Fishing Rod Knockback"%> <%"Makes fishing rod bobbers do knockback by applying 0.01 damage to entities hit by the bobber. Note: The damage and knockback will apply 1 tick after the fishing rod attaches to the entity. This is a technical restriction that is hard to work around."%> OldCombatSettings FishingRodKnockback oldcombat:config
+        boolean_input legacy <%"Fishing Bobbers Go Further"%> <%"Makes fishing rod bobbers go further when launched from a fishing rod by multiplying the bobber's velocity by a certain amount. This isn't that accurate to pre-combat update physics as that would be hard to make. Note: The velocity change happens 1 tick after the fishing bobber entity is created, causing the fishing bobber to go at the vanilla speed for 1 tick. This is a technical restriction that is hard to work around."%> OldCombatSettings FurtherFishingBobber oldcombat:config
+        value_display legacy <%"Fishing Bobber Speed"%> <%"Speed applied by the above setting, as a percent of what the velocity currently is for the bobber. (Default 150,100)"%> constant Vector2
+        numeric_input legacy <%"- x"%> <%"Horizontal Vector (Default 150)"%> OldCombatSettings FishingBobberBoost.X 10 disabled condition <%"if score FurtherFishingBobber OldCombatSettings matches 0"%> oldcombat:config
+        numeric_input legacy <%"- y"%> <%"Vertical Vector (Default 100)"%> OldCombatSettings FishingBobberBoost.Y 10 disabled condition <%"if score FurtherFishingBobber OldCombatSettings matches 0"%> oldcombat:config
+        REPEAT (140,160,10) as i {
             tellraw @s ""
         }
         value_display legacy <%"Config Data Version"%> <%"Internal variable that is used for compatibility reasons. Changing this will likely have negative consequences. As such, this cannot be changed using this config menu."%> score OldCombatSettings DataVersion
@@ -61,9 +96,13 @@ function config {
         boolean_input <%"Disable Knockback Resistance"%> <%"Removes all forms of knockback resistance such as the partial knockback resistance provided by netherite armor, the full knockback resistance iron golems and wardens have, etc."%> OldCombatSettings DisableKBResist oldcombat:config
         boolean_input <%"Knockback Effective In Air"%> <%"NOTICE: This will NOT apply to players, UNLESS you have a mod installed that allows editing of player NBT data. Makes knockback from attacks as effective in the air as it is on the ground."%> OldCombatSettings AirKB oldcombat:config
         numeric_input <%"Air Knockback Strength"%> <%"Amount of vertical knockback applied to entities in the air by the above setting, in centimeters per tick. For reference, 1 cubic meter = 1 minecraft block, 100 cm = 1 meter, 20 ticks in 1 second."%> OldCombatSettings AirKBForce 10 disabled condition <%"if score AirKB OldCombatSettings matches 0"%> oldcombat:config
-
-        REPEAT (90,160,10) as i {
-            # One line of chat is 10px, this makes it easier to understand.
+        boolean_input <%"Fishing Rod Knockback"%> <%"Makes fishing rod bobbers do knockback by applying 0.01 damage to entities hit by the bobber. Note: The damage and knockback will apply 1 tick after the fishing rod attaches to the entity. This is a technical restriction that is hard to work around."%> OldCombatSettings FishingRodKnockback oldcombat:config
+        boolean_input <%"Fishing Bobbers Go Further"%> <%"Makes fishing rod bobbers go further when launched from a fishing rod by multiplying the bobber's velocity by a certain amount. This isn't that accurate to pre-combat update physics as that would be hard to make. Note: The velocity change happens 1 tick after the fishing bobber entity is created, causing the fishing bobber to go at the vanilla speed for 1 tick. This is a technical restriction that is hard to work around."%> OldCombatSettings FurtherFishingBobber oldcombat:config
+        value_display <%"Fishing Bobber Speed"%> <%"Speed applied by the above setting, as a percent of what the velocity currently is for the bobber. (Default 150,100)"%> constant Vector2
+        numeric_input <%"- x"%> <%"Horizontal Vector (Default 150)"%> OldCombatSettings FishingBobberBoost.X 10 disabled condition <%"if score FurtherFishingBobber OldCombatSettings matches 0"%> oldcombat:config
+        numeric_input <%"- y"%> <%"Vertical Vector (Default 100)"%> OldCombatSettings FishingBobberBoost.Y 10 disabled condition <%"if score FurtherFishingBobber OldCombatSettings matches 0"%> oldcombat:config
+        # One line of chat is 10px, this makes it easier to understand.
+        REPEAT (140,160,10) as i {
             tellraw @s ""
         }
         value_display <%"Config Data Version"%> <%"Internal variable that is used for compatibility reasons. Changing this will likely have negative consequences. As such, this cannot be changed using this config menu."%> score OldCombatSettings DataVersion
@@ -80,17 +119,57 @@ function changelog {
         tellraw @a "Added a changelog (This!)"
         tellraw @a "Warn players when the config was saved in a newer version of Old Combat"
     }
+    execute if score PreviousDataVersion OldCombatSettings matches ..2 run {
+        tellraw @a "With Config Data Version 3:"    
+        tellraw @a "Fixed a bug where the pack still reset the config after a reload"
+        tellraw @a "Changed up some text"
+    }
+    execute if score PreviousDataVersion OldCombatSettings matches ..3 run {
+        tellraw @a "With Config Data Version 4:"    
+        IF $1_21_4compile==false {
+            tellraw @a ["Added the Fishing Rod Knockback mechanic. ",{text:"Click here to see it in the config.",underlined:true,click_event:{action:"run_command",command:"function oldcombat:config"}}]
+        } ELSE {
+            tellraw @a ["Added the Fishing Rod Knockback mechanic. ",{"text":"Click here to see it in the config.","underlined":true,"clickEvent":{"action":"run_command","value":"/function oldcombat:config"}}]            
+        }
+        tellraw @a "Made fishing bobbers from fishing rods go further."
+        tellraw @a "The setting for this shows as a Vector2 Input in the config (an input with 2 values, x and y)."
+    }
 }
 
-function defaults minecraft:load {
-    execute unless score DataVersion OldCombatSettings matches 0.. run scoreboard players set DataVersion OldCombatSettings 1
-    execute if score DataVersion OldCombatSettings matches <%data_version%>.. unless entity @s run {
-        execute if score DataVersion OldCombatSettings matches <%data_version+1%>.. run tellraw @a "The config was saved in a newer version of Old Combat Datapack, this may cause some issues!"
-        return fail
-    } else execute if score DataVersion OldCombatSettings matches 0.. run {
-        say Old Combat: Configuration is from an older version of Old Combat Datapack. Resetting the configuration.
+function startup minecraft:load {
+    scoreboard objectives add OldCombatSettings dummy
+    scoreboard objectives add OldCombatTemp dummy
+    scoreboard players set PackVersion OldCombatTemp <%data_version%>
+    # tellraw @a {score:{objective:"OldCombatTemp",name:"PackVersion"}}
+    # tellraw @a {score:{objective:"OldCombatSettings",name:"DataVersion"}}
+    execute unless score DataVersion OldCombatSettings matches 0.. run scoreboard players set DataVersion OldCombatSettings 0
+    execute if score DataVersion OldCombatSettings < PackVersion OldCombatTemp run {
         schedule function oldcombat:changelog 3s
+        say Old Combat: Reloading the Config
+        tellraw @a "Old Combat: Loading Default Settings"
+        # Add a start delay to ensure no issues arise while the world is loading, offhand items will turn into a single block of stone if this didn't exist
+        scoreboard players set StartDelay OldCombatTemp 60
+        scoreboard players set DisableOffhand OldCombatSettings 1
+        scoreboard players set DisableAttackCooldown OldCombatSettings 1
+        scoreboard players set SwordBlocking OldCombatSettings 1
+        scoreboard players set OldToolDamage OldCombatSettings 1
+        scoreboard players set SprintingCrits OldCombatSettings 1
+        scoreboard players set DisableSprint OldCombatSettings 0
+        scoreboard players set DisableKBResist OldCombatSettings 1
+        scoreboard players set AirKB OldCombatSettings 1
+        scoreboard players set FishingRodKnockback OldCombatSettings 1
+        scoreboard players set FurtherFishingBobber OldCombatSettings 1
+        scoreboard players set FishingBobberBoost.X OldCombatSettings 150
+        scoreboard players set FishingBobberBoost.Y OldCombatSettings 100
+        scoreboard players set AirKBForce OldCombatSettings 40
+        scoreboard players operation PreviousDataVersion OldCombatSettings = DataVersion OldCombatSettings
+        scoreboard players set DataVersion OldCombatSettings <%data_version%>
+    } else execute run {
+        execute if score DataVersion OldCombatSettings > PackVersion OldCombatTemp run tellraw @a "§4The config was saved in a newer version of Old Combat Datapack, this may cause some issues!"
     }
+}
+
+function defaults {
     scoreboard objectives add OldCombatSettings dummy
     scoreboard objectives add OldCombatTemp dummy
     tellraw @a "Old Combat: Loading Default Settings"
@@ -104,6 +183,9 @@ function defaults minecraft:load {
     scoreboard players set DisableSprint OldCombatSettings 0
     scoreboard players set DisableKBResist OldCombatSettings 1
     scoreboard players set AirKB OldCombatSettings 1
+    scoreboard players set FishingRodKnockback OldCombatSettings 1
+    scoreboard players set FishingBobberBoost.X OldCombatSettings 150
+    scoreboard players set FishingBobberBoost.Y OldCombatSettings 100
     scoreboard players set AirKBForce OldCombatSettings 40
     scoreboard players operation PreviousDataVersion OldCombatSettings = DataVersion OldCombatSettings
     scoreboard players set DataVersion OldCombatSettings <%data_version%>
@@ -122,6 +204,7 @@ function disable {
     scoreboard players set DisableKBResist OldCombatSettings 0
     scoreboard players set AirKB OldCombatSettings 0
     scoreboard players set AirKBForce OldCombatSettings 40
+    scoreboard players set FishingRodKnockback OldCombatSettings 0
 }
 
 function air_knockback {
