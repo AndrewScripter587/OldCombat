@@ -3,7 +3,8 @@ import ./z_configmenu.mcbt
 <%%
     $1_21_4compile = false
     build_time = Date()
-    data_version = 4
+    data_version = 5
+    vector_names = ["x","y","z"]
 %%>
 
 function on_load minecraft:load{
@@ -38,7 +39,11 @@ function fishing_rod_kb {
         execute as @e[type=fishing_bobber,tag=!hit] at @s run {
             execute on origin run tag @s add origin
             tag @s add this
-            execute as @n[type=!fishing_bobber,type=!marker,tag=!origin,type=!item,type=!item_frame,type=!painting,type=!experience_orb] at @s anchored eyes positioned ^ ^ ^ if entity @n[tag=this,type=fishing_bobber,distance=..0.2] run {
+            REPEAT (0,2,1) as i {
+                data modify storage oldcombat:temp <%vector_names[i]%> set from entity @s Pos[<%i%>]
+            }
+            
+            execute as @n[type=!fishing_bobber,type=!marker,tag=!origin,type=!item,type=!item_frame,type=!painting,type=!experience_orb] if entity @s[dx=0,dy=0,dz=0] run {
                 tag @n[type=fishing_bobber,tag=this] add hit
                 damage @s 0.01 player_attack by @p[tag=origin]
             }
@@ -133,6 +138,11 @@ function changelog {
         }
         tellraw @a "Made fishing bobbers from fishing rods go further."
         tellraw @a "The setting for this shows as a Vector2 Input in the config (an input with 2 values, x and y)."
+    }
+    execute if score PreviousDataVersion OldCombatSettings matches ..2 run {
+        tellraw @a "With Config Data Version 4:"    
+        tellraw @a "Fixed some bugs"
+        tellraw @a "Changed up some text"
     }
 }
 
@@ -247,6 +257,18 @@ function old_tool_damages {
     } else execute run {
         attribute @s attack_damage modifier remove oldcombat:olddamage
     }
+}
+
+tag entities large_hitboxes {
+    minecraft:ravager
+    minecraft:horse
+    minecraft:wither
+    minecraft:ender_dragon
+    minecraft:elder_guardian
+    minecraft:iron_golem
+    minecraft:camel
+    minecraft:donkey
+    minecraft:mule
 }
 
 tag damage_type bypasses_sword_blocking {

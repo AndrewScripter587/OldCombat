@@ -1,6 +1,7 @@
 {
 	"pack":{
 		"pack_format": 71,
-		"description": "A test MC-Build project to learn how to use MC-Build"
+		"supported_formats": [71,72],
+		"description": "Restore the classic combat and revert various other changes"
 	}
 }
