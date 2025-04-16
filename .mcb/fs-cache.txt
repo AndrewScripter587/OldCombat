@@ -76,6 +76,7 @@ data/oldcombat/function/throw_held_stack/load.mcfunction:83ec7e2f566a1ea9932a73b
 data/oldcombat/function/zzz/53.mcfunction:496e8fbe46e04ecb6f33dce0f559576b04a9fec2
 data/oldcombat/function/zzz/54.mcfunction:d118696918d7cafbd012c18ab9a4f2f4314153e2
 data/oldcombat/function/throw_held.mcfunction:3b60892919da6a60cff061620d03a0d948d1a3f2
+data/oldcombat/function/debug/repairheld.mcfunction:923411442b703c500e5a1a7add5d76fa6d84b091
 data/sprintcrit/function/crit.mcfunction:c5c6feabf27bd34da93531c2ea50a93100068813
 data/sprintcrit/function/livingentity.mcfunction:2071cdb0e401b850b5dd42b23c5abf997734b75c
 data/sprintcrit/function/load.mcfunction:214fa1e89982d3b960481d9f7b838d3488f79025

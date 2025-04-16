@@ -309,3 +309,9 @@ function throw_held {
     throw_held_stack 0.4 80 250
 }
 
+dir debug {
+    function repairheld {
+        remove_held_component "minecraft:damage"
+    }
+}
+
