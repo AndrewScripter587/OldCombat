@@ -230,3 +230,12 @@ template value_display {
 
 }
 
+template pagebar {
+    with pages:int functionprefix:js {
+        data remove storage z_configmenu:temp TextComponent
+        REPEAT (1,pages) as i {
+            data modify storage z_configmenu:temp TextComponent append value {text:"[<%i%>]",color:"gold",click_event:{action:"run_command",command:"/function <%functionprefix%>/page<%i%>"},hover_event:{action:"show_text",text:"Click to go to page <%i%>."}}
+        }
+        tellraw @s {storage:"z_configmenu:temp",nbt:"TextComponent",interpret:true}
+    }
+}

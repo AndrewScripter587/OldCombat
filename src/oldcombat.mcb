@@ -23,6 +23,7 @@ function on_tick minecraft:tick {
             function sword_blocking
             function old_tool_damages
             function disable_sprinting
+            function old_regen
         }
         function air_knockback
     }
@@ -32,6 +33,10 @@ function on_tick minecraft:tick {
     execute store result storage oldcombat:temp distx float 1 run scoreboard players get FishingBobberBoost.X OldCombatSettings
     execute store result storage oldcombat:temp disty float 1 run scoreboard players get FishingBobberBoost.Y OldCombatSettings
     function further_fishing_bobber with storage oldcombat:temp
+}
+
+function detect_aputils {
+    execute store result score aputils OldCombatTemp run aputils heartbeat
 }
 
 function fishing_rod_kb {
@@ -69,49 +74,56 @@ function further_fishing_bobber {
 }
 
 function config {
-    IF $1_21_4compile==true {
-        tellraw @s "Old Combat Configuration"
-        boolean_input legacy <%"Sword Blocking"%> <%"If true, allows blocking using a sword. Sword blocking halves the damage taken for most damage types."%> OldCombatSettings SwordBlocking disabled true <%"You're playing on 1.21.4! This feature doesn't work here!"%>
-        boolean_input legacy <%"Disable Offhand Slot"%> <%"If true, completely disables the offhand slot. Any items in the offhand slot when this is true will be dropped on the ground."%> OldCombatSettings DisableOffhand oldcombat:config
-        boolean_input legacy <%"Disable Attack Cooldown"%> <%"If true, completely disables the attack cooldown mechanic."%> OldCombatSettings DisableAttackCooldown oldcombat:config
-        boolean_input legacy <%"Old Tool Damages"%> <%"If true, tools (mainly axes) will do their pre-1.9 attack damage. Note: the attack damage tooltip on the tool will still show the normal amount, but the tool will deal the old amount of damage."%> OldCombatSettings OldToolDamage oldcombat:config
-        boolean_input legacy <%"Allow Critical Hits While Sprinting"%> <%"Enables getting critical hits while sprinting. After the combat update, you can no longer get a critical hit for your first hit during a sprint, you would just do a knockback attack instead. This setting, if true, allows players to crit for that first hit. This doesn't stop the knockback attack from happening, though, so you can get a crit and knockback attack at the same time. Due to technical restrictions, the critical hit will happen one tick after the player attacks a mob. Technical restrictions prevent the hitting a mob detection from happening on the same tick the attack happens. See https://modrinth.com/datapack/sprinting-crits for more about this mechanic."%> OldCombatSettings SprintingCrits disabled condition <%"if score DisableSprint OldCombatSettings matches 1"%> <%"This setting doesn't work when Disable Sprinting is true. Disable it to make this work again."%> oldcombat:config
-        boolean_input legacy <%"Disable Sprinting"%> <%"NOTICE: This doesn't prevent certain sprinting-related actions from happening, such as knockback attacks, the exhaustion from sprinting, the sprint-jump speed-boost, etc. This tweak only removes the attribute modifier (minecraft:sprinting) that increases your speed while sprinting. This will, however, prevent the sprinting-crits setting from working since it relies on this attribute modifier being applied to detect sprinting"%> OldCombatSettings DisableSprint oldcombat:config
-        boolean_input legacy <%"Disable Knockback Resistance"%> <%"Removes all forms of knockback resistance such as the partial knockback resistance provided by netherite armor, the full knockback resistance iron golems and wardens have, etc."%> OldCombatSettings DisableKBResist oldcombat:config
-        boolean_input legacy <%"Knockback Effective In Air"%> <%"NOTICE: This will NOT apply to players, UNLESS you have a mod installed that allows editing of player NBT data. Makes knockback from attacks as effective in the air as it is on the ground."%> OldCombatSettings AirKB oldcombat:config
-        numeric_input legacy <%"Air Knockback Strength"%> <%"Amount of vertical knockback applied to entities in the air by the above setting, in centimeters per tick. For reference, 1 cubic meter = 1 minecraft block, 100 cm = 1 meter, 20 ticks in 1 second."%> OldCombatSettings AirKBForce 10 disabled condition <%"if score AirKB OldCombatSettings matches 0"%> oldcombat:config
-        boolean_input legacy <%"Fishing Rod Knockback"%> <%"Makes fishing rod bobbers do knockback by applying 0.01 damage to entities hit by the bobber. Note: The damage and knockback will apply 1 tick after the fishing rod attaches to the entity. This is a technical restriction that is hard to work around."%> OldCombatSettings FishingRodKnockback oldcombat:config
-        boolean_input legacy <%"Fishing Bobbers Go Further"%> <%"Makes fishing rod bobbers go further when launched from a fishing rod by multiplying the bobber's velocity by a certain amount. This isn't that accurate to pre-combat update physics as that would be hard to make. Note: The velocity change happens 1 tick after the fishing bobber entity is created, causing the fishing bobber to go at the vanilla speed for 1 tick. This is a technical restriction that is hard to work around."%> OldCombatSettings FurtherFishingBobber oldcombat:config
-        value_display legacy <%"Fishing Bobber Speed"%> <%"Speed applied by the above setting, as a percent of what the velocity currently is for the bobber. (Default 150,100)"%> constant Vector2
-        numeric_input legacy <%"- x"%> <%"Horizontal Vector (Default 150)"%> OldCombatSettings FishingBobberBoost.X 10 disabled condition <%"if score FurtherFishingBobber OldCombatSettings matches 0"%> oldcombat:config
-        numeric_input legacy <%"- y"%> <%"Vertical Vector (Default 100)"%> OldCombatSettings FishingBobberBoost.Y 10 disabled condition <%"if score FurtherFishingBobber OldCombatSettings matches 0"%> oldcombat:config
-        REPEAT (140,160,10) as i {
-            tellraw @s ""
+    function ./config/page1
+}
+dir config {
+    function page1 {
+        IF $1_21_4compile==true {
+            tellraw @s "Old Combat Configuration"
+            boolean_input legacy <%"Sword Blocking"%> <%"If true, allows blocking using a sword. Sword blocking halves the damage taken for most damage types."%> OldCombatSettings SwordBlocking disabled true <%"You're playing on 1.21.4! This feature doesn't work here!"%>
+            boolean_input legacy <%"Disable Offhand Slot"%> <%"If true, completely disables the offhand slot. Any items in the offhand slot when this is true will be dropped on the ground."%> OldCombatSettings DisableOffhand oldcombat:config
+            boolean_input legacy <%"Disable Attack Cooldown"%> <%"If true, completely disables the attack cooldown mechanic."%> OldCombatSettings DisableAttackCooldown oldcombat:config
+            boolean_input legacy <%"Old Tool Damages"%> <%"If true, tools (mainly axes) will do their pre-1.9 attack damage. Note: the attack damage tooltip on the tool will still show the normal amount, but the tool will deal the old amount of damage."%> OldCombatSettings OldToolDamage oldcombat:config
+            boolean_input legacy <%"Allow Critical Hits While Sprinting"%> <%"Enables getting critical hits while sprinting. After the combat update, you can no longer get a critical hit for your first hit during a sprint, you would just do a knockback attack instead. This setting, if true, allows players to crit for that first hit. This doesn't stop the knockback attack from happening, though, so you can get a crit and knockback attack at the same time. Due to technical restrictions, the critical hit will happen one tick after the player attacks a mob. Technical restrictions prevent the hitting a mob detection from happening on the same tick the attack happens. See https://modrinth.com/datapack/sprinting-crits for more about this mechanic."%> OldCombatSettings SprintingCrits disabled condition <%"if score DisableSprint OldCombatSettings matches 1"%> <%"This setting doesn't work when Disable Sprinting is true. Disable it to make this work again."%> oldcombat:config
+            boolean_input legacy <%"Disable Sprinting"%> <%"NOTICE: This doesn't prevent certain sprinting-related actions from happening, such as knockback attacks, the exhaustion from sprinting, the sprint-jump speed-boost, etc. This tweak only removes the attribute modifier (minecraft:sprinting) that increases your speed while sprinting. This will, however, prevent the sprinting-crits setting from working since it relies on this attribute modifier being applied to detect sprinting"%> OldCombatSettings DisableSprint oldcombat:config
+            boolean_input legacy <%"Disable Knockback Resistance"%> <%"Removes all forms of knockback resistance such as the partial knockback resistance provided by netherite armor, the full knockback resistance iron golems and wardens have, etc."%> OldCombatSettings DisableKBResist oldcombat:config
+            boolean_input legacy <%"Knockback Effective In Air"%> <%"NOTICE: This will NOT apply to players, UNLESS you have a mod installed that allows editing of player NBT data. Makes knockback from attacks as effective in the air as it is on the ground."%> OldCombatSettings AirKB oldcombat:config
+            numeric_input legacy <%"Air Knockback Strength"%> <%"Amount of vertical knockback applied to entities in the air by the above setting, in centimeters per tick. For reference, 1 cubic meter = 1 minecraft block, 100 cm = 1 meter, 20 ticks in 1 second."%> OldCombatSettings AirKBForce 10 disabled condition <%"if score AirKB OldCombatSettings matches 0"%> oldcombat:config
+            boolean_input legacy <%"Fishing Rod Knockback"%> <%"Makes fishing rod bobbers do knockback by applying 0.01 damage to entities hit by the bobber. Note: The damage and knockback will apply 1 tick after the fishing rod attaches to the entity. This is a technical restriction that is hard to work around."%> OldCombatSettings FishingRodKnockback oldcombat:config
+            boolean_input legacy <%"Fishing Bobbers Go Further"%> <%"Makes fishing rod bobbers go further when launched from a fishing rod by multiplying the bobber's velocity by a certain amount. This isn't that accurate to pre-combat update physics as that would be hard to make. Note: The velocity change happens 1 tick after the fishing bobber entity is created, causing the fishing bobber to go at the vanilla speed for 1 tick. This is a technical restriction that is hard to work around."%> OldCombatSettings FurtherFishingBobber oldcombat:config
+            value_display legacy <%"Fishing Bobber Speed"%> <%"Speed applied by the above setting, as a percent of what the velocity currently is for the bobber. (Default 150,100)"%> constant Vector2
+            numeric_input legacy <%"- x"%> <%"Horizontal Vector (Default 150)"%> OldCombatSettings FishingBobberBoost.X 10 disabled condition <%"if score FurtherFishingBobber OldCombatSettings matches 0"%> oldcombat:config
+            numeric_input legacy <%"- y"%> <%"Vertical Vector (Default 100)"%> OldCombatSettings FishingBobberBoost.Y 10 disabled condition <%"if score FurtherFishingBobber OldCombatSettings matches 0"%> oldcombat:config
+#            REPEAT (16,16,1) as i {
+#                tellraw @s ""
+#            }
+            value_display legacy <%"Config Data Version"%> <%"Internal variable that is used for compatibility reasons. Changing this will likely have negative consequences. As such, this cannot be changed using this config menu."%> score OldCombatSettings DataVersion
+            value_display legacy <%"Compatibility Mode"%> <%"The compatibility pack you're using. Not stored anywhere, it's just a constant value stored in the pack"%> constant 1.21.4 (legacy)
+        } ELSE {
+            tellraw @s "Old Combat Configuration"
+            boolean_input <%"Sword Blocking"%> <%"If true, allows blocking using a sword. Sword blocking halves the damage taken for most damage types."%> OldCombatSettings SwordBlocking oldcombat:config
+            boolean_input <%"Disable Offhand Slot"%> <%"If true, completely disables the offhand slot. Any items in the offhand slot when this is true will be dropped on the ground."%> OldCombatSettings DisableOffhand oldcombat:config
+            boolean_input <%"Disable Attack Cooldown"%> <%"If true, completely disables the attack cooldown mechanic."%> OldCombatSettings DisableAttackCooldown oldcombat:config
+            boolean_input <%"Old Tool Damages"%> <%"If true, tools (mainly axes) will do their pre-1.9 attack damage. Note: the attack damage tooltip on the tool will still show the normal amount, but the tool will deal the old amount of damage."%> OldCombatSettings OldToolDamage oldcombat:config
+            boolean_input <%"Allow Critical Hits While Sprinting"%> <%"Enables getting critical hits while sprinting. After the combat update, you can no longer get a critical hit for your first hit during a sprint, you would just do a knockback attack instead. This setting, if true, allows players to crit for that first hit. This doesn't stop the knockback attack from happening, though, so you can get a crit and knockback attack at the same time. Due to technical restrictions, the critical hit will happen one tick after the player attacks a mob. Technical restrictions prevent the hitting a mob detection from happening on the same tick the attack happens. See https://modrinth.com/datapack/sprinting-crits for more about this mechanic."%> OldCombatSettings SprintingCrits disabled condition <%"if score DisableSprint OldCombatSettings matches 1"%> <%"This setting doesn't work when Disable Sprinting is true. Disable it to make this work again."%> oldcombat:config
+            boolean_input <%"Disable Sprinting"%> <%"NOTICE: This doesn't prevent certain sprinting-related actions from happening, such as knockback attacks, the exhaustion from sprinting, the sprint-jump speed-boost, etc. This tweak only removes the attribute modifier (minecraft:sprinting) that increases your speed while sprinting. This will, however, prevent the sprinting-crits setting from working since it relies on this attribute modifier being applied to detect sprinting"%> OldCombatSettings DisableSprint oldcombat:config
+            boolean_input <%"Disable Knockback Resistance"%> <%"Removes all forms of knockback resistance such as the partial knockback resistance provided by netherite armor, the full knockback resistance iron golems and wardens have, etc."%> OldCombatSettings DisableKBResist oldcombat:config
+            boolean_input <%"Knockback Effective In Air"%> <%"NOTICE: This will NOT apply to players, UNLESS you have a mod installed that allows editing of player NBT data. Makes knockback from attacks as effective in the air as it is on the ground."%> OldCombatSettings AirKB oldcombat:config
+            numeric_input <%"Air Knockback Strength"%> <%"Amount of vertical knockback applied to entities in the air by the above setting, in centimeters per tick. For reference, 1 cubic meter = 1 minecraft block, 100 cm = 1 meter, 20 ticks in 1 second."%> OldCombatSettings AirKBForce 10 disabled condition <%"if score AirKB OldCombatSettings matches 0"%> oldcombat:config
+            boolean_input <%"Fishing Rod Knockback"%> <%"Makes fishing rod bobbers do knockback by applying 0.01 damage to entities hit by the bobber. Note: The damage and knockback will apply 1 tick after the fishing rod attaches to the entity. This is a technical restriction that is hard to work around."%> OldCombatSettings FishingRodKnockback oldcombat:config
+            boolean_input <%"Fishing Bobbers Go Further"%> <%"Makes fishing rod bobbers go further when launched from a fishing rod by multiplying the bobber's velocity by a certain amount. This isn't that accurate to pre-combat update physics as that would be hard to make. Note: The velocity change happens 1 tick after the fishing bobber entity is created, causing the fishing bobber to go at the vanilla speed for 1 tick. This is a technical restriction that is hard to work around."%> OldCombatSettings FurtherFishingBobber oldcombat:config
+            value_display <%"Fishing Bobber Speed"%> <%"Speed applied by the above setting, as a percent of what the velocity currently is for the bobber. (Default 150,100)"%> constant Vector2
+            numeric_input <%"- x"%> <%"Horizontal Vector (Default 150)"%> OldCombatSettings FishingBobberBoost.X 10 disabled condition <%"if score FurtherFishingBobber OldCombatSettings matches 0"%> oldcombat:config
+            numeric_input <%"- y"%> <%"Vertical Vector (Default 100)"%> OldCombatSettings FishingBobberBoost.Y 10 disabled condition <%"if score FurtherFishingBobber OldCombatSettings matches 0"%> oldcombat:config
+            boolean_input <%"Old Regeneration"%> <%"NOTICE: Doesn't work without Andrew's DataPack Lib (a Fabric mod that you can find on my Github because it hasn't been approved for Modrinth yet) in order to modify player data. Makes health regeneration work like it did before the combat update, where you regain half a heart every 4 seconds, and having saturation left doesn't speed it up."%> OldCombatSettings OldRegen disabled condition <%"unless score aputils OldCombatTemp matches 1"%> oldcombat:config
+            numeric_input <%"Regeneration Delay"%> <%"The delay between each half heart regenerating, in ticks."%> OldCombatSettings AirKBForce 10 disabled condition <%"if score OldRegen OldCombatSettings matches 0"%> oldcombat:config
+#            REPEAT (16,16,1) as i {
+#                tellraw @s ""
+#            }
+            pagebar 1 <%"oldcombat:config"%>
+            value_display <%"Config Data Version"%> <%"Internal variable that is used for compatibility reasons. Changing this will likely have negative consequences. As such, this cannot be changed using this config menu."%> score OldCombatSettings DataVersion
+            value_display <%"Compatibility Mode"%> <%"The compatibility pack you're using. Not stored anywhere, it's just a constant value stored in the pack"%> constant 1.21.5 (main)
         }
-        value_display legacy <%"Config Data Version"%> <%"Internal variable that is used for compatibility reasons. Changing this will likely have negative consequences. As such, this cannot be changed using this config menu."%> score OldCombatSettings DataVersion
-        value_display legacy <%"Compatibility Mode"%> <%"The compatibility pack you're using. Not stored anywhere, it's just a constant value stored in the pack"%> constant 1.21.4 (legacy)
-    } ELSE {
-        tellraw @s "Old Combat Configuration"
-        boolean_input <%"Sword Blocking"%> <%"If true, allows blocking using a sword. Sword blocking halves the damage taken for most damage types."%> OldCombatSettings SwordBlocking oldcombat:config
-        boolean_input <%"Disable Offhand Slot"%> <%"If true, completely disables the offhand slot. Any items in the offhand slot when this is true will be dropped on the ground."%> OldCombatSettings DisableOffhand oldcombat:config
-        boolean_input <%"Disable Attack Cooldown"%> <%"If true, completely disables the attack cooldown mechanic."%> OldCombatSettings DisableAttackCooldown oldcombat:config
-        boolean_input <%"Old Tool Damages"%> <%"If true, tools (mainly axes) will do their pre-1.9 attack damage. Note: the attack damage tooltip on the tool will still show the normal amount, but the tool will deal the old amount of damage."%> OldCombatSettings OldToolDamage oldcombat:config
-        boolean_input <%"Allow Critical Hits While Sprinting"%> <%"Enables getting critical hits while sprinting. After the combat update, you can no longer get a critical hit for your first hit during a sprint, you would just do a knockback attack instead. This setting, if true, allows players to crit for that first hit. This doesn't stop the knockback attack from happening, though, so you can get a crit and knockback attack at the same time. Due to technical restrictions, the critical hit will happen one tick after the player attacks a mob. Technical restrictions prevent the hitting a mob detection from happening on the same tick the attack happens. See https://modrinth.com/datapack/sprinting-crits for more about this mechanic."%> OldCombatSettings SprintingCrits disabled condition <%"if score DisableSprint OldCombatSettings matches 1"%> <%"This setting doesn't work when Disable Sprinting is true. Disable it to make this work again."%> oldcombat:config
-        boolean_input <%"Disable Sprinting"%> <%"NOTICE: This doesn't prevent certain sprinting-related actions from happening, such as knockback attacks, the exhaustion from sprinting, the sprint-jump speed-boost, etc. This tweak only removes the attribute modifier (minecraft:sprinting) that increases your speed while sprinting. This will, however, prevent the sprinting-crits setting from working since it relies on this attribute modifier being applied to detect sprinting"%> OldCombatSettings DisableSprint oldcombat:config
-        boolean_input <%"Disable Knockback Resistance"%> <%"Removes all forms of knockback resistance such as the partial knockback resistance provided by netherite armor, the full knockback resistance iron golems and wardens have, etc."%> OldCombatSettings DisableKBResist oldcombat:config
-        boolean_input <%"Knockback Effective In Air"%> <%"NOTICE: This will NOT apply to players, UNLESS you have a mod installed that allows editing of player NBT data. Makes knockback from attacks as effective in the air as it is on the ground."%> OldCombatSettings AirKB oldcombat:config
-        numeric_input <%"Air Knockback Strength"%> <%"Amount of vertical knockback applied to entities in the air by the above setting, in centimeters per tick. For reference, 1 cubic meter = 1 minecraft block, 100 cm = 1 meter, 20 ticks in 1 second."%> OldCombatSettings AirKBForce 10 disabled condition <%"if score AirKB OldCombatSettings matches 0"%> oldcombat:config
-        boolean_input <%"Fishing Rod Knockback"%> <%"Makes fishing rod bobbers do knockback by applying 0.01 damage to entities hit by the bobber. Note: The damage and knockback will apply 1 tick after the fishing rod attaches to the entity. This is a technical restriction that is hard to work around."%> OldCombatSettings FishingRodKnockback oldcombat:config
-        boolean_input <%"Fishing Bobbers Go Further"%> <%"Makes fishing rod bobbers go further when launched from a fishing rod by multiplying the bobber's velocity by a certain amount. This isn't that accurate to pre-combat update physics as that would be hard to make. Note: The velocity change happens 1 tick after the fishing bobber entity is created, causing the fishing bobber to go at the vanilla speed for 1 tick. This is a technical restriction that is hard to work around."%> OldCombatSettings FurtherFishingBobber oldcombat:config
-        value_display <%"Fishing Bobber Speed"%> <%"Speed applied by the above setting, as a percent of what the velocity currently is for the bobber. (Default 150,100)"%> constant Vector2
-        numeric_input <%"- x"%> <%"Horizontal Vector (Default 150)"%> OldCombatSettings FishingBobberBoost.X 10 disabled condition <%"if score FurtherFishingBobber OldCombatSettings matches 0"%> oldcombat:config
-        numeric_input <%"- y"%> <%"Vertical Vector (Default 100)"%> OldCombatSettings FishingBobberBoost.Y 10 disabled condition <%"if score FurtherFishingBobber OldCombatSettings matches 0"%> oldcombat:config
-        # One line of chat is 10px, this makes it easier to understand.
-        REPEAT (140,160,10) as i {
-            tellraw @s ""
-        }
-        value_display <%"Config Data Version"%> <%"Internal variable that is used for compatibility reasons. Changing this will likely have negative consequences. As such, this cannot be changed using this config menu."%> score OldCombatSettings DataVersion
-        value_display <%"Compatibility Mode"%> <%"The compatibility pack you're using. Not stored anywhere, it's just a constant value stored in the pack"%> constant 1.21.5 (main)
     }
 }
 
@@ -140,7 +152,7 @@ function changelog {
         tellraw @a "The setting for this shows as a Vector2 Input in the config (an input with 2 values, x and y)."
     }
     execute if score PreviousDataVersion OldCombatSettings matches ..2 run {
-        tellraw @a "With Config Data Version 4:"    
+        tellraw @a "With Config Data Version 5:"    
         tellraw @a "Fixed some bugs"
         tellraw @a "Changed up some text"
     }
@@ -149,6 +161,9 @@ function changelog {
 function startup minecraft:load {
     scoreboard objectives add OldCombatSettings dummy
     scoreboard objectives add OldCombatTemp dummy
+    scoreboard objectives add foodTickTimer dummy
+    scoreboard players set aputils OldCombatTemp 0
+    function detect_aputils
     scoreboard players set PackVersion OldCombatTemp <%data_version%>
     # tellraw @a {score:{objective:"OldCombatTemp",name:"PackVersion"}}
     # tellraw @a {score:{objective:"OldCombatSettings",name:"DataVersion"}}
@@ -172,6 +187,8 @@ function startup minecraft:load {
         scoreboard players set FishingBobberBoost.X OldCombatSettings 150
         scoreboard players set FishingBobberBoost.Y OldCombatSettings 100
         scoreboard players set AirKBForce OldCombatSettings 40
+        scoreboard players set OldRegen OldCombatSettings 1
+        scoreboard players set regenRate OldCombatSettings 80
         scoreboard players operation PreviousDataVersion OldCombatSettings = DataVersion OldCombatSettings
         scoreboard players set DataVersion OldCombatSettings <%data_version%>
     } else execute run {
@@ -197,8 +214,38 @@ function defaults {
     scoreboard players set FishingBobberBoost.X OldCombatSettings 150
     scoreboard players set FishingBobberBoost.Y OldCombatSettings 100
     scoreboard players set AirKBForce OldCombatSettings 40
+    scoreboard players set OldRegen OldCombatSettings 1
+    scoreboard players set regenRate OldCombatSettings 80
     scoreboard players operation PreviousDataVersion OldCombatSettings = DataVersion OldCombatSettings
     scoreboard players set DataVersion OldCombatSettings <%data_version%>
+}
+
+function old_regen {
+    execute if score OldRegen OldCombatSettings matches 1 run {
+    execute store result score foodLevel OldCombatTemp run data get entity @s foodLevel 1
+    execute store result score foodSaturationLevel OldCombatTemp run data get entity @s foodSaturationLevel 1
+    # these two values are floating point (and actually use decimals unlike foodSaturationLevel) so they are going to be scaled by 100 to keep most of the meaningful precision
+    execute store result score foodExhaustionLevel OldCombatTemp run data get entity @s foodExhaustionLevel 100
+    execute store result score Health OldCombatTemp run data get entity @s Health 100
+    execute store result score MaxHealth OldCombatTemp run attribute @s max_health get 100
+        execute if score foodLevel OldCombatTemp matches 18.. unless score Health OldCombatTemp >= MaxHealth OldCombatTemp run {
+            data modify entity @s foodTickTimer set value 0
+            scoreboard players add @s foodTickTimer 1
+            execute if score @s foodTickTimer > regenRate OldCombatSettings run {
+                scoreboard players set @s foodTickTimer 0
+                scoreboard players add Health OldCombatTemp 100
+                scoreboard players add foodExhaustionLevel OldCombatTemp 600
+                execute store result entity @s foodLevel int 1 run scoreboard players get foodLevel OldCombatTemp
+                execute store result entity @s foodSaturationLevel float 1 run scoreboard players get foodSaturationLevel OldCombatTemp
+                execute store result entity @s foodExhaustionLevel float 0.01 run scoreboard players get foodExhaustionLevel OldCombatTemp
+                execute store result entity @s Health float 0.01 run scoreboard players get Health OldCombatTemp
+            }
+        } else execute run {
+            scoreboard players set @s foodTickTimer 0
+        }
+    } else execute run {
+        scoreboard players set @s foodTickTimer 0
+    }
 }
 
 function disable {
@@ -215,6 +262,7 @@ function disable {
     scoreboard players set AirKB OldCombatSettings 0
     scoreboard players set AirKBForce OldCombatSettings 40
     scoreboard players set FishingRodKnockback OldCombatSettings 0
+    scoreboard players set OldRegen OldCombatSettings 0
 }
 
 function air_knockback {
