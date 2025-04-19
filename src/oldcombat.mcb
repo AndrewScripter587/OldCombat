@@ -116,7 +116,7 @@ dir config {
             numeric_input <%"- x"%> <%"Horizontal Vector (Default 150)"%> OldCombatSettings FishingBobberBoost.X 10 disabled condition <%"if score FurtherFishingBobber OldCombatSettings matches 0"%> oldcombat:config
             numeric_input <%"- y"%> <%"Vertical Vector (Default 100)"%> OldCombatSettings FishingBobberBoost.Y 10 disabled condition <%"if score FurtherFishingBobber OldCombatSettings matches 0"%> oldcombat:config
             boolean_input <%"Old Regeneration"%> <%"NOTICE: Doesn't work without Andrew's DataPack Lib (a Fabric mod that you can find on my Github because it hasn't been approved for Modrinth yet) in order to modify player data. Makes health regeneration work like it did before the combat update, where you regain half a heart every 4 seconds, and having saturation left doesn't speed it up."%> OldCombatSettings OldRegen disabled condition <%"unless score aputils OldCombatTemp matches 1"%> oldcombat:config
-            numeric_input <%"Regeneration Delay"%> <%"The delay between each half heart regenerating, in ticks."%> OldCombatSettings AirKBForce 10 disabled condition <%"if score OldRegen OldCombatSettings matches 0"%> oldcombat:config
+            numeric_input <%"Regeneration Delay"%> <%"The delay between each half heart regenerating, in ticks."%> OldCombatSettings regenRate 10 disabled condition <%"if score OldRegen OldCombatSettings matches 0"%> oldcombat:config
 #            REPEAT (16,16,1) as i {
 #                tellraw @s ""
 #            }
