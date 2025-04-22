@@ -5,8 +5,12 @@ template throw_held_stack {
     load {
         scoreboard objectives add Temp dummy
     }
-    with speed:float precision_horizontal:float precision_vertical:float {
-        summon marker ^ ^ ^<%speed%> {Tags:["throw_marker"]}
+    with speed:float precision_horizontal:float precision_vertical:float randomrot:float {
+        execute store result storage oldcombat:temp rx double 0.1 run random value <%randomrot*-10%>..<%randomrot*10%>
+        execute store result storage oldcombat:temp ry double 0.1 run random value <%randomrot*-10%>..<%randomrot*10%>
+        block { with storage oldcombat:temp
+            $execute rotated ~$(rx) ~$(ry) run summon marker ^ ^ ^<%speed%> {Tags:["throw_marker"]}  
+        }
         summon marker ^ ^ ^ {Tags:["pos_marker"]}
         execute as @n[tag=throw_marker] store result score throw_x Temp run data get entity @s Pos[0] <%precision_horizontal%>
         execute as @n[tag=throw_marker] store result score throw_y Temp run data get entity @s Pos[1] <%precision_vertical%>
@@ -41,8 +45,12 @@ template throw_inventory_stack {
     load {
         scoreboard objectives add Temp dummy
     }
-    with speed:float precision_horizontal:float precision_vertical:float slot:int {
-        summon marker ^ ^ ^<%speed%> {Tags:["throw_marker"]}
+    with speed:float precision_horizontal:float precision_vertical:float slot:int randomrot:float {
+        execute store result storage oldcombat:temp rx double 0.1 run random value <%randomrot*-10%>..<%randomrot*10%>
+        execute store result storage oldcombat:temp ry double 0.1 run random value <%randomrot*-10%>..<%randomrot*10%>
+        block { with storage oldcombat:temp
+            $execute rotated ~$(rx) ~$(ry) run summon marker ^ ^ ^<%speed%> {Tags:["throw_marker"]}  
+        }
         summon marker ^ ^ ^ {Tags:["pos_marker"]}
         execute as @n[tag=throw_marker] store result score throw_x Temp run data get entity @s Pos[0] <%precision_horizontal%>
         execute as @n[tag=throw_marker] store result score throw_y Temp run data get entity @s Pos[1] <%precision_vertical%>
@@ -72,8 +80,12 @@ template throw_offhand_stack {
     load {
         scoreboard objectives add Temp dummy
     }
-    with speed:float precision_horizontal:float precision_vertical:float {
-        summon marker ^ ^ ^<%speed%> {Tags:["throw_marker"]}
+    with speed:float precision_horizontal:float precision_vertical:float randomrot:float {
+        execute store result storage oldcombat:temp rx double 0.1 run random value <%randomrot*-10%>..<%randomrot*10%>
+        execute store result storage oldcombat:temp ry double 0.1 run random value <%randomrot*-10%>..<%randomrot*10%>
+        block { with storage oldcombat:temp
+            $execute rotated ~$(rx) ~$(ry) run summon marker ^ ^ ^<%speed%> {Tags:["throw_marker"]}  
+        }
         summon marker ^ ^ ^ {Tags:["pos_marker"]}
         execute as @n[tag=throw_marker] store result score throw_x Temp run data get entity @s Pos[0] <%precision_horizontal%>
         execute as @n[tag=throw_marker] store result score throw_y Temp run data get entity @s Pos[1] <%precision_vertical%>
@@ -96,6 +108,41 @@ template throw_offhand_stack {
         execute store result entity @n[tag=thrown,type=item] Motion[2] double <%1 / precision_horizontal%> run scoreboard players get mz Temp
         data modify entity @n[tag=thrown,type=item] Item set from entity @s equipment.offhand
         tag @n[tag=thrown,type=item] remove thrown
+    }
+}
+
+template throw_custom_stack {
+    load {
+        scoreboard objectives add Temp dummy
+    }
+    with speed:float precision_horizontal:float precision_vertical:float randomrot:float itemstack:raw {
+        execute store result storage oldcombat:temp rx double 0.1 run random value <%randomrot*-10%>..<%randomrot*10%>
+        execute store result storage oldcombat:temp ry double 0.1 run random value <%randomrot*-10%>..<%randomrot*10%>
+        block { with storage oldcombat:temp
+            $execute rotated ~$(rx) ~$(ry) run summon marker ^ ^ ^<%speed%> {Tags:["throw_marker"]}  
+        }
+        summon marker ^ ^ ^ {Tags:["pos_marker"]}
+        execute as @n[tag=throw_marker] store result score throw_x Temp run data get entity @s Pos[0] <%precision_horizontal%>
+        execute as @n[tag=throw_marker] store result score throw_y Temp run data get entity @s Pos[1] <%precision_vertical%>
+        execute as @n[tag=throw_marker] store result score throw_z Temp run data get entity @s Pos[2] <%precision_horizontal%>
+        execute as @n[tag=pos_marker] store result score og_x Temp run data get entity @s Pos[0] <%precision_horizontal%>
+        execute as @n[tag=pos_marker] store result score og_y Temp run data get entity @s Pos[1] <%precision_vertical%>
+        execute as @n[tag=pos_marker] store result score og_z Temp run data get entity @s Pos[2] <%precision_horizontal%>
+        scoreboard players operation mx Temp = throw_x Temp
+        scoreboard players operation my Temp = throw_y Temp
+        scoreboard players operation mz Temp = throw_z Temp
+        scoreboard players operation mx Temp -= og_x Temp
+        scoreboard players operation my Temp -= og_y Temp
+        scoreboard players operation mz Temp -= og_z Temp
+        kill @e[tag=throw_marker]
+        kill @e[tag=pos_marker]
+        summon item ~ ~ ~ {Tags:["thrown"],Item:<%itemstack%>,PickupDelay:40s,Age:0}
+        data modify entity @n[tag=thrown,type=item] Thrower set from entity @s UUID
+        execute store result entity @n[tag=thrown,type=item] Motion[0] double <%1 / precision_horizontal%> run scoreboard players get mx Temp
+        execute store result entity @n[tag=thrown,type=item] Motion[1] double <%1 / precision_vertical%> run scoreboard players get my Temp
+        execute store result entity @n[tag=thrown,type=item] Motion[2] double <%1 / precision_horizontal%> run scoreboard players get mz Temp
+        tag @n[tag=thrown,type=item] remove thrown
+
     }
 }
 
@@ -132,3 +179,16 @@ template apply_velocity {
     }
 }
 
+
+
+template visual_break_item {
+    with item:word {
+        execute anchored eyes positioned ^ ^ ^ run particle minecraft:item{item:"<%item%>"} ^ ^-0.1 ^0.5 0 0 0 0.03 5
+        playsound entity.item.break player @a ~ ~ ~
+    }
+    with item:word sound:word {
+        execute anchored eyes positioned ^ ^ ^ run particle minecraft:item{item:"<%item%>"} ^ ^-0.1 ^0.5 0 0 0 0.03 5
+        playsound <%sound%> player @a ~ ~ ~
+
+    }
+}

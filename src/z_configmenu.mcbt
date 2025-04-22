@@ -238,4 +238,11 @@ template pagebar {
         }
         tellraw @s {storage:"z_configmenu:temp",nbt:"TextComponent",interpret:true}
     }
+    with legacy pages:int functionprefix:js {
+        data remove storage z_configmenu:temp TextComponent
+        REPEAT (1,pages) as i {
+            data modify storage z_configmenu:temp TextComponent append value {"text":"[<%i%>]","color":"gold","clickEvent":{"action":"run_command","value":"/function <%functionprefix%>/page<%i%>"},"hoverEvent":{"action":"show_text","value":"Click to go to page <%i%>."}}
+        }
+        tellraw @s {"storage":"z_configmenu:temp","nbt":"TextComponent","interpret":true}
+    }
 }
