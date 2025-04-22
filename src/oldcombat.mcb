@@ -267,7 +267,19 @@ function disable {
 
 function air_knockback {
     execute if score AirKB OldCombatSettings matches 1 if data entity @s {HurtTime:10s} run {
-        execute unless data entity @s {Motion:[0.0d,0.0d,0.0d]} unless data entity @s {OnGround:true} store result entity @s Motion[1] double 0.01 run scoreboard players get AirKBForce OldCombatSettings
+        execute unless data entity @s {Motion:[0.0d,0.0d,0.0d]} unless data entity @s {OnGround:true} run {
+            execute if score aputils OldCombatTemp matches 1 run {
+                execute store result entity @s Motion[1] double 0.01 run scoreboard players get AirKBForce OldCombatSettings
+            } else execute run {
+                execute store result storage oldcombat:temp kby double 0.01 run scoreboard players get AirKBForce OldCombatSettings
+                data modify storage oldcombat:temp dx set from entity @s Motion[0]
+                data modify storage oldcombat:temp dz set from entity @s Motion[2]
+                block knockback { with storage oldcombat:temp
+                    $aputils velocity @s $(dx) $(kb) $(dz) set  
+                }
+                
+            }
+        }
     }
 }
 
