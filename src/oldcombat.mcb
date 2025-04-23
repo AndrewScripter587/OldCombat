@@ -132,7 +132,7 @@ dir config {
             boolean_input legacy <%"Disable Netherite Items"%> <%"Disables netherite items. Fun fact: this will downgrade the netherite ingot from your netherite item all the way down to ancient debris in multiple steps"%> OldCombatSettings DisableNetheriteItems <%"oldcombat:config/page2"%>
             boolean_input legacy <%"Break Disabled Items"%> <%"Causes some disabled items to \\\"break\\\" (as if their durability was 0). Purely visual."%> OldCombatSettings BreakDisabledTools <%"oldcombat:config/page2"%>
             boolean_input legacy <%"Drop Crafting Materials For Disabled Items"%> <%"Most disabled items will drop the materials from their crafting recipe. Doesn't apply to any items that either don't have a crafting recipe or would create a dupe glitch because multiple of the item are created from the recipe."%> OldCombatSettings ReturnMaterialsOfDisabledItems <%"oldcombat:config/page2"%>
-            REPEAT (4,16) as i {
+            REPEAT (4,15) as i {
                 tellraw @s ""
             }
             pagebar legacy 2 <%"oldcombat:config"%>
@@ -144,7 +144,7 @@ dir config {
             boolean_input <%"Disable Netherite Items"%> <%"Disables netherite items. Fun fact: this will downgrade the netherite ingot from your netherite item all the way down to ancient debris in multiple steps"%> OldCombatSettings DisableNetheriteItems <%"oldcombat:config/page2"%>
             boolean_input <%"Break Disabled Items"%> <%"Causes some disabled items to \\\"break\\\" (as if their durability was 0). Purely visual."%> OldCombatSettings BreakDisabledTools <%"oldcombat:config/page2"%>
             boolean_input <%"Drop Crafting Materials For Disabled Items"%> <%"Most disabled items will drop the materials from their crafting recipe. Doesn't apply to any items that either don't have a crafting recipe or would create a dupe glitch because multiple of the item are created from the recipe."%> OldCombatSettings ReturnMaterialsOfDisabledItems <%"oldcombat:config/page2"%>
-            REPEAT (4,16) as i {
+            REPEAT (4,15) as i {
                 tellraw @s ""
             }
             pagebar 2 <%"oldcombat:config"%>
