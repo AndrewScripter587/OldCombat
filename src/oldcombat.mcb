@@ -3,7 +3,7 @@ import ./z_configmenu.mcbt
 <%%
     $1_21_4compile = false
     build_time = Date()
-    data_version = 5
+    data_version = 6
     vector_names = ["x","y","z"]
 %%>
 
@@ -99,7 +99,9 @@ dir config {
             value_display legacy <%"Fishing Bobber Speed"%> <%"Speed applied by the above setting, as a percent of what the velocity currently is for the bobber. (Default 150,100)"%> constant Vector2
             numeric_input legacy <%"- x"%> <%"Horizontal Vector (Default 150)"%> OldCombatSettings FishingBobberBoost.X 10 disabled condition <%"if score FurtherFishingBobber OldCombatSettings matches 0"%> oldcombat:config
             numeric_input legacy <%"- y"%> <%"Vertical Vector (Default 100)"%> OldCombatSettings FishingBobberBoost.Y 10 disabled condition <%"if score FurtherFishingBobber OldCombatSettings matches 0"%> oldcombat:config
-            pagebar legacy 2 <%oldcombat:config%>
+            boolean_input legacy <%"Old Regeneration"%> <%"NOTICE: Doesn't work without Andrew's DataPack Lib (a Fabric mod that you can find on Modrinth) in order to modify player data. Makes health regeneration work like it did before the combat update, where you regain half a heart every 4 seconds, and having saturation left doesn't speed it up."%> OldCombatSettings OldRegen disabled condition <%"unless score aputils OldCombatTemp matches 1"%> oldcombat:config
+            numeric_input legacy <%"Regeneration Delay"%> <%"The delay between each half heart regenerating, in ticks."%> OldCombatSettings regenRate 10 disabled condition <%"if score OldRegen OldCombatSettings matches 0"%> oldcombat:config
+            pagebar legacy 2 <%"oldcombat:config"%>
             value_display legacy <%"Config Data Version"%> <%"Internal variable that is used for compatibility reasons. Changing this will likely have negative consequences. As such, this cannot be changed using this config menu."%> score OldCombatSettings DataVersion
             value_display legacy <%"Compatibility Mode"%> <%"The compatibility pack you're using. Not stored anywhere, it's just a constant value stored in the pack"%> constant 1.21.4 (legacy)
         } ELSE {
@@ -118,7 +120,7 @@ dir config {
             value_display <%"Fishing Bobber Speed"%> <%"Speed applied by the above setting, as a percent of what the velocity currently is for the bobber. (Default 150,100)"%> constant Vector2
             numeric_input <%"- x"%> <%"Horizontal Vector (Default 150)"%> OldCombatSettings FishingBobberBoost.X 10 disabled condition <%"if score FurtherFishingBobber OldCombatSettings matches 0"%> oldcombat:config
             numeric_input <%"- y"%> <%"Vertical Vector (Default 100)"%> OldCombatSettings FishingBobberBoost.Y 10 disabled condition <%"if score FurtherFishingBobber OldCombatSettings matches 0"%> oldcombat:config
-            boolean_input <%"Old Regeneration"%> <%"NOTICE: Doesn't work without Andrew's DataPack Lib (a Fabric mod that you can find on my Github because it hasn't been approved for Modrinth yet) in order to modify player data. Makes health regeneration work like it did before the combat update, where you regain half a heart every 4 seconds, and having saturation left doesn't speed it up."%> OldCombatSettings OldRegen disabled condition <%"unless score aputils OldCombatTemp matches 1"%> oldcombat:config
+            boolean_input <%"Old Regeneration"%> <%"NOTICE: Doesn't work without Andrew's DataPack Lib (a Fabric mod that you can find on Modrinth) in order to modify player data. Makes health regeneration work like it did before the combat update, where you regain half a heart every 4 seconds, and having saturation left doesn't speed it up."%> OldCombatSettings OldRegen disabled condition <%"unless score aputils OldCombatTemp matches 1"%> oldcombat:config
             numeric_input <%"Regeneration Delay"%> <%"The delay between each half heart regenerating, in ticks."%> OldCombatSettings regenRate 10 disabled condition <%"if score OldRegen OldCombatSettings matches 0"%> oldcombat:config
             pagebar 2 <%"oldcombat:config"%>
             value_display <%"Config Data Version"%> <%"Internal variable that is used for compatibility reasons. Changing this will likely have negative consequences. As such, this cannot be changed using this config menu."%> score OldCombatSettings DataVersion
@@ -157,6 +159,8 @@ dir config {
 
 function changelog {
     tellraw @a "Old Combat Changelog:"
+    execute unless score PreviousDataVersion OldCombatSettings matches 0.. run tellraw @a "Thank you for installing Old Combat Datapack!"
+    execute unless score PreviousDataVersion OldCombatSettings matches 0.. run return 0
     execute if score PreviousDataVersion OldCombatSettings matches ..1 run {
         tellraw @a "With Config Data Version 2:"
         tellraw @a "Reloading the pack or the world/server no longer resets the config; It now only resets after the pack updates"
@@ -186,7 +190,13 @@ function changelog {
     }
     execute if score PreviousDataVersion OldCombatSettings matches ..5 run {
         tellraw @a "With Config Data Version 6:"    
-        tellraw @a "Added features that require Andrew's Datapack Utils"
+        tellraw @a "Added A LOT of features (check out /function oldcombat:config! It has a whole second page now!)"
+        IF $1_21_4compile==false {
+            tellraw @a ["Most of the new features require Andrew's Datapack Utilities to work properly. ",{text:"Click here to see it on Modrinth.",underlined:true,click_event:{action:"open_url",url:"https://modrinth.com/mod/andrews-pack-utils"}}]
+        } ELSE {
+            tellraw @a ["Most of the new features require Andrew's Datapack Utilities to work properly. ",{"text":"Click here to see it on Modrinth.","underlined":true,"clickEvent":{"action":"open_url","value":"https://modrinth.com/mod/andrews-pack-utils"}}]
+        }
+
     }
 }
 
@@ -499,6 +509,13 @@ function startup minecraft:load {
     scoreboard objectives add foodTickTimer dummy
     scoreboard players set aputils OldCombatTemp 0
     function detect_aputils
+    execute if score aputils OldCombatTemp matches 0 run {
+        IF $1_21_4compile==false {
+            tellraw @a ["Some features require Andrew's Datapack Utilities to work properly. Consider adding it! ",{text:"Click here to see it on Modrinth.",underlined:true,click_event:{action:"open_url",url:"https://modrinth.com/mod/andrews-pack-utils"}}]
+        } ELSE {
+            tellraw @a ["Some features require Andrew's Datapack Utilities to work properly. Consider adding it! ",{"text":"Click here to see it on Modrinth.","underlined":true,"clickEvent":{"action":"open_url","value":"https://modrinth.com/mod/andrews-pack-utils"}}]
+        }
+    }
     scoreboard players set PackVersion OldCombatTemp <%data_version%>
     # tellraw @a {score:{objective:"OldCombatTemp",name:"PackVersion"}}
     # tellraw @a {score:{objective:"OldCombatSettings",name:"DataVersion"}}
@@ -539,6 +556,14 @@ function defaults {
     scoreboard objectives add OldCombatSettings dummy
     scoreboard objectives add OldCombatTemp dummy
     tellraw @a "Old Combat: Loading Default Settings"
+    execute if score aputils OldCombatTemp matches 0 run {
+        IF $1_21_4compile==false {
+            tellraw @a ["Some features require Andrew's Datapack Utilities to work properly. Consider adding it! ",{text:"Click here to see it on Modrinth.",underlined:true,click_event:{action:"open_url",url:"https://modrinth.com/mod/andrews-pack-utils"}}]
+        } ELSE {
+            tellraw @a ["Some features require Andrew's Datapack Utilities to work properly. Consider adding it! ",{"text":"Click here to see it on Modrinth.","underlined":true,"clickEvent":{"action":"open_url","value":"https://modrinth.com/mod/andrews-pack-utils"}}]
+        }
+    }
+
     # Add a start delay to ensure no issues arise while the world is loading, offhand items will turn into a single block of stone if this didn't exist
     scoreboard players set StartDelay OldCombatTemp 60
     scoreboard players set DisableOffhand OldCombatSettings 1
@@ -721,7 +746,8 @@ dir debug {
     }
     function info {
         tellraw @s "Boolean $1_21_4compile = <%$1_21_4compile%>"
-        tellraw @s "String build_time = Date() = <%build_time%>"
+        tellraw @s "String build_time = <%build_time%>"
+        tellraw @s "Int data_version = 5"
     }
 }
 
