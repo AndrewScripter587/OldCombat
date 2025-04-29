@@ -16,26 +16,26 @@ function on_load minecraft:load{
 function on_tick minecraft:tick {
     execute if score StartDelay OldCombatTemp matches 1.. run {
         scoreboard players remove StartDelay OldCombatTemp 1
-    } else execute as @e[] run {
-        execute if entity @s[type=player] run {
-            function disable_modern_items
-            function disable_netherite_items
-            function block_offhand
-            function disable_cooldown
-            function sword_blocking
-            function old_tool_damages
-            function disable_sprinting
-            function old_regen
-        }
+    } else execute run {
+            execute as @a run {
+                function disable_modern_items
+                function disable_netherite_items
+                function block_offhand
+                function disable_cooldown
+                function sword_blocking
+                function old_tool_damages
+                function disable_sprinting
+                function old_regen
+            }
+            execute as @e[nbt={HurtTime:10s},type=!ender_dragon] run function air_knockback
+            function disable_kb_resist
+            function enforce_locked_settings
+            function fishing_rod_kb
+            execute store result storage oldcombat:temp distx float 1 run scoreboard players get FishingBobberBoost.X OldCombatSettings
+            execute store result storage oldcombat:temp disty float 1 run scoreboard players get FishingBobberBoost.Y OldCombatSettings
+            function further_fishing_bobber with storage oldcombat:temp
 
-        function air_knockback
     }
-    function disable_kb_resist
-    function enforce_locked_settings
-    function fishing_rod_kb
-    execute store result storage oldcombat:temp distx float 1 run scoreboard players get FishingBobberBoost.X OldCombatSettings
-    execute store result storage oldcombat:temp disty float 1 run scoreboard players get FishingBobberBoost.Y OldCombatSettings
-    function further_fishing_bobber with storage oldcombat:temp
 }
 
 function detect_aputils {
@@ -130,11 +130,12 @@ dir config {
     function page2 {
         IF $1_21_4compile==true {
             tellraw @s "Old Combat Configuration"
+            numeric_input legacy <%"Regeneration Exhaustion"%> <%"Exhaustion gain from regenerating health. 300 is 1.8's default, 400 is 1.9, 600 is 1.11."%> OldCombatSettings RegenExhaustion 10 disabled condition <%"if score OldRegen OldCombatSettings matches 0"%> oldcombat:config/page2
             boolean_input legacy <%"Disable Modern PVP Items"%> <%"Disables modern PVP items like crossbows, tipped arrows, maces, tridents, etc, by removing them when the player has them."%> OldCombatSettings DisableModernPVPItems <%"oldcombat:config/page2"%>
             boolean_input legacy <%"Disable Netherite Items"%> <%"Disables netherite items. Fun fact: this will downgrade the netherite ingot from your netherite item all the way down to ancient debris in multiple steps"%> OldCombatSettings DisableNetheriteItems <%"oldcombat:config/page2"%>
             boolean_input legacy <%"Break Disabled Items"%> <%"Causes some disabled items to \\\"break\\\" (as if their durability was 0). Purely visual."%> OldCombatSettings BreakDisabledTools <%"oldcombat:config/page2"%>
             boolean_input legacy <%"Drop Crafting Materials For Disabled Items"%> <%"Most disabled items will drop the materials from their crafting recipe. Doesn't apply to any items that either don't have a crafting recipe or would create a dupe glitch because multiple of the item are created from the recipe."%> OldCombatSettings ReturnMaterialsOfDisabledItems <%"oldcombat:config/page2"%>
-            REPEAT (4,15) as i {
+            REPEAT (5,15) as i {
                 tellraw @s ""
             }
             pagebar legacy 2 <%"oldcombat:config"%>
@@ -142,11 +143,12 @@ dir config {
             value_display legacy <%"Compatibility Mode"%> <%"The compatibility pack you're using. Not stored anywhere, it's just a constant value stored in the pack"%> constant 1.21.4 (legacy)
         } ELSE {
             tellraw @s "Old Combat Configuration"
+            numeric_input <%"Regeneration Exhaustion"%> <%"Exhaustion gain from regenerating health. 300 is 1.8's default, 400 is 1.9, 600 is 1.11."%> OldCombatSettings RegenExhaustion 10 disabled condition <%"if score OldRegen OldCombatSettings matches 0"%> oldcombat:config/page2
             boolean_input <%"Disable Modern PVP Items"%> <%"Disables modern PVP items like crossbows, tipped arrows, maces, tridents, etc, by removing them when the player has them."%> OldCombatSettings DisableModernPVPItems <%"oldcombat:config/page2"%>
             boolean_input <%"Disable Netherite Items"%> <%"Disables netherite items. Fun fact: this will downgrade the netherite ingot from your netherite item all the way down to ancient debris in multiple steps"%> OldCombatSettings DisableNetheriteItems <%"oldcombat:config/page2"%>
             boolean_input <%"Break Disabled Items"%> <%"Causes some disabled items to \\\"break\\\" (as if their durability was 0). Purely visual."%> OldCombatSettings BreakDisabledTools <%"oldcombat:config/page2"%>
             boolean_input <%"Drop Crafting Materials For Disabled Items"%> <%"Most disabled items will drop the materials from their crafting recipe. Doesn't apply to any items that either don't have a crafting recipe or would create a dupe glitch because multiple of the item are created from the recipe."%> OldCombatSettings ReturnMaterialsOfDisabledItems <%"oldcombat:config/page2"%>
-            REPEAT (4,15) as i {
+            REPEAT (5,15) as i {
                 tellraw @s ""
             }
             pagebar 2 <%"oldcombat:config"%>
@@ -526,6 +528,7 @@ function startup minecraft:load {
         tellraw @a "Old Combat: Loading Default Settings"
         # Add a start delay to ensure no issues arise while the world is loading, offhand items will turn into a single block of stone if this didn't exist
         scoreboard players set StartDelay OldCombatTemp 60
+        scoreboard players set RegenExhaustion OldCombatSettings 300
         scoreboard players set DisableOffhand OldCombatSettings 1
         scoreboard players set DisableAttackCooldown OldCombatSettings 1
         scoreboard players set SwordBlocking OldCombatSettings 1
@@ -569,6 +572,7 @@ function defaults {
     scoreboard players set DisableOffhand OldCombatSettings 1
     scoreboard players set DisableAttackCooldown OldCombatSettings 1
     scoreboard players set SwordBlocking OldCombatSettings 1
+    scoreboard players set RegenExhaustion OldCombatSettings 300
     scoreboard players set OldToolDamage OldCombatSettings 1
     scoreboard players set SprintingCrits OldCombatSettings 1
     scoreboard players set DisableSprint OldCombatSettings 0
@@ -592,7 +596,7 @@ function old_regen {
     execute if score OldRegen OldCombatSettings matches 1 unless entity @s[tag=oldcombatignore] run {
     execute store result score foodLevel OldCombatTemp run data get entity @s foodLevel 1
     execute store result score foodSaturationLevel OldCombatTemp run data get entity @s foodSaturationLevel 1
-    # these two values are floating point (and actually use decimals unlike foodSaturationLevel) so they are going to be scaled by 100 to keep most of the meaningful precision
+    # these two values are floating point so they are going to be scaled by 100 to keep most of the meaningful precision
     execute store result score foodExhaustionLevel OldCombatTemp run data get entity @s foodExhaustionLevel 100
     execute store result score Health OldCombatTemp run data get entity @s Health 100
     execute store result score MaxHealth OldCombatTemp run attribute @s max_health get 100
@@ -602,7 +606,7 @@ function old_regen {
             execute if score @s foodTickTimer > regenRate OldCombatSettings run {
                 scoreboard players set @s foodTickTimer 0
                 scoreboard players add Health OldCombatTemp 100
-                scoreboard players add foodExhaustionLevel OldCombatTemp 600
+                scoreboard players operation foodExhaustionLevel OldCombatTemp += RegenExhaustion OldCombatSettings
                 execute store result entity @s foodLevel int 1 run scoreboard players get foodLevel OldCombatTemp
                 execute store result entity @s foodSaturationLevel float 1 run scoreboard players get foodSaturationLevel OldCombatTemp
                 execute store result entity @s foodExhaustionLevel float 0.01 run scoreboard players get foodExhaustionLevel OldCombatTemp
@@ -636,7 +640,7 @@ function disable {
 }
 
 function air_knockback {
-    execute if score AirKB OldCombatSettings matches 1 if data entity @s[type=!ender_dragon] {HurtTime:10s} run {
+    execute if score AirKB OldCombatSettings matches 1 run {
         execute unless data entity @s {Motion:[0.0d,0.0d,0.0d]} unless data entity @s {OnGround:true} run {
             execute on attacker if entity @s[tag=oldcombatignore] run return fail
             execute if score aputils OldCombatTemp matches 0 run {

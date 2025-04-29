@@ -2,11 +2,11 @@
 
 function crit {
     playsound entity.player.attack.crit player @a ~ ~ ~ 1 1 0
-    #say ow
+    # say ow
     execute at @s anchored eyes positioned ^ ^ ^ run summon marker ~ ~ ~ {Tags:["Head","PositioningMarker"]}
     execute at @s anchored feet positioned ^ ^ ^ run summon marker ~ ~ ~ {Tags:["Feet","PositioningMarker"]}
 
-    #Math to calculate center(-ish) of body
+    # Math to calculate center(-ish) of body
     execute store result score HeadY Temp run data get entity @e[limit=1,sort=nearest,type=marker,tag=Head] Pos[1] 100
     execute store result score FeetY Temp run data get entity @e[limit=1,sort=nearest,type=marker,tag=Feet] Pos[1] 100
     scoreboard players set 2 Temp 2
@@ -29,16 +29,16 @@ function crit {
 function livingentity {
     execute on attacker unless entity @s[type=player] run return fail
     tag @s add this
-    #say Ow
+    # say Ow
     execute on attacker run tag @s add attacker
-    #execute as @e[tag=attacker] run say I did it
+    # execute as @e[tag=attacker] run say I did it
     scoreboard players set 15 Temp 15
 
-    #Debug text
-    #execute if score @e[limit=1,tag=attacker] WereSprinting matches 1.. run say they were sprinting
-    #execute unless score @e[limit=1,tag=attacker] WereSprinting matches 1.. run say they were not sprinting
-    #execute if score @e[limit=1,tag=attacker] WereFalling matches 1.. run say they were falling
-    #execute unless score @e[limit=1,tag=attacker] WereFalling matches 1.. run say they were not falling
+    # Debug text
+    # execute if score @e[limit=1,tag=attacker] WereSprinting matches 1.. run say they were sprinting
+    # execute unless score @e[limit=1,tag=attacker] WereSprinting matches 1.. run say they were not sprinting
+    # execute if score @e[limit=1,tag=attacker] WereFalling matches 1.. run say they were falling
+    # execute unless score @e[limit=1,tag=attacker] WereFalling matches 1.. run say they were not falling
 
     scoreboard players operation CritDamage Temp = @e[tag=attacker,limit=1] TotalDamageDealt
     execute store result storage temp damage float 0.001 run scoreboard players operation CritDamage Temp *= 15 Temp
@@ -83,7 +83,7 @@ function player {
 function tick minecraft:tick {
     execute if score SprintingCrits OldCombatSettings matches 1 run {
         execute as @a at @s run function sprintcrit:player
-        execute as @e[nbt={HurtTime:10s}] at @s run function sprintcrit:livingentity
+        execute as @e[nbt={HurtTime:10s},type=!ender_dragon,type=!armor_stand] at @s run function sprintcrit:livingentity
         scoreboard players reset @e DamageDealt
         scoreboard players reset @e DamageDealtAbsorbed
         scoreboard players reset @e DamageDealtResisted
