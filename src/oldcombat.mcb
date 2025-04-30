@@ -159,6 +159,8 @@ dir config {
 }
 
 
+
+
 function changelog {
     tellraw @a "Old Combat Changelog:"
     execute unless score PreviousDataVersion OldCombatSettings matches 0.. run tellraw @a "Thank you for installing Old Combat Datapack!"
