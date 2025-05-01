@@ -27,7 +27,10 @@ function on_tick minecraft:tick {
                 function disable_sprinting
                 function old_regen
             }
-            execute as @e[nbt={HurtTime:10s},type=!ender_dragon] run function air_knockback
+            execute as @e[nbt={HurtTime:10s},type=!ender_dragon,type=!player] run function buff_knockback
+            execute as @e[nbt={HurtTime:10s},type=!ender_dragon,type=!player] run function air_knockback
+            execute as @a[nbt={HurtTime:9s}] run function buff_knockback
+            execute as @a[nbt={HurtTime:9s}] run function air_knockback
             function disable_kb_resist
             function enforce_locked_settings
             function fishing_rod_kb
@@ -148,7 +151,12 @@ dir config {
             boolean_input <%"Disable Netherite Items"%> <%"Disables netherite items. Fun fact: this will downgrade the netherite ingot from your netherite item all the way down to ancient debris in multiple steps"%> OldCombatSettings DisableNetheriteItems <%"oldcombat:config/page2"%>
             boolean_input <%"Break Disabled Items"%> <%"Causes some disabled items to \\\"break\\\" (as if their durability was 0). Purely visual."%> OldCombatSettings BreakDisabledTools <%"oldcombat:config/page2"%>
             boolean_input <%"Drop Crafting Materials For Disabled Items"%> <%"Most disabled items will drop the materials from their crafting recipe. Doesn't apply to any items that either don't have a crafting recipe or would create a dupe glitch because multiple of the item are created from the recipe."%> OldCombatSettings ReturnMaterialsOfDisabledItems <%"oldcombat:config/page2"%>
-            REPEAT (5,15) as i {
+            boolean_input <%"Increase Damage Knockback"%> <%"Increases the knockback applied to mobs that take damage. Requires Andrew's Pack Utilities to affect players."%> OldCombatSettings BuffKB <%"oldcombat:config/page2"%>
+            value_display <%"Knockback Increase"%> <%"Increase applied by the above setting, as a percent of what the knockback normally was. (Default 150,105)"%> constant Vector2
+            numeric_input <%"- x"%> <%"Horizontal Vector (Default 150)"%> OldCombatSettings BuffKBValue.X 5 disabled condition <%"if score BuffKB OldCombatSettings matches 0"%> oldcombat:config/page2
+            numeric_input <%"- y"%> <%"Vertical Vector (Default 105)"%> OldCombatSettings BuffKBValue.Y 5 disabled condition <%"if score BuffKB OldCombatSettings matches 0"%> oldcombat:config/page2
+
+            REPEAT (9,15) as i {
                 tellraw @s ""
             }
             pagebar 2 <%"oldcombat:config"%>
@@ -506,6 +514,28 @@ function disable_netherite_items {
     }
 }
 
+function buff_knockback {
+    execute store result storage oldcombat:temp horizontal int 1 run scoreboard players get BuffKBValue.X OldCombatSettings
+    execute store result storage oldcombat:temp vertical int 1 run scoreboard players get BuffKBValue.Y OldCombatSettings
+    execute if score BuffKB OldCombatSettings matches 1 unless entity @s[tag=oldcombatignore] run { with storage oldcombat:temp
+    execute if score aputils OldCombatTemp matches 0 run {
+        $execute store result entity @s Motion[0] double 0.01 run data get entity @s Motion[0] $(horizontal)
+        $execute store result entity @s Motion[1] double 0.01 run data get entity @s Motion[1] $(vertical)
+        $execute store result entity @s Motion[2] double 0.01 run data get entity @s Motion[2] $(horizontal)
+    } else execute run { with storage oldcombat:temp
+        tellraw @a "Test1"
+        $execute store result storage oldcombat:temp x double 0.01 run data get entity @s Motion[0] $(horizontal)
+        $execute store result storage oldcombat:temp y double 0.01 run data get entity @s Motion[1] $(vertical)
+        $execute store result storage oldcombat:temp z double 0.01 run data get entity @s Motion[2] $(horizontal)
+        block { with storage oldcombat:temp
+            tellraw @a "Test"
+            $aputils velocity @s $(x) $(y) $(z) add
+        }
+
+    }
+    }
+}
+
 
 function startup minecraft:load {
     scoreboard objectives add OldCombatSettings dummy
@@ -532,6 +562,9 @@ function startup minecraft:load {
         scoreboard players set StartDelay OldCombatTemp 60
         scoreboard players set RegenExhaustion OldCombatSettings 300
         scoreboard players set DisableOffhand OldCombatSettings 1
+        scoreboard players set BuffKB OldCombatSettings 1
+        scoreboard players set BuffKBValue.X OldCombatSettings 125
+        scoreboard players set BuffKBValue.Y OldCombatSettings 105
         scoreboard players set DisableAttackCooldown OldCombatSettings 1
         scoreboard players set SwordBlocking OldCombatSettings 1
         scoreboard players set OldToolDamage OldCombatSettings 1
@@ -557,6 +590,13 @@ function startup minecraft:load {
     }
 }
 
+
+
+
+function spawn_marker_adjacent {
+    $summon marker ~$(x) ~$(y) ~$(z) $(nbt)        
+}
+
 function defaults {
     scoreboard objectives add OldCombatSettings dummy
     scoreboard objectives add OldCombatTemp dummy
@@ -572,6 +612,9 @@ function defaults {
     # Add a start delay to ensure no issues arise while the world is loading, offhand items will turn into a single block of stone if this didn't exist
     scoreboard players set StartDelay OldCombatTemp 60
     scoreboard players set DisableOffhand OldCombatSettings 1
+    scoreboard players set BuffKB OldCombatSettings 1
+    scoreboard players set BuffKBValue.X OldCombatSettings 125
+    scoreboard players set BuffKBValue.Y OldCombatSettings 105
     scoreboard players set DisableAttackCooldown OldCombatSettings 1
     scoreboard players set SwordBlocking OldCombatSettings 1
     scoreboard players set RegenExhaustion OldCombatSettings 300
