@@ -638,7 +638,7 @@ function defaults {
 }
 
 function old_regen {
-    execute if score OldRegen OldCombatSettings matches 1 unless entity @s[tag=oldcombatignore] run {
+    execute if score OldRegen OldCombatSettings matches 1 unless entity @s[tag=oldcombatignore] unless entity @s[nbt={Health:0f}] run {
     execute store result score foodLevel OldCombatTemp run data get entity @s foodLevel 1
     execute store result score foodSaturationLevel OldCombatTemp run data get entity @s foodSaturationLevel 1
     # these two values are floating point so they are going to be scaled by 100 to keep most of the meaningful precision
