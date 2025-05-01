@@ -1,7 +1,7 @@
 data/oldcombat/function/on_load.mcfunction:c137f583a39a0f10976c4f412edd3c0d6257e0ab
 data/oldcombat/function/zzz/0.mcfunction:c90cdb9593af0b4dfbc817ed07bec152fb70a3a5
 data/oldcombat/function/zzz/2.mcfunction:4352ae2be9317f0892c523870a995ad6c4b0409c
-data/oldcombat/function/zzz/1.mcfunction:b900784d67a677ae01ec3bfd9239cc1faaa08593
+data/oldcombat/function/zzz/1.mcfunction:e98e3532615ef92c1d895e6aa6977a9b9edcc233
 data/oldcombat/function/on_tick.mcfunction:b337d55dad073759daaae1071cf9410aaa1d2ae8
 data/oldcombat/function/detect_aputils.mcfunction:cfe4caaa9a5094e4ef6e36ab5f09e680597aa0f6
 data/oldcombat/function/zzz/5.mcfunction:ba6ca0b430c7df28520a14b69a42d0f1ccb74996
@@ -170,9 +170,9 @@ data/oldcombat/function/zzz/100.mcfunction:9be014a4b31bb3bccafe2ecd91a23aacbaa70
 data/oldcombat/function/zzz/36.mcfunction:9c19e51f9e46f120559885d986ee82a09aee0090
 data/oldcombat/function/disable_netherite_items.mcfunction:8d51b38a2b74d66f9fc23d617ee344869b3db4ad
 data/oldcombat/function/zzz/105.mcfunction:11ea5be5e67751de2b82466d53c68d36bb59d137
-data/oldcombat/function/zzz/107.mcfunction:8dcfb3fccd26ab17f285730ffa906164e429a12b
-data/oldcombat/function/zzz/106.mcfunction:ebf125d1ff6dc1be1357a3afc02d07b15bed6963
-data/oldcombat/function/zzz/104.mcfunction:21cb4c4c6e9caf33b2fa2040c90d63e4edb64399
+data/oldcombat/function/zzz/107.mcfunction:fcc4484f58b7617b77bd4edecce1982063078672
+data/oldcombat/function/zzz/106.mcfunction:e14adda84097e15fc91152b49dc5db4dbb0be3e0
+data/oldcombat/function/zzz/104.mcfunction:7f93e12877defa9cb26f07552932355ba8b887dd
 data/oldcombat/function/buff_knockback.mcfunction:3cfcbf1f780cb1db496e65cb356cd32298598c74
 data/oldcombat/function/zzz/108.mcfunction:6487ad2832eef386e8c0af7699296f60f291a3b1
 data/oldcombat/function/zzz/109.mcfunction:7e7cc0d3c8e1c72ac04615f31fe4716ebdf1d9f5
@@ -192,7 +192,7 @@ data/oldcombat/function/zzz/119.mcfunction:03c3eef6add4011b06f86066eb77c390be391
 data/oldcombat/function/knockback.mcfunction:874f48264d80cb92dfe7c1868d62f3dee0fc08eb
 data/oldcombat/function/zzz/120.mcfunction:12b028937f281b66448580f991feab417e53ebb9
 data/oldcombat/function/zzz/118.mcfunction:4df853172723a74df13fd008b1f86d6648d20f17
-data/oldcombat/function/zzz/117.mcfunction:d88e2011ce194c09858f1a0950141f2a2a77ca37
+data/oldcombat/function/zzz/117.mcfunction:d6333f89887a640d098652b47d03408423a9ed2e
 data/oldcombat/function/air_knockback.mcfunction:daaa73cafb572a1269371e2e75a7a87161e09126
 data/oldcombat/function/zzz/121.mcfunction:18686087a0fc9eedc6353695ab5f62f7705544b3
 data/oldcombat/function/disable_cooldown.mcfunction:dcddbd0a79be189e6f4926c9b54258dfc9b3b571
@@ -220,7 +220,7 @@ data/oldcombat/function/zzz/132.mcfunction:496e8fbe46e04ecb6f33dce0f559576b04a9f
 data/oldcombat/function/zzz/133.mcfunction:d118696918d7cafbd012c18ab9a4f2f4314153e2
 data/oldcombat/function/throw_held.mcfunction:d0ab51abe7fbeeb246c29d7ee31ca2a2313ae754
 data/oldcombat/function/debug/repairheld.mcfunction:923411442b703c500e5a1a7add5d76fa6d84b091
-data/oldcombat/function/debug/info.mcfunction:0c015be6831f4d01ac212d9913a1f232a7e29081
+data/oldcombat/function/debug/info.mcfunction:07d6b7f39ab7e617d515c3c8e385c3fe238f5ad3
 data/sprintcrit/function/crit.mcfunction:75ef5beac741b8cf07cf7a3806b5aa094afa280d
 data/sprintcrit/function/livingentity.mcfunction:e99396ce0c1850ec98a17c1f4bc974168905d761
 data/sprintcrit/function/load.mcfunction:214fa1e89982d3b960481d9f7b838d3488f79025

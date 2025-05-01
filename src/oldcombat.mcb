@@ -27,10 +27,14 @@ function on_tick minecraft:tick {
                 function disable_sprinting
                 function old_regen
             }
-            execute as @e[nbt={HurtTime:10s},type=!ender_dragon,type=!player] run function buff_knockback
-            execute as @e[nbt={HurtTime:10s},type=!ender_dragon,type=!player] run function air_knockback
-            execute as @a[nbt={HurtTime:9s}] run function buff_knockback
-            execute as @a[nbt={HurtTime:9s}] run function air_knockback
+            execute as @e[nbt={HurtTime:10s},type=!ender_dragon,tag=!bkbprocessed] run function buff_knockback
+            execute as @e[nbt={HurtTime:10s},type=!ender_dragon,tag=!akbprocessed] run function air_knockback
+            execute as @e[nbt={HurtTime:9s},type=!ender_dragon,tag=!bkbprocessed] run function buff_knockback
+            execute as @e[nbt={HurtTime:9s},type=!ender_dragon,tag=!akbprocessed] run function air_knockback
+            execute as @e[nbt={HurtTime:9s},type=!ender_dragon,tag=bkbprocessed] run tag @s remove bkbprocessed
+            execute as @e[nbt={HurtTime:9s},type=!ender_dragon,tag=akbprocessed] run tag @s remove akbprocessed
+#            execute as @a[nbt={HurtTime:9s}] run function buff_knockback
+#            execute as @a[nbt={HurtTime:9s}] run function air_knockback
             function disable_kb_resist
             function enforce_locked_settings
             function fishing_rod_kb
@@ -523,16 +527,15 @@ function buff_knockback {
         $execute store result entity @s Motion[1] double 0.01 run data get entity @s Motion[1] $(vertical)
         $execute store result entity @s Motion[2] double 0.01 run data get entity @s Motion[2] $(horizontal)
     } else execute run { with storage oldcombat:temp
-        tellraw @a "Test1"
         $execute store result storage oldcombat:temp x double 0.01 run data get entity @s Motion[0] $(horizontal)
         $execute store result storage oldcombat:temp y double 0.01 run data get entity @s Motion[1] $(vertical)
         $execute store result storage oldcombat:temp z double 0.01 run data get entity @s Motion[2] $(horizontal)
         block { with storage oldcombat:temp
-            tellraw @a "Test"
-            $aputils velocity @s $(x) $(y) $(z) add
+            $aputils velocity @s $(x) $(y) $(z) set
         }
 
     }
+    tag @s add bkbprocessed
     }
 }
 
@@ -699,7 +702,9 @@ function air_knockback {
                 }
                 
             }
+            
         }
+        tag @s add akbprocessed
     }
 }
 
