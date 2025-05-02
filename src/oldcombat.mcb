@@ -805,3 +805,8 @@ dir debug {
     }
 }
 
+function heal {
+    execute store result score Current OldCombatTemp run data get entity @s Health 10
+    $execute store result entity @s Health float 0.1 run scoreboard players add Current OldCombatTemp $(value)
+}
+
