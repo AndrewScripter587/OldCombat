@@ -5,7 +5,7 @@ import ./Logger.mcbt
 <%%
     $1_21_4compile = false
     build_time = Date()
-    data_version = 6
+    data_version = 7
     vector_names = ["x","y","z"]
 %%>
 
