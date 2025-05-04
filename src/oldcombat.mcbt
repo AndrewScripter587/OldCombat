@@ -166,6 +166,27 @@ template remove_held_component {
     }
 }
 
+template modify_offheld_components {
+    with data:raw {
+        summon armor_stand ~ ~ ~ {ShowArms:1b,Tags:["modify_slot"],Marker:true,Invisible:true,Invulnerable:true}
+        item replace entity @n[type=armor_stand,tag=modify_slot] weapon.offhand from entity @s weapon.offhand
+        data merge entity @n[type=armor_stand,tag=modify_slot] {equipment:{mainhand:{components:<%data%>}}}
+        item replace entity @s weapon.offhand from entity @n[type=armor_stand,tag=modify_slot] weapon.offhand
+        kill @e[type=armor_stand,tag=modify_slot]
+    }
+}
+
+template remove_offheld_component {
+    with data:raw {
+        summon armor_stand ~ ~ ~ {ShowArms:1b,Tags:["modify_slot"],Marker:true,Invisible:true,Invulnerable:true}
+        item replace entity @n[type=armor_stand,tag=modify_slot] weapon.offhand from entity @s weapon.offhand
+        data remove entity @n[type=armor_stand,tag=modify_slot] equipment.offhand.components.<%data%>
+        item replace entity @s weapon.offhand from entity @n[type=armor_stand,tag=modify_slot] weapon.offhand
+        kill @e[type=armor_stand,tag=modify_slot]
+    }
+}
+
+
 template apply_velocity {
     with x:float y:float z:float {
         data modify entity @s Motion set value [<%x%>d,<%y%>d,<%z%>d]
@@ -192,3 +213,5 @@ template visual_break_item {
 
     }
 }
+
+

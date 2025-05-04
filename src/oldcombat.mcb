@@ -1,11 +1,21 @@
 import ./oldcombat.mcbt
 import ./z_configmenu.mcbt
+import ./Logger.mcbt
+
 <%%
     $1_21_4compile = false
     build_time = Date()
     data_version = 6
     vector_names = ["x","y","z"]
 %%>
+
+<%%
+    spacing = "\\t".repeat(0);
+%%>
+
+function print_mcb_context {
+    tellraw @s '<%JSON.stringify(context)%>'
+}
 
 function on_load minecraft:load{
     # you can use MC-Build without its internal scoreboard but this will limit the available features
@@ -23,6 +33,7 @@ function on_tick minecraft:tick {
                 function block_offhand
                 function disable_cooldown
                 function sword_blocking
+                function nerf_shields
                 function old_tool_damages
                 function disable_sprinting
                 function old_regen
@@ -33,8 +44,6 @@ function on_tick minecraft:tick {
             execute as @e[nbt={HurtTime:9s},type=!ender_dragon,tag=!akbprocessed] run function air_knockback
             execute as @e[nbt={HurtTime:9s},type=!ender_dragon,tag=bkbprocessed] run tag @s remove bkbprocessed
             execute as @e[nbt={HurtTime:9s},type=!ender_dragon,tag=akbprocessed] run tag @s remove akbprocessed
-#            execute as @a[nbt={HurtTime:9s}] run function buff_knockback
-#            execute as @a[nbt={HurtTime:9s}] run function air_knockback
             function disable_kb_resist
             function enforce_locked_settings
             function fishing_rod_kb
@@ -92,91 +101,219 @@ dir config {
     function page1 {
         IF $1_21_4compile==true {
             tellraw @s "Old Combat Configuration"
-            boolean_input legacy <%"Sword Blocking"%> <%"If true, allows blocking using a sword. Sword blocking halves the damage taken for most damage types."%> OldCombatSettings SwordBlocking disabled true <%"You're playing on 1.21.4! This feature doesn't work here!"%>
+            boolean_input legacy <%"Sword Blocking"%> <%"If true, allows blocking using a sword. Sword blocking halves the damage taken for most damage types."%> OldCombatSettings SwordBlocking oldcombat:config
             boolean_input legacy <%"Disable Offhand Slot"%> <%"If true, completely disables the offhand slot. Any items in the offhand slot when this is true will be dropped on the ground."%> OldCombatSettings DisableOffhand oldcombat:config
             boolean_input legacy <%"Disable Attack Cooldown"%> <%"If true, completely disables the attack cooldown mechanic."%> OldCombatSettings DisableAttackCooldown oldcombat:config
             boolean_input legacy <%"Old Tool Damages"%> <%"If true, tools (mainly axes) will do their pre-1.9 attack damage. Note: the attack damage tooltip on the tool will still show the normal amount, but the tool will deal the old amount of damage."%> OldCombatSettings OldToolDamage oldcombat:config
-            boolean_input legacy <%"Allow Critical Hits While Sprinting"%> <%"Enables getting critical hits while sprinting. After the combat update, you can no longer get a critical hit for your first hit during a sprint, you would just do a knockback attack instead. This setting, if true, allows players to crit for that first hit. This doesn't stop the knockback attack from happening, though, so you can get a crit and knockback attack at the same time. Due to technical restrictions, the critical hit will happen one tick after the player attacks a mob. Technical restrictions prevent the hitting a mob detection from happening on the same tick the attack happens. See https://modrinth.com/datapack/sprinting-crits for more about this mechanic."%> OldCombatSettings SprintingCrits disabled condition <%"if score DisableSprint OldCombatSettings matches 1"%> <%"This setting doesn't work when Disable Sprinting is true. Disable it to make this work again."%> oldcombat:config
+            boolean_input legacy <%"Allow Critical Hits While Sprinting"%> <%"Enables getting critical hits while sprinting. After the combat update, you can no longer get a critical hit for your first hit during a sprint, you would just do a knockback attack instead. This setting, if true, allows players to crit for that first hit. This doesn't stop the knockback attack from happening, though, so you can get a crit and knockback attack at the same time. Due to technical restrictions, the critical hit will happen one tick after the player attacks a mob. Technical restrictions prevent the hitting a mob detection from happening on the same tick the attack happens. See https://modrinth.com/datapack/sprinting-crits for more about this mechanic."%> OldCombatSettings SprintingCrits disabled condition <%"if score DisableSprint OldCombatSettings matches 1"%> oldcombat:config
             boolean_input legacy <%"Disable Sprinting"%> <%"NOTICE: This doesn't prevent certain sprinting-related actions from happening, such as knockback attacks, the exhaustion from sprinting, the sprint-jump speed-boost, etc. This tweak only removes the attribute modifier (minecraft:sprinting) that increases your speed while sprinting. This will, however, prevent the sprinting-crits setting from working since it relies on this attribute modifier being applied to detect sprinting"%> OldCombatSettings DisableSprint oldcombat:config
             boolean_input legacy <%"Disable Knockback Resistance"%> <%"Removes all forms of knockback resistance such as the partial knockback resistance provided by netherite armor, the full knockback resistance iron golems and wardens have, etc."%> OldCombatSettings DisableKBResist oldcombat:config
-            boolean_input legacy <%"Knockback Effective In Air"%> <%"NOTICE: This will NOT apply to players, UNLESS you have a mod installed that allows editing of player NBT data. Makes knockback from attacks as effective in the air as it is on the ground."%> OldCombatSettings AirKB oldcombat:config
-            numeric_input legacy <%"Air Knockback Strength"%> <%"Amount of vertical knockback applied to entities in the air by the above setting, in centimeters per tick. For reference, 1 cubic meter = 1 minecraft block, 100 cm = 1 meter, 20 ticks in 1 second."%> OldCombatSettings AirKBForce 10 disabled condition <%"if score AirKB OldCombatSettings matches 0"%> oldcombat:config
+            boolean_input legacy <%"Knockback Effective In Air"%> <%"NOTICE: This will NOT apply to players, UNLESS you have Andrew's Datapack Utils Fabric mod installed. Makes knockback from attacks as effective in the air as it is on the ground."%> OldCombatSettings AirKB oldcombat:config oldcombat:config/subconfig/airkb
             boolean_input legacy <%"Fishing Rod Knockback"%> <%"Makes fishing rod bobbers do knockback by applying 0.01 damage to entities hit by the bobber. Note: The damage and knockback will apply 1 tick after the fishing rod attaches to the entity. This is a technical restriction that is hard to work around."%> OldCombatSettings FishingRodKnockback oldcombat:config
-            boolean_input legacy <%"Fishing Bobbers Go Further"%> <%"Makes fishing rod bobbers go further when launched from a fishing rod by multiplying the bobber's velocity by a certain amount. This isn't that accurate to pre-combat update physics as that would be hard to make. Note: The velocity change happens 1 tick after the fishing bobber entity is created, causing the fishing bobber to go at the vanilla speed for 1 tick. This is a technical restriction that is hard to work around."%> OldCombatSettings FurtherFishingBobber oldcombat:config
-            value_display legacy <%"Fishing Bobber Speed"%> <%"Speed applied by the above setting, as a percent of what the velocity currently is for the bobber. (Default 150,100)"%> constant Vector2
-            numeric_input legacy <%"- x"%> <%"Horizontal Vector (Default 150)"%> OldCombatSettings FishingBobberBoost.X 10 disabled condition <%"if score FurtherFishingBobber OldCombatSettings matches 0"%> oldcombat:config
-            numeric_input legacy <%"- y"%> <%"Vertical Vector (Default 100)"%> OldCombatSettings FishingBobberBoost.Y 10 disabled condition <%"if score FurtherFishingBobber OldCombatSettings matches 0"%> oldcombat:config
-            boolean_input legacy <%"Old Regeneration"%> <%"NOTICE: Doesn't work without Andrew's DataPack Lib (a Fabric mod that you can find on Modrinth) in order to modify player data. Makes health regeneration work like it did before the combat update, where you regain half a heart every 4 seconds, and having saturation left doesn't speed it up."%> OldCombatSettings OldRegen disabled condition <%"unless score aputils OldCombatTemp matches 1"%> oldcombat:config
-            numeric_input legacy <%"Regeneration Delay"%> <%"The delay between each half heart regenerating, in ticks."%> OldCombatSettings regenRate 10 disabled condition <%"if score OldRegen OldCombatSettings matches 0"%> oldcombat:config
-            pagebar legacy 2 <%"oldcombat:config"%>
-            value_display legacy <%"Config Data Version"%> <%"Internal variable that is used for compatibility reasons. Changing this will likely have negative consequences. As such, this cannot be changed using this config menu."%> score OldCombatSettings DataVersion
-            value_display legacy <%"Compatibility Mode"%> <%"The compatibility pack you're using. Not stored anywhere, it's just a constant value stored in the pack"%> constant 1.21.4 (legacy)
+            boolean_input legacy <%"Fishing Bobbers Go Further"%> <%"Makes fishing rod bobbers go further when launched from a fishing rod by multiplying the bobber's velocity by a certain amount. This isn't that accurate to pre-combat update physics as that would be hard to make. Note: The velocity change happens 1 tick after the fishing bobber entity is created, causing the fishing bobber to go at the vanilla speed for 1 tick. This is a technical restriction that is hard to work around."%> OldCombatSettings FurtherFishingBobber oldcombat:config oldcombat:config/subconfig/fishingrodboost
+            boolean_input legacy <%"Old Regeneration"%> <%"NOTICE: Doesn't work without Andrew's DataPack Lib (a Fabric mod that you can find on Modrinth) in order to modify player data. Makes health regeneration work like it did before the combat update, where you regain half a heart every 4 seconds, and having saturation left doesn't speed it up."%> OldCombatSettings OldRegen disabled condition <%"unless score aputils OldCombatTemp matches 1"%> oldcombat:config oldcombat:config/subconfig/oldregen
+            boolean_input legacy <%"Increase Damage Knockback"%> <%"Increases the knockback applied to mobs that take damage. Requires Andrew's Pack Utilities to affect players."%> OldCombatSettings BuffKB oldcombat:config/page2 oldcombat:config/submenu/knockback
+            submenu legacy <%"Disabling items"%> <%"Some tweaks for disabling various items."%> oldcombat:config/subconfig/itemdisable
+            boolean_input legacy <%"Nerf Shields"%> <%"Makes Shields block 66% of incoming melee damage like they did before 1.11. Damage from projectiles such as arrows are still completely blocked, because they were completely blocked before 1.11. You still take knockback from projectiles for unknown reasons."%> OldCombatSettings ShieldNerf <%"oldcombat:config/page2"%>
+            emptyline 4
+            pagebar legacy 1 <%"oldcombat:config"%>
         } ELSE {
             tellraw @s "Old Combat Configuration"
             boolean_input <%"Sword Blocking"%> <%"If true, allows blocking using a sword. Sword blocking halves the damage taken for most damage types."%> OldCombatSettings SwordBlocking oldcombat:config
             boolean_input <%"Disable Offhand Slot"%> <%"If true, completely disables the offhand slot. Any items in the offhand slot when this is true will be dropped on the ground."%> OldCombatSettings DisableOffhand oldcombat:config
             boolean_input <%"Disable Attack Cooldown"%> <%"If true, completely disables the attack cooldown mechanic."%> OldCombatSettings DisableAttackCooldown oldcombat:config
             boolean_input <%"Old Tool Damages"%> <%"If true, tools (mainly axes) will do their pre-1.9 attack damage. Note: the attack damage tooltip on the tool will still show the normal amount, but the tool will deal the old amount of damage."%> OldCombatSettings OldToolDamage oldcombat:config
-            boolean_input <%"Allow Critical Hits While Sprinting"%> <%"Enables getting critical hits while sprinting. After the combat update, you can no longer get a critical hit for your first hit during a sprint, you would just do a knockback attack instead. This setting, if true, allows players to crit for that first hit. This doesn't stop the knockback attack from happening, though, so you can get a crit and knockback attack at the same time. Due to technical restrictions, the critical hit will happen one tick after the player attacks a mob. Technical restrictions prevent the hitting a mob detection from happening on the same tick the attack happens. See https://modrinth.com/datapack/sprinting-crits for more about this mechanic."%> OldCombatSettings SprintingCrits disabled condition <%"if score DisableSprint OldCombatSettings matches 1"%> <%"This setting doesn't work when Disable Sprinting is true. Disable it to make this work again."%> oldcombat:config
+            boolean_input <%"Allow Critical Hits While Sprinting"%> <%"Enables getting critical hits while sprinting. After the combat update, you can no longer get a critical hit for your first hit during a sprint, you would just do a knockback attack instead. This setting, if true, allows players to crit for that first hit. This doesn't stop the knockback attack from happening, though, so you can get a crit and knockback attack at the same time. Due to technical restrictions, the critical hit will happen one tick after the player attacks a mob. Technical restrictions prevent the hitting a mob detection from happening on the same tick the attack happens. See https://modrinth.com/datapack/sprinting-crits for more about this mechanic."%> OldCombatSettings SprintingCrits disabled condition <%"if score DisableSprint OldCombatSettings matches 1"%> oldcombat:config
             boolean_input <%"Disable Sprinting"%> <%"NOTICE: This doesn't prevent certain sprinting-related actions from happening, such as knockback attacks, the exhaustion from sprinting, the sprint-jump speed-boost, etc. This tweak only removes the attribute modifier (minecraft:sprinting) that increases your speed while sprinting. This will, however, prevent the sprinting-crits setting from working since it relies on this attribute modifier being applied to detect sprinting"%> OldCombatSettings DisableSprint oldcombat:config
             boolean_input <%"Disable Knockback Resistance"%> <%"Removes all forms of knockback resistance such as the partial knockback resistance provided by netherite armor, the full knockback resistance iron golems and wardens have, etc."%> OldCombatSettings DisableKBResist oldcombat:config
-            boolean_input <%"Knockback Effective In Air"%> <%"NOTICE: This will NOT apply to players, UNLESS you have Andrew's Datapack Utils Fabric mod installed. Makes knockback from attacks as effective in the air as it is on the ground."%> OldCombatSettings AirKB oldcombat:config
-            numeric_input <%"Air Knockback Strength"%> <%"Amount of vertical knockback applied to entities in the air by the above setting, in centimeters per tick. For reference, 1 cubic meter = 1 minecraft block, 100 cm = 1 meter, 20 ticks in 1 second."%> OldCombatSettings AirKBForce 10 disabled condition <%"if score AirKB OldCombatSettings matches 0"%> oldcombat:config
+            boolean_input <%"Knockback Effective In Air"%> <%"NOTICE: This will NOT apply to players, UNLESS you have Andrew's Datapack Utils Fabric mod installed. Makes knockback from attacks as effective in the air as it is on the ground."%> OldCombatSettings AirKB oldcombat:config oldcombat:config/subconfig/airkb
             boolean_input <%"Fishing Rod Knockback"%> <%"Makes fishing rod bobbers do knockback by applying 0.01 damage to entities hit by the bobber. Note: The damage and knockback will apply 1 tick after the fishing rod attaches to the entity. This is a technical restriction that is hard to work around."%> OldCombatSettings FishingRodKnockback oldcombat:config
-            boolean_input <%"Fishing Bobbers Go Further"%> <%"Makes fishing rod bobbers go further when launched from a fishing rod by multiplying the bobber's velocity by a certain amount. This isn't that accurate to pre-combat update physics as that would be hard to make. Note: The velocity change happens 1 tick after the fishing bobber entity is created, causing the fishing bobber to go at the vanilla speed for 1 tick. This is a technical restriction that is hard to work around."%> OldCombatSettings FurtherFishingBobber oldcombat:config
-            value_display <%"Fishing Bobber Speed"%> <%"Speed applied by the above setting, as a percent of what the velocity currently is for the bobber. (Default 150,100)"%> constant Vector2
-            numeric_input <%"- x"%> <%"Horizontal Vector (Default 150)"%> OldCombatSettings FishingBobberBoost.X 10 disabled condition <%"if score FurtherFishingBobber OldCombatSettings matches 0"%> oldcombat:config
-            numeric_input <%"- y"%> <%"Vertical Vector (Default 100)"%> OldCombatSettings FishingBobberBoost.Y 10 disabled condition <%"if score FurtherFishingBobber OldCombatSettings matches 0"%> oldcombat:config
-            boolean_input <%"Old Regeneration"%> <%"NOTICE: Doesn't work without Andrew's DataPack Lib (a Fabric mod that you can find on Modrinth) in order to modify player data. Makes health regeneration work like it did before the combat update, where you regain half a heart every 4 seconds, and having saturation left doesn't speed it up."%> OldCombatSettings OldRegen disabled condition <%"unless score aputils OldCombatTemp matches 1"%> oldcombat:config
-            numeric_input <%"Regeneration Delay"%> <%"The delay between each half heart regenerating, in ticks."%> OldCombatSettings regenRate 10 disabled condition <%"if score OldRegen OldCombatSettings matches 0"%> oldcombat:config
-            pagebar 2 <%"oldcombat:config"%>
-            value_display <%"Config Data Version"%> <%"Internal variable that is used for compatibility reasons. Changing this will likely have negative consequences. As such, this cannot be changed using this config menu."%> score OldCombatSettings DataVersion
-            value_display <%"Compatibility Mode"%> <%"The compatibility pack you're using. Not stored anywhere, it's just a constant value stored in the pack"%> constant 1.21.5 (main)
+            boolean_input <%"Fishing Bobbers Go Further"%> <%"Makes fishing rod bobbers go further when launched from a fishing rod by multiplying the bobber's velocity by a certain amount. This isn't that accurate to pre-combat update physics as that would be hard to make. Note: The velocity change happens 1 tick after the fishing bobber entity is created, causing the fishing bobber to go at the vanilla speed for 1 tick. This is a technical restriction that is hard to work around."%> OldCombatSettings FurtherFishingBobber oldcombat:config oldcombat:config/subconfig/fishingrodboost
+            boolean_input <%"Old Regeneration"%> <%"NOTICE: Doesn't work without Andrew's DataPack Lib (a Fabric mod that you can find on Modrinth) in order to modify player data. Makes health regeneration work like it did before the combat update, where you regain half a heart every 4 seconds, and having saturation left doesn't speed it up."%> OldCombatSettings OldRegen disabled condition <%"unless score aputils OldCombatTemp matches 1"%> oldcombat:config oldcombat:config/subconfig/oldregen
+            boolean_input <%"Increase Damage Knockback"%> <%"Increases the knockback applied to mobs that take damage. Requires Andrew's Pack Utilities to affect players."%> OldCombatSettings BuffKB oldcombat:config/page2 oldcombat:config/submenu/knockback
+            submenu <%"Disabling items"%> <%"Some tweaks for disabling various items."%> oldcombat:config/subconfig/itemdisable
+            boolean_input <%"Nerf Shields"%> <%"Makes Shields block 66% of incoming melee damage like they did before 1.11. Damage from projectiles such as arrows are still completely blocked, because they were completely blocked before 1.11. You still take knockback from projectiles for unknown reasons."%> OldCombatSettings ShieldNerf <%"oldcombat:config/page2"%>
+            emptyline 4
+            pagebar 1 <%"oldcombat:config"%>
         }
     }
-    function page2 {
-        IF $1_21_4compile==true {
-            tellraw @s "Old Combat Configuration"
-            numeric_input legacy <%"Regeneration Exhaustion"%> <%"Exhaustion gain from regenerating health. 300 is 1.8's default, 400 is 1.9, 600 is 1.11."%> OldCombatSettings RegenExhaustion 10 disabled condition <%"if score OldRegen OldCombatSettings matches 0"%> oldcombat:config/page2
-            boolean_input legacy <%"Disable Modern PVP Items"%> <%"Disables modern PVP items like crossbows, tipped arrows, maces, tridents, etc, by removing them when the player has them."%> OldCombatSettings DisableModernPVPItems <%"oldcombat:config/page2"%>
-            boolean_input legacy <%"Disable Netherite Items"%> <%"Disables netherite items. Fun fact: this will downgrade the netherite ingot from your netherite item all the way down to ancient debris in multiple steps"%> OldCombatSettings DisableNetheriteItems <%"oldcombat:config/page2"%>
-            boolean_input legacy <%"Break Disabled Items"%> <%"Causes some disabled items to \\\"break\\\" (as if their durability was 0). Purely visual."%> OldCombatSettings BreakDisabledTools <%"oldcombat:config/page2"%>
-            boolean_input legacy <%"Drop Crafting Materials For Disabled Items"%> <%"Most disabled items will drop the materials from their crafting recipe. Doesn't apply to any items that either don't have a crafting recipe or would create a dupe glitch because multiple of the item are created from the recipe."%> OldCombatSettings ReturnMaterialsOfDisabledItems <%"oldcombat:config/page2"%>
-            REPEAT (5,15) as i {
-                tellraw @s ""
+    dir subconfig {
+        function airkb {
+            IF $1_21_4compile==true {
+                textline "Sub-configuration for Knockback Effective In Air"
+                single_button legacy <%"Go back"%> white <%"/function oldcombat:config/page1"%>
+                numeric_input legacy <%"Air Knockback Strength"%> <%"Amount of vertical knockback applied to entities in the air by the above setting, in centimeters per tick. For reference, 1 cubic meter = 1 minecraft block, 100 cm = 1 meter, 20 ticks in 1 second."%> OldCombatSettings AirKBForce 10 oldcombat:config/subconfig/airkb
+                emptyline 17
+            } ELSE {
+                textline "Sub-configuration for Knockback Effective In Air"
+                single_button <%"Go back"%> white <%"/function oldcombat:config/page1"%>
+                numeric_input <%"Air Knockback Strength"%> <%"Amount of vertical knockback applied to entities in the air by the above setting, in centimeters per tick. For reference, 1 cubic meter = 1 minecraft block, 100 cm = 1 meter, 20 ticks in 1 second."%> OldCombatSettings AirKBForce 10 oldcombat:config/subconfig/airkb
+                emptyline 17
             }
-            pagebar legacy 2 <%"oldcombat:config"%>
-            value_display legacy <%"Config Data Version"%> <%"Internal variable that is used for compatibility reasons. Changing this will likely have negative consequences. As such, this cannot be changed using this config menu."%> score OldCombatSettings DataVersion
-            value_display legacy <%"Compatibility Mode"%> <%"The compatibility pack you're using. Not stored anywhere, it's just a constant value stored in the pack"%> constant 1.21.4 (legacy)
-        } ELSE {
-            tellraw @s "Old Combat Configuration"
-            numeric_input <%"Regeneration Exhaustion"%> <%"Exhaustion gain from regenerating health. 300 is 1.8's default, 400 is 1.9, 600 is 1.11."%> OldCombatSettings RegenExhaustion 10 disabled condition <%"if score OldRegen OldCombatSettings matches 0"%> oldcombat:config/page2
-            boolean_input <%"Disable Modern PVP Items"%> <%"Disables modern PVP items like crossbows, tipped arrows, maces, tridents, etc, by removing them when the player has them."%> OldCombatSettings DisableModernPVPItems <%"oldcombat:config/page2"%>
-            boolean_input <%"Disable Netherite Items"%> <%"Disables netherite items. Fun fact: this will downgrade the netherite ingot from your netherite item all the way down to ancient debris in multiple steps"%> OldCombatSettings DisableNetheriteItems <%"oldcombat:config/page2"%>
-            boolean_input <%"Break Disabled Items"%> <%"Causes some disabled items to \\\"break\\\" (as if their durability was 0). Purely visual."%> OldCombatSettings BreakDisabledTools <%"oldcombat:config/page2"%>
-            boolean_input <%"Drop Crafting Materials For Disabled Items"%> <%"Most disabled items will drop the materials from their crafting recipe. Doesn't apply to any items that either don't have a crafting recipe or would create a dupe glitch because multiple of the item are created from the recipe."%> OldCombatSettings ReturnMaterialsOfDisabledItems <%"oldcombat:config/page2"%>
-            boolean_input <%"Increase Damage Knockback"%> <%"Increases the knockback applied to mobs that take damage. Requires Andrew's Pack Utilities to affect players."%> OldCombatSettings BuffKB <%"oldcombat:config/page2"%>
-            value_display <%"Knockback Increase"%> <%"Increase applied by the above setting, as a percent of what the knockback normally was. (Default 150,105)"%> constant Vector2
-            numeric_input <%"- x"%> <%"Horizontal Vector (Default 150)"%> OldCombatSettings BuffKBValue.X 5 disabled condition <%"if score BuffKB OldCombatSettings matches 0"%> oldcombat:config/page2
-            numeric_input <%"- y"%> <%"Vertical Vector (Default 105)"%> OldCombatSettings BuffKBValue.Y 5 disabled condition <%"if score BuffKB OldCombatSettings matches 0"%> oldcombat:config/page2
+        }
+        function fishingrodboost {
+            IF $1_21_4compile==true {
+                textline "Configuration for Fishing Bobbers Go Further"
+                single_button legacy <%"Go back"%> white <%"/function oldcombat:config/page1"%>
+                numeric_input legacy <%"Horizontal Boost"%> <%"Horizontal Vector (Default 150)"%> OldCombatSettings FishingBobberBoost.X 10 oldcombat:config/subconfig/fishingrodboost
+                numeric_input legacy <%"Vertical Boost"%> <%"Vertical Vector (Default 100)"%> OldCombatSettings FishingBobberBoost.Y 10 oldcombat:config/subconfig/fishingrodboost
+                emptyline 16
+            } ELSE {
+                textline "Configuration for Fishing Bobbers Go Further"
+                single_button <%"Go back"%> white <%"/function oldcombat:config/page1"%>
+                numeric_input <%"Horizontal Boost"%> <%"Horizontal Vector (Default 150)"%> OldCombatSettings FishingBobberBoost.X 10 oldcombat:config/subconfig/fishingrodboost
+                numeric_input <%"Vertical Boost"%> <%"Vertical Vector (Default 100)"%> OldCombatSettings FishingBobberBoost.Y 10 oldcombat:config/subconfig/fishingrodboost
+                emptyline 16
+            }
 
-            REPEAT (9,15) as i {
-                tellraw @s ""
+        }
+        function oldregen {
+            IF $1_21_4compile==true {
+                textline "Sub-configuration for Old Regeneration"
+                single_button legacy <%"Go back"%> white <%"/function oldcombat:config/page1"%>
+                numeric_input legacy <%"Regeneration Delay"%> <%"The delay between each half heart regenerating, in ticks."%> OldCombatSettings regenRate 10 oldcombat:config/subconfig/oldregen
+                numeric_input legacy <%"Regeneration Exhaustion"%> <%"Exhaustion gain from regenerating health. 300 is 1.8's default, 400 is 1.9, 600 is 1.11."%> OldCombatSettings RegenExhaustion 10 oldcombat:config/subconfig/oldregen
+                emptyline 16
+            } ELSE {
+                textline "Sub-configuration for Old Regeneration"
+                single_button <%"Go back"%> white <%"/function oldcombat:config/page1"%>
+                numeric_input <%"Regeneration Delay"%> <%"The delay between each half heart regenerating, in ticks."%> OldCombatSettings regenRate 10 oldcombat:config/subconfig/oldregen
+                numeric_input <%"Regeneration Exhaustion"%> <%"Exhaustion gain from regenerating health. 300 is 1.8's default, 400 is 1.9, 600 is 1.11."%> OldCombatSettings RegenExhaustion 10 oldcombat:config/subconfig/oldregen
+                emptyline 16
             }
-            pagebar 2 <%"oldcombat:config"%>
-            value_display <%"Config Data Version"%> <%"Internal variable that is used for compatibility reasons. Changing this will likely have negative consequences. As such, this cannot be changed using this config menu."%> score OldCombatSettings DataVersion
-            value_display <%"Compatibility Mode"%> <%"The compatibility pack you're using. Not stored anywhere, it's just a constant value stored in the pack"%> constant 1.21.5 (main)
+        }
+        function itemdisable {
+            IF $1_21_4compile==true {
+                textline "Configuration for disabling items"
+                single_button legacy <%"Go back"%> white <%"/function oldcombat:config/page1"%>
+                boolean_input legacy <%"Disable Modern PVP Items"%> <%"Disables modern PVP items like crossbows, tipped arrows, maces, tridents, etc, by removing them when the player has them."%> OldCombatSettings DisableModernPVPItems oldcombat:config/subconfig/itemdisable
+                boolean_input legacy <%"Disable Netherite Items"%> <%"Disables netherite items. Fun fact: this will downgrade the netherite ingot from your netherite item all the way down to ancient debris in multiple steps"%> OldCombatSettings DisableNetheriteItems oldcombat:config/subconfig/itemdisable
+                boolean_input legacy <%"Break Disabled Items"%> <%"Causes some disabled items to \\\"break\\\" (as if their durability was 0). Purely visual."%> OldCombatSettings BreakDisabledTools oldcombat:config/subconfig/itemdisable
+                boolean_input legacy <%"Drop Crafting Materials For Disabled Items"%> <%"Most disabled items will drop the materials from their crafting recipe. Doesn't apply to any items that either don't have a crafting recipe or would create a dupe glitch because multiple of the item are created from the recipe."%> OldCombatSettings ReturnMaterialsOfDisabledItems oldcombat:config/subconfig/itemdisable
+                emptyline 14
+            } ELSE {
+                textline "Configuration for disabling items"
+                single_button <%"Go back"%> white <%"/function oldcombat:config/page1"%>
+                boolean_input <%"Disable Modern PVP Items"%> <%"Disables modern PVP items like crossbows, tipped arrows, maces, tridents, etc, by removing them when the player has them."%> OldCombatSettings DisableModernPVPItems oldcombat:config/subconfig/itemdisable
+                boolean_input <%"Disable Netherite Items"%> <%"Disables netherite items. Fun fact: this will downgrade the netherite ingot from your netherite item all the way down to ancient debris in multiple steps"%> OldCombatSettings DisableNetheriteItems oldcombat:config/subconfig/itemdisable
+                boolean_input <%"Break Disabled Items"%> <%"Causes some disabled items to \\\"break\\\" (as if their durability was 0). Purely visual."%> OldCombatSettings BreakDisabledTools oldcombat:config/subconfig/itemdisable
+                boolean_input <%"Drop Crafting Materials For Disabled Items"%> <%"Most disabled items will drop the materials from their crafting recipe. Doesn't apply to any items that either don't have a crafting recipe or would create a dupe glitch because multiple of the item are created from the recipe."%> OldCombatSettings ReturnMaterialsOfDisabledItems oldcombat:config/subconfig/itemdisable
+                emptyline 14
+            }
+        }
+        function knockback {
+            IF $1_21_4compile==true {
+                textline "Configuration for Increase Damage Knockback"
+                single_button legacy <%"Go back"%> white <%"/function oldcombat:config/page1"%>
+                numeric_input legacy <%"Horizontal"%> <%"Horizontal Vector (Default 150)"%> OldCombatSettings BuffKBValue.X 5 oldcombat:config/subconfig/knockback
+                numeric_input legacy <%"Vertical"%> <%"Vertical Vector (Default 105)"%> OldCombatSettings BuffKBValue.Y 5 oldcombat:config/subconfig/knockback
+                emptyline 16
+            } ELSE {
+                textline "Configuration for Increase Damage Knockback"
+                single_button <%"Go back"%> white <%"/function oldcombat:config/page1"%>
+                numeric_input <%"Horizontal"%> <%"Horizontal Vector (Default 150)"%> OldCombatSettings BuffKBValue.X 5 oldcombat:config/subconfig/knockback
+                numeric_input <%"Vertical"%> <%"Vertical Vector (Default 105)"%> OldCombatSettings BuffKBValue.Y 5 oldcombat:config/subconfig/knockback
+                emptyline 16
+            }
+
+        }
+    }
+    function quicksetup {
+        function ./quicksetup/page1
+    }
+    dir quicksetup {
+        function page1 {
+            textline "Old Combat Quick Setup"
+            emptyline
+            textline "TODO"
         }
     }
 }
 
+dir presets {
+    function 1.8 {
+        scoreboard players set DisableOffhand OldCombatSettings 1
+        scoreboard players set BuffKB OldCombatSettings 0
+        scoreboard players set BuffKBValue.X OldCombatSettings 125
+        scoreboard players set BuffKBValue.Y OldCombatSettings 105
+        scoreboard players set DisableAttackCooldown OldCombatSettings 1
+        scoreboard players set SwordBlocking OldCombatSettings 1
+        scoreboard players set RegenExhaustion OldCombatSettings 300
+        scoreboard players set OldToolDamage OldCombatSettings 1
+        scoreboard players set SprintingCrits OldCombatSettings 1
+        scoreboard players set DisableSprint OldCombatSettings 0
+        scoreboard players set DisableKBResist OldCombatSettings 1
+        scoreboard players set AirKB OldCombatSettings 1
+        scoreboard players set FishingRodKnockback OldCombatSettings 1
+        scoreboard players set FishingBobberBoost.X OldCombatSettings 150
+        scoreboard players set FishingBobberBoost.Y OldCombatSettings 100
+        scoreboard players set AirKBForce OldCombatSettings 40
+        scoreboard players set OldRegen OldCombatSettings 1
+        scoreboard players set regenRate OldCombatSettings 80
+        scoreboard players set DisableModernPVPItems OldCombatSettings 0
+        scoreboard players set DisableNetheriteItems OldCombatSettings 0
+        scoreboard players set BreakDisabledTools OldCombatSettings 1
+        scoreboard players set ReturnMaterialsOfDisabledItems OldCombatSettings 1
+        scoreboard players set ShieldNerf OldCombatSettings 1
+    }
+    function 1.9 {
+        scoreboard players set DisableOffhand OldCombatSettings 0
+        scoreboard players set BuffKB OldCombatSettings 0
+        scoreboard players set BuffKBValue.X OldCombatSettings 125
+        scoreboard players set BuffKBValue.Y OldCombatSettings 105
+        scoreboard players set DisableAttackCooldown OldCombatSettings 0
+        scoreboard players set SwordBlocking OldCombatSettings 0
+        scoreboard players set RegenExhaustion OldCombatSettings 600
+        scoreboard players set OldToolDamage OldCombatSettings 0
+        scoreboard players set SprintingCrits OldCombatSettings 0
+        scoreboard players set DisableSprint OldCombatSettings 0
+        scoreboard players set DisableKBResist OldCombatSettings 0
+        scoreboard players set AirKB OldCombatSettings 0
+        scoreboard players set FishingRodKnockback OldCombatSettings 0
+        scoreboard players set FishingBobberBoost.X OldCombatSettings 150
+        scoreboard players set FishingBobberBoost.Y OldCombatSettings 100
+        scoreboard players set AirKBForce OldCombatSettings 40
+        scoreboard players set OldRegen OldCombatSettings 0
+        scoreboard players set regenRate OldCombatSettings 80
+        scoreboard players set DisableModernPVPItems OldCombatSettings 0
+        scoreboard players set DisableNetheriteItems OldCombatSettings 0
+        scoreboard players set BreakDisabledTools OldCombatSettings 1
+        scoreboard players set ReturnMaterialsOfDisabledItems OldCombatSettings 1
+        scoreboard players set ShieldNerf OldCombatSettings 1
+    }
+    function 1.11 {
+        scoreboard players set DisableOffhand OldCombatSettings 0
+        scoreboard players set BuffKB OldCombatSettings 0
+        scoreboard players set BuffKBValue.X OldCombatSettings 125
+        scoreboard players set BuffKBValue.Y OldCombatSettings 105
+        scoreboard players set DisableAttackCooldown OldCombatSettings 0
+        scoreboard players set SwordBlocking OldCombatSettings 0
+        scoreboard players set RegenExhaustion OldCombatSettings 600
+        scoreboard players set OldToolDamage OldCombatSettings 0
+        scoreboard players set SprintingCrits OldCombatSettings 0
+        scoreboard players set DisableSprint OldCombatSettings 0
+        scoreboard players set DisableKBResist OldCombatSettings 0
+        scoreboard players set AirKB OldCombatSettings 0
+        scoreboard players set FishingRodKnockback OldCombatSettings 0
+        scoreboard players set FishingBobberBoost.X OldCombatSettings 150
+        scoreboard players set FishingBobberBoost.Y OldCombatSettings 100
+        scoreboard players set AirKBForce OldCombatSettings 40
+        scoreboard players set OldRegen OldCombatSettings 0
+        scoreboard players set regenRate OldCombatSettings 80
+        scoreboard players set DisableModernPVPItems OldCombatSettings 0
+        scoreboard players set DisableNetheriteItems OldCombatSettings 0
+        scoreboard players set BreakDisabledTools OldCombatSettings 1
+        scoreboard players set ReturnMaterialsOfDisabledItems OldCombatSettings 1
+        scoreboard players set ShieldNerf OldCombatSettings 0
+    }
 
+}
 
 
 function changelog {
     tellraw @a "Old Combat Changelog:"
-    execute unless score PreviousDataVersion OldCombatSettings matches 0.. run tellraw @a "Thank you for installing Old Combat Datapack!"
-    execute unless score PreviousDataVersion OldCombatSettings matches 0.. run return 0
+    execute unless score PreviousDataVersion OldCombatSettings matches 1.. run tellraw @a "Thank you for installing Old Combat Datapack!"
+    execute unless score PreviousDataVersion OldCombatSettings matches 1.. run return 0
     execute if score PreviousDataVersion OldCombatSettings matches ..1 run {
         tellraw @a "With Config Data Version 2:"
         tellraw @a "Reloading the pack or the world/server no longer resets the config; It now only resets after the pack updates"
@@ -208,12 +345,26 @@ function changelog {
         tellraw @a "With Config Data Version 6:"    
         tellraw @a "Added A LOT of features (check out /function oldcombat:config! It has a whole second page now!)"
         IF $1_21_4compile==false {
-            tellraw @a ["Most of the new features require Andrew's Datapack Utilities to work properly. ",{text:"Click here to see it on Modrinth.",underlined:true,click_event:{action:"open_url",url:"https://modrinth.com/mod/andrews-pack-utils"}}]
+            tellraw @a ["Some of the new features require Andrew's Datapack Utilities to work properly. ",{text:"Click here to see it on Modrinth.",underlined:true,click_event:{action:"open_url",url:"https://modrinth.com/mod/andrews-pack-utils"}}]
         } ELSE {
-            tellraw @a ["Most of the new features require Andrew's Datapack Utilities to work properly. ",{"text":"Click here to see it on Modrinth.","underlined":true,"clickEvent":{"action":"open_url","value":"https://modrinth.com/mod/andrews-pack-utils"}}]
+            tellraw @a ["Some of the new features require Andrew's Datapack Utilities to work properly. ",{"text":"Click here to see it on Modrinth.","underlined":true,"clickEvent":{"action":"open_url","value":"https://modrinth.com/mod/andrews-pack-utils"}}]
         }
 
     }
+    execute if score PreviousDataVersion OldCombatSettings matches ..5 run {
+        tellraw @a "With Config Data Version 7:"    
+        tellraw @a "Added A LOT more features (check them out on the second page of /function oldcombat:config!)"
+        tellraw @a "Added Presets"
+        tellraw @a "Added a confirmation when you try to run a dangerous function (such as oldcombat:disable)"
+        tellraw @a "Fixed a lot of bugs."
+        IF $1_21_4compile==false {
+            tellraw @a ["Some of the new features require Andrew's Datapack Utilities to work properly. ",{text:"Click here to see it on Modrinth.",underlined:true,click_event:{action:"open_url",url:"https://modrinth.com/mod/andrews-pack-utils"}}]
+        } ELSE {
+            tellraw @a ["Some of the new features require Andrew's Datapack Utilities to work properly. ",{"text":"Click here to see it on Modrinth.","underlined":true,"clickEvent":{"action":"open_url","value":"https://modrinth.com/mod/andrews-pack-utils"}}]
+        }
+
+    }
+
 }
 
 function disable_modern_items {
@@ -544,13 +695,14 @@ function startup minecraft:load {
     scoreboard objectives add OldCombatSettings dummy
     scoreboard objectives add OldCombatTemp dummy
     scoreboard objectives add foodTickTimer dummy
+    scoreboard objectives add WasOnGround dummy
     scoreboard players set aputils OldCombatTemp 0
     function detect_aputils
     execute if score aputils OldCombatTemp matches 0 run {
         IF $1_21_4compile==false {
-            tellraw @a ["Some features require Andrew's Datapack Utilities to work properly. Consider adding it! ",{text:"Click here to see it on Modrinth.",underlined:true,click_event:{action:"open_url",url:"https://modrinth.com/mod/andrews-pack-utils"}}]
+            logger info ["Some features require Andrew's Datapack Utilities to work properly. Consider adding it! ",{text:"Click here to see it on Modrinth.",underlined:true,click_event:{action:"open_url",url:"https://modrinth.com/mod/andrews-pack-utils"}}]
         } ELSE {
-            tellraw @a ["Some features require Andrew's Datapack Utilities to work properly. Consider adding it! ",{"text":"Click here to see it on Modrinth.","underlined":true,"clickEvent":{"action":"open_url","value":"https://modrinth.com/mod/andrews-pack-utils"}}]
+            logger info ["Some features require Andrew's Datapack Utilities to work properly. Consider adding it! ",{"text":"Click here to see it on Modrinth.","underlined":true,"clickEvent":{"action":"open_url","value":"https://modrinth.com/mod/andrews-pack-utils"}}]
         }
     }
     scoreboard players set PackVersion OldCombatTemp <%data_version%>
@@ -560,7 +712,7 @@ function startup minecraft:load {
     execute if score DataVersion OldCombatSettings < PackVersion OldCombatTemp run {
         schedule function oldcombat:changelog 3s
         say Old Combat: Reloading the Config
-        tellraw @a "Old Combat: Loading Default Settings"
+        logger info "Loading Default Settings"
         # Add a start delay to ensure no issues arise while the world is loading, offhand items will turn into a single block of stone if this didn't exist
         scoreboard players set StartDelay OldCombatTemp 60
         scoreboard players set RegenExhaustion OldCombatSettings 300
@@ -586,6 +738,7 @@ function startup minecraft:load {
         scoreboard players set DisableNetheriteItems OldCombatSettings 0
         scoreboard players set BreakDisabledTools OldCombatSettings 1
         scoreboard players set ReturnMaterialsOfDisabledItems OldCombatSettings 1
+        scoreboard players set ShieldNerf OldCombatSettings 1
         scoreboard players operation PreviousDataVersion OldCombatSettings = DataVersion OldCombatSettings
         scoreboard players set DataVersion OldCombatSettings <%data_version%>
     } else execute run {
@@ -601,43 +754,11 @@ function spawn_marker_adjacent {
 }
 
 function defaults {
-    scoreboard objectives add OldCombatSettings dummy
-    scoreboard objectives add OldCombatTemp dummy
-    tellraw @a "Old Combat: Loading Default Settings"
-    execute if score aputils OldCombatTemp matches 0 run {
-        IF $1_21_4compile==false {
-            tellraw @a ["Some features require Andrew's Datapack Utilities to work properly. Consider adding it! ",{text:"Click here to see it on Modrinth.",underlined:true,click_event:{action:"open_url",url:"https://modrinth.com/mod/andrews-pack-utils"}}]
-        } ELSE {
-            tellraw @a ["Some features require Andrew's Datapack Utilities to work properly. Consider adding it! ",{"text":"Click here to see it on Modrinth.","underlined":true,"clickEvent":{"action":"open_url","value":"https://modrinth.com/mod/andrews-pack-utils"}}]
-        }
-    }
+    confirmnoreturn <%"/function oldcombat:noconfirm/defaults"%>
+}
 
-    # Add a start delay to ensure no issues arise while the world is loading, offhand items will turn into a single block of stone if this didn't exist
-    scoreboard players set StartDelay OldCombatTemp 60
-    scoreboard players set DisableOffhand OldCombatSettings 1
-    scoreboard players set BuffKB OldCombatSettings 1
-    scoreboard players set BuffKBValue.X OldCombatSettings 125
-    scoreboard players set BuffKBValue.Y OldCombatSettings 105
-    scoreboard players set DisableAttackCooldown OldCombatSettings 1
-    scoreboard players set SwordBlocking OldCombatSettings 1
-    scoreboard players set RegenExhaustion OldCombatSettings 300
-    scoreboard players set OldToolDamage OldCombatSettings 1
-    scoreboard players set SprintingCrits OldCombatSettings 1
-    scoreboard players set DisableSprint OldCombatSettings 0
-    scoreboard players set DisableKBResist OldCombatSettings 1
-    scoreboard players set AirKB OldCombatSettings 1
-    scoreboard players set FishingRodKnockback OldCombatSettings 1
-    scoreboard players set FishingBobberBoost.X OldCombatSettings 150
-    scoreboard players set FishingBobberBoost.Y OldCombatSettings 100
-    scoreboard players set AirKBForce OldCombatSettings 40
-    scoreboard players set OldRegen OldCombatSettings 1
-    scoreboard players set regenRate OldCombatSettings 80
-    scoreboard players set DisableModernPVPItems OldCombatSettings 0
-    scoreboard players set DisableNetheriteItems OldCombatSettings 0
-    scoreboard players set BreakDisabledTools OldCombatSettings 1
-    scoreboard players set ReturnMaterialsOfDisabledItems OldCombatSettings 1
-    scoreboard players operation PreviousDataVersion OldCombatSettings = DataVersion OldCombatSettings
-    scoreboard players set DataVersion OldCombatSettings <%data_version%>
+function reset {
+    confirmnoreturn <%"/function oldcombat:noconfirm/reset"%>
 }
 
 function old_regen {
@@ -668,24 +789,85 @@ function old_regen {
     }
 }
 
-function disable {
-    scoreboard objectives add OldCombatSettings dummy
-    scoreboard objectives add OldCombatTemp dummy
-    tellraw @a "Old Combat: Disabling all settings"
-    scoreboard players set DisableOffhand OldCombatSettings 0
-    scoreboard players set DisableAttackCooldown OldCombatSettings 0
-    scoreboard players set SwordBlocking OldCombatSettings 0
-    scoreboard players set OldToolDamage OldCombatSettings 0
-    scoreboard players set SprintingCrits OldCombatSettings 0
-    scoreboard players set DisableSprint OldCombatSettings 0
-    scoreboard players set DisableKBResist OldCombatSettings 0
-    scoreboard players set AirKB OldCombatSettings 0
-    scoreboard players set AirKBForce OldCombatSettings 40
-    scoreboard players set FishingRodKnockback OldCombatSettings 0
-    scoreboard players set OldRegen OldCombatSettings 0
-    scoreboard players set DisableModernPVPItems OldCombatSettings 0
-    scoreboard players set DisableNetheriteItems OldCombatSettings 0
+dir noconfirm {
+    function disable {
+        scoreboard objectives add OldCombatSettings dummy
+        scoreboard objectives add OldCombatTemp dummy
+        logger info "Disabling all settings"
+        scoreboard players set DisableOffhand OldCombatSettings 0
+        scoreboard players set DisableAttackCooldown OldCombatSettings 0
+        scoreboard players set SwordBlocking OldCombatSettings 0
+        scoreboard players set OldToolDamage OldCombatSettings 0
+        scoreboard players set SprintingCrits OldCombatSettings 0
+        scoreboard players set DisableSprint OldCombatSettings 0
+        scoreboard players set DisableKBResist OldCombatSettings 0
+        scoreboard players set AirKB OldCombatSettings 0
+        scoreboard players set AirKBForce OldCombatSettings 40
+        scoreboard players set FishingRodKnockback OldCombatSettings 0
+        scoreboard players set OldRegen OldCombatSettings 0
+        scoreboard players set DisableModernPVPItems OldCombatSettings 0
+        scoreboard players set DisableNetheriteItems OldCombatSettings 0
+    }
+
+    function defaults {
+        scoreboard objectives add OldCombatSettings dummy
+        scoreboard objectives add OldCombatTemp dummy
+        logger info "Loading Default Settings"
+        execute if score aputils OldCombatTemp matches 0 run {
+            IF $1_21_4compile==false {
+                logger info ["Some features require Andrew's Datapack Utilities to work properly. Consider adding it! ",{text:"Click here to see it on Modrinth.",underlined:true,click_event:{action:"open_url",url:"https://modrinth.com/mod/andrews-pack-utils"}}]
+            } ELSE {
+                logger info ["Some features require Andrew's Datapack Utilities to work properly. Consider adding it! ",{"text":"Click here to see it on Modrinth.","underlined":true,"clickEvent":{"action":"open_url","value":"https://modrinth.com/mod/andrews-pack-utils"}}]
+            }
+        }
+
+        # Add a start delay to ensure no issues arise while the world is loading, offhand items will turn into a single block of stone if this didn't exist
+        scoreboard players set StartDelay OldCombatTemp 60
+        scoreboard players set DisableOffhand OldCombatSettings 1
+        scoreboard players set BuffKB OldCombatSettings 1
+        scoreboard players set BuffKBValue.X OldCombatSettings 125
+        scoreboard players set BuffKBValue.Y OldCombatSettings 105
+        scoreboard players set DisableAttackCooldown OldCombatSettings 1
+        scoreboard players set SwordBlocking OldCombatSettings 1
+        scoreboard players set RegenExhaustion OldCombatSettings 300
+        scoreboard players set OldToolDamage OldCombatSettings 1
+        scoreboard players set SprintingCrits OldCombatSettings 1
+        scoreboard players set DisableSprint OldCombatSettings 0
+        scoreboard players set DisableKBResist OldCombatSettings 1
+        scoreboard players set AirKB OldCombatSettings 1
+        scoreboard players set FishingRodKnockback OldCombatSettings 1
+        scoreboard players set FishingBobberBoost.X OldCombatSettings 150
+        scoreboard players set FishingBobberBoost.Y OldCombatSettings 100
+        scoreboard players set AirKBForce OldCombatSettings 40
+        scoreboard players set OldRegen OldCombatSettings 1
+        scoreboard players set regenRate OldCombatSettings 80
+        scoreboard players set DisableModernPVPItems OldCombatSettings 0
+        scoreboard players set DisableNetheriteItems OldCombatSettings 0
+        scoreboard players set BreakDisabledTools OldCombatSettings 1
+        scoreboard players set ReturnMaterialsOfDisabledItems OldCombatSettings 1
+        scoreboard players set ShieldNerf OldCombatSettings 1
+        scoreboard players operation PreviousDataVersion OldCombatSettings = DataVersion OldCombatSettings
+        scoreboard players set DataVersion OldCombatSettings <%data_version%>
+
+    }
+    function reset {
+        function oldcombat:noconfirm/uninstall
+        function oldcombat:on_load
+    }
+    function uninstall {
+        scoreboard objectives remove OldCombatSettings
+        scoreboard objectives remove OldCombatTemp
+    }
 }
+
+function disable {
+    confirmnoreturn <%"function oldcombat:noconfirm/disable"%>
+}
+
+function uninstall {
+    confirmnoreturn <%"function oldcombat:noconfirm/uninstall"%> Run this only after making sure nothing will persist after.
+}
+
 
 function air_knockback {
     execute if score AirKB OldCombatSettings matches 1 run {
@@ -778,6 +960,21 @@ function sword_blocking {
     }
 }
 
+function nerf_shields {
+    execute if score ShieldNerf OldCombatSettings matches 1 unless entity @s[tag=oldcombatignore] if items entity @s weapon.mainhand shield[!custom_data={oldcombat.modified:true}] run {
+        modify_held_components {"minecraft:blocks_attacks":{disable_cooldown_scale:1,damage_reductions:[{base:0,factor:0.66,horizontal_blocking_angle:90},{base:0,factor:1,horizontal_blocking_angle:90,type:"#minecraft:is_projectile"}],block_sound:"item.shield.block",item_damage:{threshold:0f,base:0f,factor:0f},block_delay_seconds:0.25,bypassed_by:"#bypasses_shield"},custom_data:{oldcombat.modified:true}}
+    } else execute if score ShieldNerf OldCombatSettings matches 0 run {
+        remove_held_component "minecraft:blocks_attacks"
+    }
+    execute if score ShieldNerf OldCombatSettings matches 1 unless entity @s[tag=oldcombatignore] if items entity @s weapon.offhand shield[!custom_data={oldcombat.modified:true}] run {
+        modify_offheld_components {"minecraft:blocks_attacks":{disable_cooldown_scale:1,damage_reductions:[{base:0,factor:0.66,horizontal_blocking_angle:90},{base:0,factor:1,horizontal_blocking_angle:90,type:"#minecraft:is_projectile"}],block_sound:"item.shield.block",item_damage:{threshold:0f,base:0f,factor:0f},block_delay_seconds:0.25,bypassed_by:"#bypasses_shield"},custom_data:{oldcombat.modified:true}}
+    } else execute if score ShieldNerf OldCombatSettings matches 0 run {
+        remove_offheld_component "minecraft:blocks_attacks"
+    }
+
+}
+
+
 function block_offhand {
     execute if score DisableOffhand OldCombatSettings matches 1 unless entity @s[tag=oldcombatignore] if items entity @s weapon.offhand * run {
         execute at @s anchored eyes positioned ^ ^ ^ positioned ~ ~-0.1 ~ run function throw_offhand
@@ -798,10 +995,29 @@ dir debug {
     function repairheld {
         remove_held_component "minecraft:damage"
     }
+
+    function modify_held_components {
+        summon armor_stand ~ ~ ~ {ShowArms:1b,Tags:["modify_slot"],Marker:true,Invisible:true,Invulnerable:true}
+        item replace entity @n[type=armor_stand,tag=modify_slot] weapon.mainhand from entity @s weapon.mainhand
+        $data merge entity @n[type=armor_stand,tag=modify_slot] {equipment:{mainhand:{components:$(components)}}}
+        item replace entity @s weapon.mainhand from entity @n[type=armor_stand,tag=modify_slot] weapon.mainhand
+        kill @e[type=armor_stand,tag=modify_slot]
+
+    }
+
+    function remove_held_component {
+        summon armor_stand ~ ~ ~ {ShowArms:1b,Tags:["modify_slot"],Marker:true,Invisible:true,Invulnerable:true}
+        item replace entity @n[type=armor_stand,tag=modify_slot] weapon.mainhand from entity @s weapon.mainhand
+        $data remove entity @n[type=armor_stand,tag=modify_slot] equipment.mainhand.components.$(data)
+        item replace entity @s weapon.mainhand from entity @n[type=armor_stand,tag=modify_slot] weapon.mainhand
+        kill @e[type=armor_stand,tag=modify_slot]
+
+    }
+
     function info {
-        tellraw @s "Boolean $1_21_4compile = <%$1_21_4compile%>"
-        tellraw @s "String build_time = <%build_time%>"
-        tellraw @s "Int data_version = 5"
+        tellraw @s "$1_21_4compile = <%$1_21_4compile%>"
+        tellraw @s "build_time = <%build_time%>"
+        tellraw @s "data_version = <%data_version%>"
     }
 }
 

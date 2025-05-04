@@ -58,6 +58,7 @@ function load minecraft:load {
     scoreboard objectives add WereFalling dummy
     scoreboard objectives add Settings dummy
     scoreboard objectives add Temp dummy
+    scoreboard objectives add EntityInteractionRange dummy
 }
 
 function player {
@@ -81,6 +82,7 @@ function player {
 
 
 function tick minecraft:tick {
+    execute as @a store result score @s EntityInteractionRange run attribute @s entity_interaction_range get
     execute if score SprintingCrits OldCombatSettings matches 1 run {
         execute as @a at @s run function sprintcrit:player
         execute as @e[nbt={HurtTime:10s},type=!ender_dragon,type=!armor_stand] at @s run function sprintcrit:livingentity
@@ -88,4 +90,5 @@ function tick minecraft:tick {
         scoreboard players reset @e DamageDealtAbsorbed
         scoreboard players reset @e DamageDealtResisted
     }
+
 }

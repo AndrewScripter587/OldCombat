@@ -2,6 +2,14 @@
 
 import ./z_configmenu.mcbt
 
+<%%
+    chat_width = {
+        chars: 53,
+        pixels: 320
+    };
+    char_width = 6
+
+%%>
 tag functions on_config_button_press {
     oldcombat:enforce_locked_settings
 }
@@ -19,4 +27,20 @@ function tests {
     boolean_input <%"Sword Blocking"%> <%"Test"%> OldCombatSettings SwordBlocking disabled condition <%"unless entity @s"%> z_configmenu:tests
     boolean_input <%"Sword Blocking"%> <%"Test"%> OldCombatSettings SwordBlocking disabled condition <%"if entity @s"%> z_configmenu:tests
     numeric_input <%"Sword Blocking"%> <%"Test"%> OldCombatSettings SwordBlocking 1 z_configmenu:tests
+}
+
+function confirmtest {
+    confirm <%""%>
+}
+
+function empty {
+    tellraw @s ""
+}
+
+function confirm {
+    confirm macro
+}
+
+function testconfig {
+    tellraw @s [{text:"[Test Confirmation]",click_event:{action:run_command,command:"function z_configmenu:confirm {yes:'tellraw @s \"Yes\"',no:'tellraw @s \"No\"',return:'function z_configmenu:testconfig',namespace:'<%context.namespace%>'}"}}]
 }
