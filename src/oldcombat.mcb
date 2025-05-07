@@ -24,6 +24,12 @@ function on_load minecraft:load{
 }
 
 function on_tick minecraft:tick {
+    execute as @e run block check_ground {
+        # execute if entity @s[type=!player] store result score @s WasOnGround run data get entity @s OnGround
+        execute store result score @s WasOnGround run scoreboard players get @s OnGround
+        execute store result score @s OnGround run data get entity @s OnGround
+    }
+
     execute if score StartDelay OldCombatTemp matches 1.. run {
         scoreboard players remove StartDelay OldCombatTemp 1
     } else execute run {
@@ -112,7 +118,7 @@ dir config {
             boolean_input legacy <%"Fishing Rod Knockback"%> <%"Makes fishing rod bobbers do knockback by applying 0.01 damage to entities hit by the bobber. Note: The damage and knockback will apply 1 tick after the fishing rod attaches to the entity. This is a technical restriction that is hard to work around."%> OldCombatSettings FishingRodKnockback oldcombat:config
             boolean_input legacy <%"Fishing Bobbers Go Further"%> <%"Makes fishing rod bobbers go further when launched from a fishing rod by multiplying the bobber's velocity by a certain amount. This isn't that accurate to pre-combat update physics as that would be hard to make. Note: The velocity change happens 1 tick after the fishing bobber entity is created, causing the fishing bobber to go at the vanilla speed for 1 tick. This is a technical restriction that is hard to work around."%> OldCombatSettings FurtherFishingBobber oldcombat:config oldcombat:config/subconfig/fishingrodboost
             boolean_input legacy <%"Old Regeneration"%> <%"NOTICE: Doesn't work without Andrew's DataPack Lib (a Fabric mod that you can find on Modrinth) in order to modify player data. Makes health regeneration work like it did before the combat update, where you regain half a heart every 4 seconds, and having saturation left doesn't speed it up."%> OldCombatSettings OldRegen disabled condition <%"unless score aputils OldCombatTemp matches 1"%> oldcombat:config oldcombat:config/subconfig/oldregen
-            boolean_input legacy <%"Increase Damage Knockback"%> <%"Increases the knockback applied to mobs that take damage. Requires Andrew's Pack Utilities to affect players."%> OldCombatSettings BuffKB oldcombat:config/page2 oldcombat:config/subconfig/knockback
+            boolean_input legacy <%"Increase Damage Knockback"%> <%"Increases the knockback applied to mobs that take damage. Requires Andrew's Pack Utilities to affect players."%> OldCombatSettings BuffKB oldcombat:config oldcombat:config/subconfig/knockback
             submenu legacy <%"Disabling items"%> <%"Some tweaks for disabling various items."%> oldcombat:config/subconfig/itemdisable
             boolean_input legacy <%"Nerf Shields"%> <%"Makes Shields block 66% of incoming melee damage like they did before 1.11. Damage from projectiles such as arrows are still completely blocked, because they were completely blocked before 1.11. You still take knockback from projectiles for unknown reasons. Disabled because you're using 1.21.4."%> OldCombatSettings ShieldNerf disabled true 
             emptyline 4
@@ -129,8 +135,8 @@ dir config {
             boolean_input <%"Knockback Effective In Air"%> <%"NOTICE: This will NOT apply to players, UNLESS you have Andrew's Datapack Utils Fabric mod installed. Makes knockback from attacks as effective in the air as it is on the ground."%> OldCombatSettings AirKB oldcombat:config oldcombat:config/subconfig/airkb
             boolean_input <%"Fishing Rod Knockback"%> <%"Makes fishing rod bobbers do knockback by applying 0.01 damage to entities hit by the bobber. Note: The damage and knockback will apply 1 tick after the fishing rod attaches to the entity. This is a technical restriction that is hard to work around."%> OldCombatSettings FishingRodKnockback oldcombat:config
             boolean_input <%"Fishing Bobbers Go Further"%> <%"Makes fishing rod bobbers go further when launched from a fishing rod by multiplying the bobber's velocity by a certain amount. This isn't that accurate to pre-combat update physics as that would be hard to make. Note: The velocity change happens 1 tick after the fishing bobber entity is created, causing the fishing bobber to go at the vanilla speed for 1 tick. This is a technical restriction that is hard to work around."%> OldCombatSettings FurtherFishingBobber oldcombat:config oldcombat:config/subconfig/fishingrodboost
-            boolean_input <%"Old Regeneration"%> <%"NOTICE: Doesn't work without Andrew's DataPack Lib (a Fabric mod that you can find on Modrinth) in order to modify player data. Makes health regeneration work like it did before the combat update, where you regain half a heart every 4 seconds, and having saturation left doesn't speed it up."%> OldCombatSettings OldRegen disabled condition <%"unless score aputils OldCombatTemp matches 1"%> oldcombat:config oldcombat:config/subconfig/oldregen
-            boolean_input <%"Increase Damage Knockback"%> <%"Increases the knockback applied to mobs that take damage. Requires Andrew's Pack Utilities to affect players."%> OldCombatSettings BuffKB oldcombat:config/page2 oldcombat:config/subconfig/knockback
+            boolean_input <%"Old Regeneration"%> <%"NOTICE: Doesn't work without Andrew's DataPack Lib (a Fabric, soon to be NeoForge as well, mod that you can find on Modrinth) in order to modify player data. Makes health regeneration work like it did before the combat update, where you regain half a heart every 4 seconds, and having saturation left doesn't speed it up."%> OldCombatSettings OldRegen disabled condition <%"unless score aputils OldCombatTemp matches 1"%> oldcombat:config oldcombat:config/subconfig/oldregen
+            boolean_input <%"Increase Damage Knockback"%> <%"Increases the knockback applied to mobs that take damage. Requires Andrew's Pack Utilities to affect players."%> OldCombatSettings BuffKB oldcombat:config oldcombat:config/subconfig/knockback
             submenu <%"Disabling items"%> <%"Some tweaks for disabling various items."%> oldcombat:config/subconfig/itemdisable
             boolean_input <%"Nerf Shields"%> <%"Makes Shields block 66% of incoming melee damage like they did before 1.11. Damage from projectiles such as arrows are still completely blocked, because they were completely blocked before 1.11. You still take knockback from projectiles for unknown reasons."%> OldCombatSettings ShieldNerf <%"oldcombat:config/page1"%>
             emptyline 4
@@ -141,14 +147,20 @@ dir config {
         function airkb {
             IF $1_21_4compile==true {
                 textline "Sub-configuration for Knockback Effective In Air"
-                single_button legacy <%"Go back"%> white <%"/function oldcombat:config/page1"%>
-                numeric_input legacy <%"Air Knockback Strength"%> <%"Amount of vertical knockback applied to entities in the air by the above setting, in centimeters per tick. For reference, 1 cubic meter = 1 minecraft block, 100 cm = 1 meter, 20 ticks in 1 second."%> OldCombatSettings AirKBForce 10 oldcombat:config/subconfig/airkb
-                emptyline 17
+                single_button <%"Go back"%> white <%"/function oldcombat:config/page1"%>
+                textline {"text":"IMPORTANT (See tooltip)","hoverEvent":{"action":"show_text","value":"When this screen refers to 'velocity', it actually means only the entity's vertical velocity, NOT horizontal."}}
+                numeric_input <%"Air Knockback Strength"%> <%"Amount of vertical knockback applied to entities in the air by the above setting, in centimeters per tick. For reference, 1 cubic meter = 1 minecraft block, 100 cm = 1 meter, 20 ticks in 1 second."%> OldCombatSettings AirKBForce 10 oldcombat:config/subconfig/airkb
+                boolean_input <%"Set/Mix (See Tooltip)"%> <%"If false, sets the velocity of the entity. If true, it mixes the entity's current velocity with the Air Knockback Strength velocity, use the setting below to control this."%> OldCombatSettings AirKBMode oldcombat:config/subconfig/airkb
+                numeric_input <%"Air Knockback Mix Amount"%> <%"Mix amount for the above setting. A value of 0 means no mixing will happen and the entity's velocity won't change, a value of 100 means the entity's velocity will get set to the Air Knockback Strength. A value of 50 means the entity's velocity will get set to the value in the middle of the entity's current velocity and the Air Knockback Strength. Weird effects happen above 100 and below 0."%> OldCombatSettings AirKBMix 5 oldcombat:config/subconfig/airkb
+                emptyline 14
             } ELSE {
                 textline "Sub-configuration for Knockback Effective In Air"
                 single_button <%"Go back"%> white <%"/function oldcombat:config/page1"%>
+                textline {text:"IMPORTANT (See tooltip)",hover_event:{action:show_text,value:"When this screen refers to 'velocity', it actually means only the entity's vertical velocity, NOT horizontal."}}
                 numeric_input <%"Air Knockback Strength"%> <%"Amount of vertical knockback applied to entities in the air by the above setting, in centimeters per tick. For reference, 1 cubic meter = 1 minecraft block, 100 cm = 1 meter, 20 ticks in 1 second."%> OldCombatSettings AirKBForce 10 oldcombat:config/subconfig/airkb
-                emptyline 17
+                boolean_input <%"Set/Mix (See Tooltip)"%> <%"If false, sets the velocity of the entity. If true, it mixes the entity's current velocity with the Air Knockback Strength velocity, use the setting below to control this."%> OldCombatSettings AirKBMode oldcombat:config/subconfig/airkb
+                numeric_input <%"Air Knockback Mix Amount"%> <%"Mix amount for the above setting. A value of 0 means no mixing will happen and the entity's velocity won't change, a value of 100 means the entity's velocity will get set to the Air Knockback Strength. A value of 50 means the entity's velocity will get set to the value in the middle of the entity's current velocity and the Air Knockback Strength. Weird effects happen above 100 and below 0."%> OldCombatSettings AirKBMix 5 oldcombat:config/subconfig/airkb
+                emptyline 14
             }
         }
         function fishingrodboost {
@@ -244,6 +256,7 @@ dir presets {
         scoreboard players set DisableSprint OldCombatSettings 0
         scoreboard players set DisableKBResist OldCombatSettings 1
         scoreboard players set AirKB OldCombatSettings 1
+        scoreboard players set AirKBMode OldCombatSettings 0
         scoreboard players set FishingRodKnockback OldCombatSettings 1
         scoreboard players set FishingBobberBoost.X OldCombatSettings 150
         scoreboard players set FishingBobberBoost.Y OldCombatSettings 100
@@ -269,6 +282,7 @@ dir presets {
         scoreboard players set DisableSprint OldCombatSettings 0
         scoreboard players set DisableKBResist OldCombatSettings 0
         scoreboard players set AirKB OldCombatSettings 0
+        scoreboard players set AirKBMode OldCombatSettings 0
         scoreboard players set FishingRodKnockback OldCombatSettings 0
         scoreboard players set FishingBobberBoost.X OldCombatSettings 150
         scoreboard players set FishingBobberBoost.Y OldCombatSettings 100
@@ -280,6 +294,7 @@ dir presets {
         scoreboard players set BreakDisabledTools OldCombatSettings 1
         scoreboard players set ReturnMaterialsOfDisabledItems OldCombatSettings 1
         scoreboard players set ShieldNerf OldCombatSettings 1
+        scoreboard players set AirKBMode OldCombatSettings 1
     }
     function 1.11 {
         scoreboard players set DisableOffhand OldCombatSettings 0
@@ -294,6 +309,7 @@ dir presets {
         scoreboard players set DisableSprint OldCombatSettings 0
         scoreboard players set DisableKBResist OldCombatSettings 0
         scoreboard players set AirKB OldCombatSettings 0
+        scoreboard players set AirKBMode OldCombatSettings 0
         scoreboard players set FishingRodKnockback OldCombatSettings 0
         scoreboard players set FishingBobberBoost.X OldCombatSettings 150
         scoreboard players set FishingBobberBoost.Y OldCombatSettings 100
@@ -696,6 +712,7 @@ function startup minecraft:load {
     scoreboard objectives add OldCombatTemp dummy
     scoreboard objectives add foodTickTimer dummy
     scoreboard objectives add WasOnGround dummy
+    scoreboard objectives add OnGround dummy
     scoreboard players set aputils OldCombatTemp 0
     function detect_aputils
     execute if score aputils OldCombatTemp matches 0 run {
@@ -727,6 +744,7 @@ function startup minecraft:load {
         scoreboard players set DisableSprint OldCombatSettings 0
         scoreboard players set DisableKBResist OldCombatSettings 1
         scoreboard players set AirKB OldCombatSettings 1
+        scoreboard players set AirKBMode OldCombatSettings 0
         scoreboard players set FishingRodKnockback OldCombatSettings 1
         scoreboard players set FurtherFishingBobber OldCombatSettings 1
         scoreboard players set FishingBobberBoost.X OldCombatSettings 150
@@ -871,16 +889,33 @@ function uninstall {
 
 function air_knockback {
     execute if score AirKB OldCombatSettings matches 1 run {
-        execute unless data entity @s {Motion:[0.0d,0.0d,0.0d]} unless data entity @s {OnGround:true} run {
+        execute unless data entity @s {Motion:[0.0d,0.0d,0.0d]} if entity @s[scores={WasOnGround=0},nbt={OnGround:0b}] run {
             execute on attacker if entity @s[tag=oldcombatignore] run return fail
+            execute store result score vel OldCombatTemp run data get entity @s Motion[1] 100
+            execute if score AirKBMode OldCombatSettings matches 1 run {
+                scoreboard players operation vel2 OldCombatTemp = vel OldCombatTemp
+                # tellraw @a {score:{name:"vel",objective:"OldCombatTemp"}}
+                scoreboard players operation vel OldCombatTemp = AirKBForce OldCombatSettings
+                scoreboard players set 100 OldCombatTemp 100
+                
+                # tellraw @a {score:{name:"vel",objective:"OldCombatTemp"}}
+                scoreboard players operation vel OldCombatTemp -= vel2 OldCombatTemp
+                # tellraw @a {score:{name:"vel",objective:"OldCombatTemp"}}
+                scoreboard players operation vel OldCombatTemp *= AirKBMix OldCombatSettings
+                # tellraw @a {score:{name:"vel",objective:"OldCombatTemp"}}
+                scoreboard players operation vel OldCombatTemp /= 100 OldCombatTemp
+                # tellraw @a {score:{name:"vel",objective:"OldCombatTemp"}}
+                scoreboard players operation vel OldCombatTemp += vel2 OldCombatTemp
+                # tellraw @a {score:{name:"vel",objective:"OldCombatTemp"}}
+            }
             execute if score aputils OldCombatTemp matches 0 run {
-                execute store result entity @s Motion[1] double 0.01 run scoreboard players get AirKBForce OldCombatSettings
+                execute store result entity @s Motion[1] double 0.01 run scoreboard players get vel OldCombatTemp
             } else execute run {
-                execute store result storage oldcombat:temp kb double 0.01 run scoreboard players get AirKBForce OldCombatSettings
+                execute store result storage oldcombat:temp kb double 0.01 run scoreboard players get vel OldCombatTemp
                 data modify storage oldcombat:temp dx set from entity @s Motion[0]
                 data modify storage oldcombat:temp dz set from entity @s Motion[2]
                 block knockback { with storage oldcombat:temp
-                    $aputils velocity @s $(dx) $(kb) $(dz) set  
+                    $aputils velocity @s $(dx) $(kb) $(dz) set
                 }
                 
             }
