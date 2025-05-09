@@ -53,6 +53,7 @@ function on_tick minecraft:tick {
             function disable_kb_resist
             function enforce_locked_settings
             function fishing_rod_kb
+            function disable_attack_sounds
             execute store result storage oldcombat:temp distx float 1 run scoreboard players get FishingBobberBoost.X OldCombatSettings
             execute store result storage oldcombat:temp disty float 1 run scoreboard players get FishingBobberBoost.Y OldCombatSettings
             function further_fishing_bobber with storage oldcombat:temp
@@ -121,6 +122,7 @@ dir config {
             boolean_input legacy <%"Increase Damage Knockback"%> <%"Increases the knockback applied to mobs that take damage. Requires Andrew's Pack Utilities to affect players."%> OldCombatSettings BuffKB oldcombat:config oldcombat:config/subconfig/knockback
             submenu legacy <%"Disabling items"%> <%"Some tweaks for disabling various items."%> oldcombat:config/subconfig/itemdisable
             boolean_input legacy <%"Nerf Shields"%> <%"Makes Shields block 66% of incoming melee damage like they did before 1.11. Damage from projectiles such as arrows are still completely blocked, because they were completely blocked before 1.11. You still take knockback from projectiles for unknown reasons. Disabled because you're using 1.21.4."%> OldCombatSettings ShieldNerf disabled true 
+            boolean_input legacy <%"Disable Attack Sounds"%> <%"\"Disables\" attack sounds such as sweep attack, critical attack, knockback attack, etc. Not perfect, sounds will still play for 1 tick before being cancelled. However, this imperfection is usually masked out by other ongoing sounds, like a mob or player taking damage, so it doesn't really have to be perfect."%> OldCombatSettings DisableAttackSounds <%"oldcombat:config/page1"%>
             emptyline 4
             pagebar legacy 1 <%"oldcombat:config"%>
         } ELSE {
@@ -139,7 +141,8 @@ dir config {
             boolean_input <%"Increase Damage Knockback"%> <%"Increases the knockback applied to mobs that take damage. Requires Andrew's Pack Utilities to affect players."%> OldCombatSettings BuffKB oldcombat:config oldcombat:config/subconfig/knockback
             submenu <%"Disabling items"%> <%"Some tweaks for disabling various items."%> oldcombat:config/subconfig/itemdisable
             boolean_input <%"Nerf Shields"%> <%"Makes Shields block 66% of incoming melee damage like they did before 1.11. Damage from projectiles such as arrows are still completely blocked, because they were completely blocked before 1.11. You still take knockback from projectiles for unknown reasons."%> OldCombatSettings ShieldNerf <%"oldcombat:config/page1"%>
-            emptyline 4
+            boolean_input <%"Disable Attack Sounds"%> <%"\\\"Disables\\\" attack sounds such as sweep attack, critical attack, knockback attack, etc. Not perfect, sounds will still play for 1 tick before being cancelled. However, this imperfection is usually masked out by other ongoing sounds, like a mob or player taking damage, so it doesn't really have to be perfect. However, the cutoff is very noticable for the 'no damage' sound, and there are some other imperfections, so this setting isn't defaulted to on."%> OldCombatSettings DisableAttackSounds <%"oldcombat:config/page1"%>
+            emptyline 3
             pagebar 1 <%"oldcombat:config"%>
         }
     }
@@ -158,9 +161,9 @@ dir config {
                 single_button <%"Go back"%> white <%"/function oldcombat:config/page1"%>
                 textline {text:"IMPORTANT (See tooltip)",hover_event:{action:show_text,value:"When this screen refers to 'velocity', it actually means only the entity's vertical velocity, NOT horizontal."}}
                 numeric_input <%"Air Knockback Strength"%> <%"Amount of vertical knockback applied to entities in the air by the above setting, in centimeters per tick. For reference, 1 cubic meter = 1 minecraft block, 100 cm = 1 meter, 20 ticks in 1 second."%> OldCombatSettings AirKBForce 10 oldcombat:config/subconfig/airkb
-                boolean_input <%"Set/Mix (See Tooltip)"%> <%"If false, sets the velocity of the entity. If true, it mixes the entity's current velocity with the Air Knockback Strength velocity, use the setting below to control this."%> OldCombatSettings AirKBMode oldcombat:config/subconfig/airkb
-                numeric_input <%"Air Knockback Mix Amount"%> <%"Mix amount for the above setting. A value of 0 means no mixing will happen and the entity's velocity won't change, a value of 100 means the entity's velocity will get set to the Air Knockback Strength. A value of 50 means the entity's velocity will get set to the value in the middle of the entity's current velocity and the Air Knockback Strength. Weird effects happen above 100 and below 0."%> OldCombatSettings AirKBMix 5 oldcombat:config/subconfig/airkb
-                emptyline 14
+#                 boolean_input <%"Set/Mix (See Tooltip)"%> <%"If false, sets the velocity of the entity. If true, it mixes the entity's current velocity with the Air Knockback Strength velocity, use the setting below to control this."%> OldCombatSettings AirKBMode oldcombat:config/subconfig/airkb
+                numeric_input <%"Air Knockback Mix Amount"%> <%"Mix amount for the knockback, mixing the above value with the current velocity. A value of 0 means no mixing will happen and the entity's velocity won't change, a value of 100 means the entity's velocity will get set to the Air Knockback Strength. A value of 50 means the entity's velocity will get set to the value in the middle of the entity's current velocity and the Air Knockback Strength. Weird effects happen above 100 and below 0."%> OldCombatSettings AirKBMix 5 oldcombat:config/subconfig/airkb
+                emptyline 15
             }
         }
         function fishingrodboost {
@@ -268,6 +271,7 @@ dir presets {
         scoreboard players set BreakDisabledTools OldCombatSettings 1
         scoreboard players set ReturnMaterialsOfDisabledItems OldCombatSettings 1
         scoreboard players set ShieldNerf OldCombatSettings 1
+        scoreboard players set DisableAttackSounds OldCombatSettings 0
     }
     function 1.9 {
         scoreboard players set DisableOffhand OldCombatSettings 0
@@ -295,6 +299,7 @@ dir presets {
         scoreboard players set ReturnMaterialsOfDisabledItems OldCombatSettings 1
         scoreboard players set ShieldNerf OldCombatSettings 1
         scoreboard players set AirKBMode OldCombatSettings 1
+        scoreboard players set DisableAttackSounds OldCombatSettings 0
     }
     function 1.11 {
         scoreboard players set DisableOffhand OldCombatSettings 0
@@ -321,6 +326,7 @@ dir presets {
         scoreboard players set BreakDisabledTools OldCombatSettings 1
         scoreboard players set ReturnMaterialsOfDisabledItems OldCombatSettings 1
         scoreboard players set ShieldNerf OldCombatSettings 0
+        scoreboard players set DisableAttackSounds OldCombatSettings 0
     }
 
 }
@@ -757,6 +763,7 @@ function startup minecraft:load {
         scoreboard players set BreakDisabledTools OldCombatSettings 1
         scoreboard players set ReturnMaterialsOfDisabledItems OldCombatSettings 1
         scoreboard players set ShieldNerf OldCombatSettings 1
+        scoreboard players set DisableAttackSounds OldCombatSettings 0
         scoreboard players operation PreviousDataVersion OldCombatSettings = DataVersion OldCombatSettings
         scoreboard players set DataVersion OldCombatSettings <%data_version%>
     } else execute run {
@@ -820,11 +827,12 @@ dir noconfirm {
         scoreboard players set DisableSprint OldCombatSettings 0
         scoreboard players set DisableKBResist OldCombatSettings 0
         scoreboard players set AirKB OldCombatSettings 0
-        scoreboard players set AirKBForce OldCombatSettings 40
         scoreboard players set FishingRodKnockback OldCombatSettings 0
         scoreboard players set OldRegen OldCombatSettings 0
         scoreboard players set DisableModernPVPItems OldCombatSettings 0
         scoreboard players set DisableNetheriteItems OldCombatSettings 0
+        scoreboard players set ShieldNerf OldCombatSettings 0
+        scoreboard players set DisableAttackSounds OldCombatSettings 0
     }
 
     function defaults {
@@ -864,6 +872,7 @@ dir noconfirm {
         scoreboard players set BreakDisabledTools OldCombatSettings 1
         scoreboard players set ReturnMaterialsOfDisabledItems OldCombatSettings 1
         scoreboard players set ShieldNerf OldCombatSettings 1
+        scoreboard players set DisableAttackSounds OldCombatSettings 1
         scoreboard players operation PreviousDataVersion OldCombatSettings = DataVersion OldCombatSettings
         scoreboard players set DataVersion OldCombatSettings <%data_version%>
 
@@ -929,6 +938,17 @@ function disable_cooldown {
     execute if score DisableAttackCooldown OldCombatSettings matches 1 unless entity @s[tag=oldcombatignore] run {
         attribute @s attack_speed modifier remove minecraft:base_attack_speed
         attribute @s attack_speed modifier add minecraft:base_attack_speed 100 add_value
+    }
+}
+
+function disable_attack_sounds {
+    execute if score DisableAttackSounds OldCombatSettings matches 1 run {
+        stopsound @a * minecraft:entity.player.attack.knockback
+        stopsound @a * minecraft:entity.player.attack.weak
+        stopsound @a * minecraft:entity.player.attack.strong
+        stopsound @a * minecraft:entity.player.attack.crit
+        stopsound @a * minecraft:entity.player.attack.nodamage
+        stopsound @a * minecraft:entity.player.attack.sweep
     }
 }
 
