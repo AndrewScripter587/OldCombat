@@ -44,12 +44,18 @@ function on_tick minecraft:tick {
                 function disable_sprinting
                 function old_regen
             }
-            execute as @e[nbt={HurtTime:10s},type=!ender_dragon,tag=!bkbprocessed] run function buff_knockback
-            execute as @e[nbt={HurtTime:10s},type=!ender_dragon,tag=!akbprocessed] run function air_knockback
-            execute as @e[nbt={HurtTime:9s},type=!ender_dragon,tag=!bkbprocessed] run function buff_knockback
-            execute as @e[nbt={HurtTime:9s},type=!ender_dragon,tag=!akbprocessed] run function air_knockback
-            execute as @e[nbt={HurtTime:9s},type=!ender_dragon,tag=bkbprocessed] run tag @s remove bkbprocessed
-            execute as @e[nbt={HurtTime:9s},type=!ender_dragon,tag=akbprocessed] run tag @s remove akbprocessed
+#            execute as @e[nbt={HurtTime:10s},type=!ender_dragon,tag=!bkbprocessed] run function buff_knockback
+#            execute as @e[nbt={HurtTime:10s},type=!ender_dragon,tag=!akbprocessed] run function air_knockback
+#            execute as @e[nbt={HurtTime:9s},type=!ender_dragon,tag=!bkbprocessed] run function buff_knockback
+#            execute as @e[nbt={HurtTime:9s},type=!ender_dragon,tag=!akbprocessed] run function air_knockback
+#            execute as @e[nbt={HurtTime:9s},type=!ender_dragon,tag=bkbprocessed] run tag @s remove bkbprocessed
+#            execute as @e[nbt={HurtTime:9s},type=!ender_dragon,tag=akbprocessed] run tag @s remove akbprocessed
+            execute as @e[type=!player] run {
+                scoreboard players operation @s LastHurtByTimestamp = @s HurtByTimestamp
+                execute store result score @s HurtByTimestamp run data get entity @s HurtByTimestamp
+                function buff_knockback
+                function air_knockback
+            }
             function disable_kb_resist
             function enforce_locked_settings
             function fishing_rod_kb
@@ -166,6 +172,7 @@ dir config {
                 emptyline 15
             }
         }
+
         function fishingrodboost {
             IF $1_21_4compile==true {
                 textline "Configuration for Fishing Bobbers Go Further"
@@ -243,6 +250,16 @@ dir config {
             textline "TODO"
         }
     }
+}
+
+advancement just_took_damage {
+    "display":{"icon": {"id": "iron_sword"},"title": "Taken Damage","announce_to_chat": false,"description": "You took damage! Yayyyyy!!......","show_toast": true,"hidden": true},"criteria": {"hurt":{"trigger": "entity_hurt_player"}},"rewards":{"function":"oldcombat:on_damage"}
+}
+
+function on_damage {
+    function buff_knockback
+    function air_knockback
+    advancement revoke @s only oldcombat:just_took_damage
 }
 
 dir presets {
@@ -692,6 +709,8 @@ function disable_netherite_items {
 }
 
 function buff_knockback {
+    execute if score @s HurtByTimestamp = @s LastHurtByTimestamp unless entity @s[type=player] run return fail
+    execute unless data entity @s {HurtTime:10s} unless data entity @s {HurtTime:9s} unless data entity @s {HurtTime:8s} run return fail
     execute store result storage oldcombat:temp horizontal int 1 run scoreboard players get BuffKBValue.X OldCombatSettings
     execute store result storage oldcombat:temp vertical int 1 run scoreboard players get BuffKBValue.Y OldCombatSettings
     execute if score BuffKB OldCombatSettings matches 1 unless entity @s[tag=oldcombatignore] run { with storage oldcombat:temp
@@ -719,6 +738,8 @@ function startup minecraft:load {
     scoreboard objectives add foodTickTimer dummy
     scoreboard objectives add WasOnGround dummy
     scoreboard objectives add OnGround dummy
+    scoreboard objectives add HurtByTimestamp dummy
+    scoreboard objectives add LastHurtByTimestamp dummy
     scoreboard players set aputils OldCombatTemp 0
     function detect_aputils
     execute if score aputils OldCombatTemp matches 0 run {
@@ -897,6 +918,8 @@ function uninstall {
 
 
 function air_knockback {
+    execute if score @s HurtByTimestamp = @s LastHurtByTimestamp unless entity @s[type=player] run return fail
+    execute unless data entity @s {HurtTime:10s} unless data entity @s {HurtTime:9s} unless data entity @s {HurtTime:8s} run return fail
     execute if score AirKB OldCombatSettings matches 1 run {
         execute unless data entity @s {Motion:[0.0d,0.0d,0.0d]} if entity @s[scores={WasOnGround=0},nbt={OnGround:0b}] run {
             execute on attacker if entity @s[tag=oldcombatignore] run return fail

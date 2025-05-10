@@ -1,0 +1,21 @@
+#tag damage_type bypasses_cooldown {
+#    explosion
+#    player_explosion
+#    player_attack
+#    mob_attack
+#    mob_attack_no_aggro
+#    arrow
+#    fall
+#    bad_respawn_point
+#    cramming
+#    ender_pearl
+#    fireworks
+#    mace_smash
+#    magic
+#    mob_projectile
+#    sonic_boom
+#    spit
+#    sting
+#    trident
+#    fly_into_wall
+#}
