@@ -156,11 +156,11 @@ dir config {
         function airkb {
             IF $1_21_4compile==true {
                 textline "Sub-configuration for Knockback Effective In Air"
-                single_button <%"Go back"%> white <%"/function oldcombat:config/page1"%>
+                single_button legacy <%"Go back"%> white <%"/function oldcombat:config/page1"%>
                 textline {"text":"IMPORTANT (See tooltip)","hoverEvent":{"action":"show_text","value":"When this screen refers to 'velocity', it actually means only the entity's vertical velocity, NOT horizontal."}}
-                numeric_input <%"Air Knockback Strength"%> <%"Amount of vertical knockback applied to entities in the air by the above setting, in centimeters per tick. For reference, 1 cubic meter = 1 minecraft block, 100 cm = 1 meter, 20 ticks in 1 second."%> OldCombatSettings AirKBForce 10 oldcombat:config/subconfig/airkb
-                boolean_input <%"Set/Mix (See Tooltip)"%> <%"If false, sets the velocity of the entity. If true, it mixes the entity's current velocity with the Air Knockback Strength velocity, use the setting below to control this."%> OldCombatSettings AirKBMode oldcombat:config/subconfig/airkb
-                numeric_input <%"Air Knockback Mix Amount"%> <%"Mix amount for the above setting. A value of 0 means no mixing will happen and the entity's velocity won't change, a value of 100 means the entity's velocity will get set to the Air Knockback Strength. A value of 50 means the entity's velocity will get set to the value in the middle of the entity's current velocity and the Air Knockback Strength. Weird effects happen above 100 and below 0."%> OldCombatSettings AirKBMix 5 oldcombat:config/subconfig/airkb
+                numeric_input legacy <%"Air Knockback Strength"%> <%"Amount of vertical knockback applied to entities in the air by the above setting, in centimeters per tick. For reference, 1 cubic meter = 1 minecraft block, 100 cm = 1 meter, 20 ticks in 1 second."%> OldCombatSettings AirKBForce 10 oldcombat:config/subconfig/airkb
+#                boolean_input <%"Set/Mix (See Tooltip)"%> <%"If false, sets the velocity of the entity. If true, it mixes the entity's current velocity with the Air Knockback Strength velocity, use the setting below to control this."%> OldCombatSettings AirKBMode oldcombat:config/subconfig/airkb
+                numeric_input legacy <%"Air Knockback Mix Amount"%> <%"Mix amount for the above setting. A value of 0 means no mixing will happen and the entity's velocity won't change, a value of 100 means the entity's velocity will get set to the Air Knockback Strength. A value of 50 means the entity's velocity will get set to the value in the middle of the entity's current velocity and the Air Knockback Strength. Weird effects happen above 100 and below 0."%> OldCombatSettings AirKBMix 5 oldcombat:config/subconfig/airkb
                 emptyline 14
             } ELSE {
                 textline "Sub-configuration for Knockback Effective In Air"
