@@ -26,6 +26,22 @@ function crit {
 
 }
 
+predicate correctdamage {
+    "condition": "damage_source_properties",
+    "predicate": {
+        "tags": [
+            {
+                "id": "sprintcrit:sprinting_crit_allow",
+                "expected": true
+            }
+        ]
+    }
+}
+
+tag damage_type sprinting_crit_allow {
+    minecraft:player_attack
+}
+
 function livingentity {
     execute on attacker unless entity @s[type=player] run return fail
     tag @s add this

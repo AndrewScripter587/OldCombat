@@ -83,7 +83,8 @@ function fishing_rod_kb {
             
             execute as @n[type=!fishing_bobber,type=!marker,tag=!origin,type=!item,type=!item_frame,type=!painting,type=!experience_orb] if entity @s[dx=0,dy=0,dz=0] run {
                 tag @n[type=fishing_bobber,tag=this] add hit
-                damage @s 0.01 player_attack by @p[tag=origin]
+                damage @s 0.001 player_attack by @p[tag=origin]
+                tag @s[nbt={OnGround:1b}] add tempIgnoreAirKB
             }
             tag @a remove origin
             tag @e[type=fishing_bobber] remove this
@@ -276,11 +277,11 @@ dir presets {
         scoreboard players set DisableSprint OldCombatSettings 0
         scoreboard players set DisableKBResist OldCombatSettings 1
         scoreboard players set AirKB OldCombatSettings 1
-        scoreboard players set AirKBMode OldCombatSettings 0
+        scoreboard players set AirKBMix OldCombatSettings 85
         scoreboard players set FishingRodKnockback OldCombatSettings 1
         scoreboard players set FishingBobberBoost.X OldCombatSettings 150
         scoreboard players set FishingBobberBoost.Y OldCombatSettings 100
-        scoreboard players set AirKBForce OldCombatSettings 40
+        scoreboard players set AirKBForce OldCombatSettings 50
         scoreboard players set OldRegen OldCombatSettings 1
         scoreboard players set regenRate OldCombatSettings 80
         scoreboard players set DisableModernPVPItems OldCombatSettings 0
@@ -303,7 +304,7 @@ dir presets {
         scoreboard players set DisableSprint OldCombatSettings 0
         scoreboard players set DisableKBResist OldCombatSettings 0
         scoreboard players set AirKB OldCombatSettings 0
-        scoreboard players set AirKBMode OldCombatSettings 0
+        scoreboard players set AirKBMix OldCombatSettings 85
         scoreboard players set FishingRodKnockback OldCombatSettings 0
         scoreboard players set FishingBobberBoost.X OldCombatSettings 150
         scoreboard players set FishingBobberBoost.Y OldCombatSettings 100
@@ -315,7 +316,6 @@ dir presets {
         scoreboard players set BreakDisabledTools OldCombatSettings 1
         scoreboard players set ReturnMaterialsOfDisabledItems OldCombatSettings 1
         scoreboard players set ShieldNerf OldCombatSettings 1
-        scoreboard players set AirKBMode OldCombatSettings 1
         scoreboard players set DisableAttackSounds OldCombatSettings 0
     }
     function 1.11 {
@@ -331,11 +331,11 @@ dir presets {
         scoreboard players set DisableSprint OldCombatSettings 0
         scoreboard players set DisableKBResist OldCombatSettings 0
         scoreboard players set AirKB OldCombatSettings 0
-        scoreboard players set AirKBMode OldCombatSettings 0
+        scoreboard players set AirKBMix OldCombatSettings 85
         scoreboard players set FishingRodKnockback OldCombatSettings 0
         scoreboard players set FishingBobberBoost.X OldCombatSettings 150
         scoreboard players set FishingBobberBoost.Y OldCombatSettings 100
-        scoreboard players set AirKBForce OldCombatSettings 40
+        scoreboard players set AirKBForce OldCombatSettings 50
         scoreboard players set OldRegen OldCombatSettings 0
         scoreboard players set regenRate OldCombatSettings 80
         scoreboard players set DisableModernPVPItems OldCombatSettings 0
@@ -771,12 +771,12 @@ function startup minecraft:load {
         scoreboard players set DisableSprint OldCombatSettings 0
         scoreboard players set DisableKBResist OldCombatSettings 1
         scoreboard players set AirKB OldCombatSettings 1
-        scoreboard players set AirKBMode OldCombatSettings 0
+        scoreboard players set AirKBMix OldCombatSettings 85
         scoreboard players set FishingRodKnockback OldCombatSettings 1
         scoreboard players set FurtherFishingBobber OldCombatSettings 1
         scoreboard players set FishingBobberBoost.X OldCombatSettings 150
         scoreboard players set FishingBobberBoost.Y OldCombatSettings 100
-        scoreboard players set AirKBForce OldCombatSettings 40
+        scoreboard players set AirKBForce OldCombatSettings 50
         scoreboard players set OldRegen OldCombatSettings 1
         scoreboard players set regenRate OldCombatSettings 80
         scoreboard players set DisableModernPVPItems OldCombatSettings 0
@@ -885,7 +885,8 @@ dir noconfirm {
         scoreboard players set FishingRodKnockback OldCombatSettings 1
         scoreboard players set FishingBobberBoost.X OldCombatSettings 150
         scoreboard players set FishingBobberBoost.Y OldCombatSettings 100
-        scoreboard players set AirKBForce OldCombatSettings 40
+        scoreboard players set AirKBForce OldCombatSettings 50
+        scoreboard players set AirKBMix OldCombatSettings 85
         scoreboard players set OldRegen OldCombatSettings 1
         scoreboard players set regenRate OldCombatSettings 80
         scoreboard players set DisableModernPVPItems OldCombatSettings 0
@@ -919,27 +920,26 @@ function uninstall {
 
 function air_knockback {
     execute if score @s HurtByTimestamp = @s LastHurtByTimestamp unless entity @s[type=player] run return fail
-    execute unless data entity @s {HurtTime:10s} unless data entity @s {HurtTime:9s} unless data entity @s {HurtTime:8s} run return fail
-    execute if score AirKB OldCombatSettings matches 1 run {
-        execute unless data entity @s {Motion:[0.0d,0.0d,0.0d]} if entity @s[scores={WasOnGround=0},nbt={OnGround:0b}] run {
+    execute unless data entity @s {HurtTime:10s} unless data entity @s {HurtTime:9s} unless data entity @s {HurtTime:8s} unless entity @s[type=player] run return fail
+     
+    execute if score AirKB OldCombatSettings matches 1 unless entity @s[tag=tempIgnoreAirKB] run {
+        execute unless data entity @s {Motion:[0.0d,0.0d,0.0d]} if entity @s[nbt={OnGround:0b}] run {
             execute on attacker if entity @s[tag=oldcombatignore] run return fail
             execute store result score vel OldCombatTemp run data get entity @s Motion[1] 100
-            execute if score AirKBMode OldCombatSettings matches 1 run {
-                scoreboard players operation vel2 OldCombatTemp = vel OldCombatTemp
-                # tellraw @a {score:{name:"vel",objective:"OldCombatTemp"}}
-                scoreboard players operation vel OldCombatTemp = AirKBForce OldCombatSettings
-                scoreboard players set 100 OldCombatTemp 100
-                
-                # tellraw @a {score:{name:"vel",objective:"OldCombatTemp"}}
-                scoreboard players operation vel OldCombatTemp -= vel2 OldCombatTemp
-                # tellraw @a {score:{name:"vel",objective:"OldCombatTemp"}}
-                scoreboard players operation vel OldCombatTemp *= AirKBMix OldCombatSettings
-                # tellraw @a {score:{name:"vel",objective:"OldCombatTemp"}}
-                scoreboard players operation vel OldCombatTemp /= 100 OldCombatTemp
-                # tellraw @a {score:{name:"vel",objective:"OldCombatTemp"}}
-                scoreboard players operation vel OldCombatTemp += vel2 OldCombatTemp
-                # tellraw @a {score:{name:"vel",objective:"OldCombatTemp"}}
-            }
+            scoreboard players operation vel2 OldCombatTemp = vel OldCombatTemp
+            # tellraw @a {score:{name:"vel",objective:"OldCombatTemp"}}
+            scoreboard players operation vel OldCombatTemp = AirKBForce OldCombatSettings
+            scoreboard players set 100 OldCombatTemp 100
+            
+            # tellraw @a {score:{name:"vel",objective:"OldCombatTemp"}}
+            scoreboard players operation vel OldCombatTemp -= vel2 OldCombatTemp
+            # tellraw @a {score:{name:"vel",objective:"OldCombatTemp"}}
+            scoreboard players operation vel OldCombatTemp *= AirKBMix OldCombatSettings
+            # tellraw @a {score:{name:"vel",objective:"OldCombatTemp"}}
+            scoreboard players operation vel OldCombatTemp /= 100 OldCombatTemp
+            # tellraw @a {score:{name:"vel",objective:"OldCombatTemp"}}
+            scoreboard players operation vel OldCombatTemp += vel2 OldCombatTemp
+            # tellraw @a {score:{name:"vel",objective:"OldCombatTemp"}}
             execute if score aputils OldCombatTemp matches 0 run {
                 execute store result entity @s Motion[1] double 0.01 run scoreboard players get vel OldCombatTemp
             } else execute run {
@@ -955,6 +955,7 @@ function air_knockback {
         }
         tag @s add akbprocessed
     }
+    tag @s remove tempIgnoreAirKB
 }
 
 function disable_cooldown {
@@ -980,6 +981,7 @@ function disable_sprinting {
         attribute @s movement_speed modifier remove minecraft:sprinting
     }
 }
+
 
 
 function disable_kb_resist {
