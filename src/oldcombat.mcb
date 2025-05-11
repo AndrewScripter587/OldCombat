@@ -69,6 +69,7 @@ function on_tick minecraft:tick {
 
 function detect_aputils {
     execute store result score aputils OldCombatTemp run aputils heartbeat
+    execute store result score aputilsver OldCombatTemp run aputils loader
 }
 
 function fishing_rod_kb {
@@ -741,6 +742,7 @@ function startup minecraft:load {
     scoreboard objectives add HurtByTimestamp dummy
     scoreboard objectives add LastHurtByTimestamp dummy
     scoreboard players set aputils OldCombatTemp 0
+    scoreboard players set aputilsver OldCombatTemp -1
     function detect_aputils
     execute if score aputils OldCombatTemp matches 0 run {
         IF $1_21_4compile==false {
