@@ -962,8 +962,9 @@ function air_knockback {
 
 function disable_cooldown {
     execute if score DisableAttackCooldown OldCombatSettings matches 1 unless entity @s[tag=oldcombatignore] run {
-        attribute @s attack_speed modifier remove minecraft:base_attack_speed
-        attribute @s attack_speed modifier add minecraft:base_attack_speed 100 add_value
+        attribute @s attack_speed modifier add oldcombat:disable 1000 add_value
+    } else execute run {
+        attribute @s attack_speed modifier remove oldcombat:disable
     }
 }
 
