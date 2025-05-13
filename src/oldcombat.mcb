@@ -34,6 +34,8 @@ function on_tick minecraft:tick {
         scoreboard players remove StartDelay OldCombatTemp 1
     } else execute run {
             execute as @a run {
+                execute unless score @s Hunger matches -1 store result entity @s foodLevel int 1 run scoreboard players get @s Hunger
+                
                 function disable_modern_items
                 function disable_netherite_items
                 function block_offhand
@@ -43,13 +45,8 @@ function on_tick minecraft:tick {
                 function old_tool_damages
                 function disable_sprinting
                 function old_regen
+                function disable_swimming
             }
-#            execute as @e[nbt={HurtTime:10s},type=!ender_dragon,tag=!bkbprocessed] run function buff_knockback
-#            execute as @e[nbt={HurtTime:10s},type=!ender_dragon,tag=!akbprocessed] run function air_knockback
-#            execute as @e[nbt={HurtTime:9s},type=!ender_dragon,tag=!bkbprocessed] run function buff_knockback
-#            execute as @e[nbt={HurtTime:9s},type=!ender_dragon,tag=!akbprocessed] run function air_knockback
-#            execute as @e[nbt={HurtTime:9s},type=!ender_dragon,tag=bkbprocessed] run tag @s remove bkbprocessed
-#            execute as @e[nbt={HurtTime:9s},type=!ender_dragon,tag=akbprocessed] run tag @s remove akbprocessed
             execute as @e[type=!player] run {
                 scoreboard players operation @s LastHurtByTimestamp = @s HurtByTimestamp
                 execute store result score @s HurtByTimestamp run data get entity @s HurtByTimestamp
@@ -131,7 +128,8 @@ dir config {
             submenu legacy <%"Disabling items"%> <%"Some tweaks for disabling various items."%> oldcombat:config/subconfig/itemdisable
             boolean_input legacy <%"Nerf Shields"%> <%"Makes Shields block 66% of incoming melee damage like they did before 1.11. Damage from projectiles such as arrows are still completely blocked, because they were completely blocked before 1.11. You still take knockback from projectiles for unknown reasons. Disabled because you're using 1.21.4."%> OldCombatSettings ShieldNerf disabled true 
             boolean_input legacy <%"Disable Attack Sounds"%> <%"\"Disables\" attack sounds such as sweep attack, critical attack, knockback attack, etc. Not perfect, sounds will still play for 1 tick before being cancelled. However, this imperfection is usually masked out by other ongoing sounds, like a mob or player taking damage, so it doesn't really have to be perfect."%> OldCombatSettings DisableAttackSounds <%"oldcombat:config/page1"%>
-            emptyline 4
+            boolean_input legacy <%"Disable Swimming"%> <%"Sets the player's hunger to 3 bars while they're in water to effectively disable 1.13's swimming. Disables natural health regeneration when in water if Old Health Regeneration is off. Note: Saturation gain from eating and the Saturation effect is limited to 6 hunger points a tick for technical restrictions, so food like golden carrots are less effective."%> OldCombatSettings DisableSwimming disabled condition <%"unless score aputils OldCombatTemp matches 1"%> <%"oldcombat:config/page1"%>
+            emptyline 2
             pagebar legacy 1 <%"oldcombat:config"%>
         } ELSE {
             tellraw @s "Old Combat Configuration"
@@ -139,10 +137,10 @@ dir config {
             boolean_input <%"Disable Offhand Slot"%> <%"If true, completely disables the offhand slot. Any items in the offhand slot when this is true will be dropped on the ground."%> OldCombatSettings DisableOffhand oldcombat:config
             boolean_input <%"Disable Attack Cooldown"%> <%"If true, completely disables the attack cooldown mechanic."%> OldCombatSettings DisableAttackCooldown oldcombat:config
             boolean_input <%"Old Tool Damages"%> <%"If true, tools (mainly axes) will do their pre-1.9 attack damage. Note: the attack damage tooltip on the tool will still show the normal amount, but the tool will deal the old amount of damage."%> OldCombatSettings OldToolDamage oldcombat:config
-            boolean_input <%"Allow Critical Hits While Sprinting"%> <%"Enables getting critical hits while sprinting. After the combat update, you can no longer get a critical hit for your first hit during a sprint, you would just do a knockback attack instead. This setting, if true, allows players to crit for that first hit. This doesn't stop the knockback attack from happening, though, so you can get a crit and knockback attack at the same time. Due to technical restrictions, the critical hit will happen one tick after the player attacks a mob. Technical restrictions prevent the hitting a mob detection from happening on the same tick the attack happens. See https://modrinth.com/datapack/sprinting-crits for more about this mechanic."%> OldCombatSettings SprintingCrits disabled condition <%"if score DisableSprint OldCombatSettings matches 1"%> oldcombat:config
+            boolean_input <%"Allow Critical Hits While Sprinting"%> <%"Enables getting critical hits while sprinting. After the combat update, you can no longer get a critical hit for your first hit during a sprint, you would just do a knockback attack instead. This setting, if true, allows players to crit for that first hit. This doesn't stop the knockback attack from happening, though, so you can get a crit and knockback attack at the same time. Due to technical restrictions, the critical hit will happen one tick after the player attacks a mob. Technical restrictions prevent the hitting a mob detection from happening on the same tick the attack happens.  Direct port of my Sprinting Crits datapack, with better detection if Andrew's Datapack Utilities is installed. See https://modrinth.com/datapack/sprinting-crits for more about this mechanic."%> OldCombatSettings SprintingCrits disabled condition <%"if score DisableSprint OldCombatSettings matches 1"%> oldcombat:config
             boolean_input <%"Disable Sprinting"%> <%"NOTICE: This doesn't prevent certain sprinting-related actions from happening, such as knockback attacks, the exhaustion from sprinting, the sprint-jump speed-boost, etc. This tweak only removes the attribute modifier (minecraft:sprinting) that increases your speed while sprinting. This will, however, prevent the sprinting-crits setting from working since it relies on this attribute modifier being applied to detect sprinting"%> OldCombatSettings DisableSprint oldcombat:config
             boolean_input <%"Disable Knockback Resistance"%> <%"Removes all forms of knockback resistance such as the partial knockback resistance provided by netherite armor, the full knockback resistance iron golems and wardens have, etc."%> OldCombatSettings DisableKBResist oldcombat:config
-            boolean_input <%"Knockback Effective In Air"%> <%"NOTICE: This will NOT apply to players, UNLESS you have Andrew's Datapack Utils Fabric mod installed. Makes knockback from attacks as effective in the air as it is on the ground."%> OldCombatSettings AirKB oldcombat:config oldcombat:config/subconfig/airkb
+            boolean_input <%"Knockback Effective In Air"%> <%"NOTICE: This will NOT apply to players, UNLESS you have Andrew's Datapack Utilities, which is my Fabric mod, installed. Makes knockback from attacks as effective in the air as it is on the ground."%> OldCombatSettings AirKB oldcombat:config oldcombat:config/subconfig/airkb
             boolean_input <%"Fishing Rod Knockback"%> <%"Makes fishing rod bobbers do knockback by applying 0.01 damage to entities hit by the bobber. Note: The damage and knockback will apply 1 tick after the fishing rod attaches to the entity. This is a technical restriction that is hard to work around."%> OldCombatSettings FishingRodKnockback oldcombat:config
             boolean_input <%"Fishing Bobbers Go Further"%> <%"Makes fishing rod bobbers go further when launched from a fishing rod by multiplying the bobber's velocity by a certain amount. This isn't that accurate to pre-combat update physics as that would be hard to make. Note: The velocity change happens 1 tick after the fishing bobber entity is created, causing the fishing bobber to go at the vanilla speed for 1 tick. This is a technical restriction that is hard to work around."%> OldCombatSettings FurtherFishingBobber oldcombat:config oldcombat:config/subconfig/fishingrodboost
             boolean_input <%"Old Regeneration"%> <%"NOTICE: Doesn't work without Andrew's DataPack Lib (a Fabric, soon to be NeoForge as well, mod that you can find on Modrinth) in order to modify player data. Makes health regeneration work like it did before the combat update, where you regain half a heart every 4 seconds, and having saturation left doesn't speed it up."%> OldCombatSettings OldRegen disabled condition <%"unless score aputils OldCombatTemp matches 1"%> oldcombat:config oldcombat:config/subconfig/oldregen
@@ -150,7 +148,8 @@ dir config {
             submenu <%"Disabling items"%> <%"Some tweaks for disabling various items."%> oldcombat:config/subconfig/itemdisable
             boolean_input <%"Nerf Shields"%> <%"Makes Shields block 66% of incoming melee damage like they did before 1.11. Damage from projectiles such as arrows are still completely blocked, because they were completely blocked before 1.11. You still take knockback from projectiles for unknown reasons."%> OldCombatSettings ShieldNerf <%"oldcombat:config/page1"%>
             boolean_input <%"Disable Attack Sounds"%> <%"\\\"Disables\\\" attack sounds such as sweep attack, critical attack, knockback attack, etc. Not perfect, sounds will still play for 1 tick before being cancelled. However, this imperfection is usually masked out by other ongoing sounds, like a mob or player taking damage, so it doesn't really have to be perfect. However, the cutoff is very noticable for the 'no damage' sound, and there are some other imperfections, so this setting isn't defaulted to on."%> OldCombatSettings DisableAttackSounds <%"oldcombat:config/page1"%>
-            emptyline 3
+            boolean_input <%"Disable Swimming"%> <%"Requires Andrew's Datapack Utilities. Sets the player's food level to 3 bars while they're in water to effectively disable 1.13's swimming. Don't worry, the food level gets restored upon leaving the water, and all changes that would have been made to the food level will be reflected once you leave the water. Disables natural health regeneration when in water if Old Health Regeneration is off."%> OldCombatSettings DisableSwimming disabled condition <%"unless score aputils OldCombatTemp matches 1"%> <%"oldcombat:config/page1"%>
+            emptyline 2
             pagebar 1 <%"oldcombat:config"%>
         }
     }
@@ -161,7 +160,6 @@ dir config {
                 single_button legacy <%"Go back"%> white <%"/function oldcombat:config/page1"%>
                 textline {"text":"IMPORTANT (See tooltip)","hoverEvent":{"action":"show_text","value":"When this screen refers to 'velocity', it actually means only the entity's vertical velocity, NOT horizontal."}}
                 numeric_input legacy <%"Air Knockback Strength"%> <%"Amount of vertical knockback applied to entities in the air by the above setting, in centimeters per tick. For reference, 1 cubic meter = 1 minecraft block, 100 cm = 1 meter, 20 ticks in 1 second."%> OldCombatSettings AirKBForce 10 oldcombat:config/subconfig/airkb
-#                boolean_input <%"Set/Mix (See Tooltip)"%> <%"If false, sets the velocity of the entity. If true, it mixes the entity's current velocity with the Air Knockback Strength velocity, use the setting below to control this."%> OldCombatSettings AirKBMode oldcombat:config/subconfig/airkb
                 numeric_input legacy <%"Air Knockback Mix Amount"%> <%"Mix amount for the above setting. A value of 0 means no mixing will happen and the entity's velocity won't change, a value of 100 means the entity's velocity will get set to the Air Knockback Strength. A value of 50 means the entity's velocity will get set to the value in the middle of the entity's current velocity and the Air Knockback Strength. Weird effects happen above 100 and below 0."%> OldCombatSettings AirKBMix 5 oldcombat:config/subconfig/airkb
                 emptyline 14
             } ELSE {
@@ -169,7 +167,6 @@ dir config {
                 single_button <%"Go back"%> white <%"/function oldcombat:config/page1"%>
                 textline {text:"IMPORTANT (See tooltip)",hover_event:{action:show_text,value:"When this screen refers to 'velocity', it actually means only the entity's vertical velocity, NOT horizontal."}}
                 numeric_input <%"Air Knockback Strength"%> <%"Amount of vertical knockback applied to entities in the air by the above setting, in centimeters per tick. For reference, 1 cubic meter = 1 minecraft block, 100 cm = 1 meter, 20 ticks in 1 second."%> OldCombatSettings AirKBForce 10 oldcombat:config/subconfig/airkb
-#                 boolean_input <%"Set/Mix (See Tooltip)"%> <%"If false, sets the velocity of the entity. If true, it mixes the entity's current velocity with the Air Knockback Strength velocity, use the setting below to control this."%> OldCombatSettings AirKBMode oldcombat:config/subconfig/airkb
                 numeric_input <%"Air Knockback Mix Amount"%> <%"Mix amount for the knockback, mixing the above value with the current velocity. A value of 0 means no mixing will happen and the entity's velocity won't change, a value of 100 means the entity's velocity will get set to the Air Knockback Strength. A value of 50 means the entity's velocity will get set to the value in the middle of the entity's current velocity and the Air Knockback Strength. Weird effects happen above 100 and below 0."%> OldCombatSettings AirKBMix 5 oldcombat:config/subconfig/airkb
                 emptyline 15
             }
@@ -291,6 +288,7 @@ dir presets {
         scoreboard players set ReturnMaterialsOfDisabledItems OldCombatSettings 1
         scoreboard players set ShieldNerf OldCombatSettings 1
         scoreboard players set DisableAttackSounds OldCombatSettings 0
+        scoreboard players set DisableSwimming OldCombatSettings 1
     }
     function 1.9 {
         scoreboard players set DisableOffhand OldCombatSettings 0
@@ -318,6 +316,7 @@ dir presets {
         scoreboard players set ReturnMaterialsOfDisabledItems OldCombatSettings 1
         scoreboard players set ShieldNerf OldCombatSettings 1
         scoreboard players set DisableAttackSounds OldCombatSettings 0
+        scoreboard players set DisableSwimming OldCombatSettings 1
     }
     function 1.11 {
         scoreboard players set DisableOffhand OldCombatSettings 0
@@ -345,6 +344,35 @@ dir presets {
         scoreboard players set ReturnMaterialsOfDisabledItems OldCombatSettings 1
         scoreboard players set ShieldNerf OldCombatSettings 0
         scoreboard players set DisableAttackSounds OldCombatSettings 0
+        scoreboard players set DisableSwimming OldCombatSettings 1
+    }
+    function 1.13 {
+        scoreboard players set DisableOffhand OldCombatSettings 0
+        scoreboard players set BuffKB OldCombatSettings 0
+        scoreboard players set BuffKBValue.X OldCombatSettings 125
+        scoreboard players set BuffKBValue.Y OldCombatSettings 105
+        scoreboard players set DisableAttackCooldown OldCombatSettings 0
+        scoreboard players set SwordBlocking OldCombatSettings 0
+        scoreboard players set RegenExhaustion OldCombatSettings 600
+        scoreboard players set OldToolDamage OldCombatSettings 0
+        scoreboard players set SprintingCrits OldCombatSettings 0
+        scoreboard players set DisableSprint OldCombatSettings 0
+        scoreboard players set DisableKBResist OldCombatSettings 0
+        scoreboard players set AirKB OldCombatSettings 0
+        scoreboard players set AirKBMix OldCombatSettings 85
+        scoreboard players set FishingRodKnockback OldCombatSettings 0
+        scoreboard players set FishingBobberBoost.X OldCombatSettings 150
+        scoreboard players set FishingBobberBoost.Y OldCombatSettings 100
+        scoreboard players set AirKBForce OldCombatSettings 50
+        scoreboard players set OldRegen OldCombatSettings 0
+        scoreboard players set regenRate OldCombatSettings 80
+        scoreboard players set DisableModernPVPItems OldCombatSettings 0
+        scoreboard players set DisableNetheriteItems OldCombatSettings 0
+        scoreboard players set BreakDisabledTools OldCombatSettings 1
+        scoreboard players set ReturnMaterialsOfDisabledItems OldCombatSettings 1
+        scoreboard players set ShieldNerf OldCombatSettings 0
+        scoreboard players set DisableAttackSounds OldCombatSettings 0
+        scoreboard players set DisableSwimming OldCombatSettings 0
     }
 
 }
@@ -741,6 +769,10 @@ function startup minecraft:load {
     scoreboard objectives add OnGround dummy
     scoreboard objectives add HurtByTimestamp dummy
     scoreboard objectives add LastHurtByTimestamp dummy
+    scoreboard objectives add Hunger dummy
+    scoreboard objectives add HungerSat dummy
+    scoreboard objectives add TicksInWater dummy
+    scoreboard objectives add Food food
     scoreboard players set aputils OldCombatTemp 0
     scoreboard players set aputilsver OldCombatTemp -1
     function detect_aputils
@@ -787,6 +819,7 @@ function startup minecraft:load {
         scoreboard players set ReturnMaterialsOfDisabledItems OldCombatSettings 1
         scoreboard players set ShieldNerf OldCombatSettings 1
         scoreboard players set DisableAttackSounds OldCombatSettings 0
+        scoreboard players set DisableSwimming OldCombatSettings 0
         scoreboard players operation PreviousDataVersion OldCombatSettings = DataVersion OldCombatSettings
         scoreboard players set DataVersion OldCombatSettings <%data_version%>
     } else execute run {
@@ -811,7 +844,8 @@ function reset {
 
 function old_regen {
     execute if score OldRegen OldCombatSettings matches 1 unless entity @s[tag=oldcombatignore] unless entity @s[nbt={Health:0f}] run {
-    execute store result score foodLevel OldCombatTemp run data get entity @s foodLevel 1
+    execute if score @s Hunger matches -1.. store result score foodLevel OldCombatTemp run data get entity @s foodLevel 1
+    execute unless score @s Hunger matches -1.. run scoreboard players operation @s foodLevel = @s Hunger
     execute store result score foodSaturationLevel OldCombatTemp run data get entity @s foodSaturationLevel 1
     # these two values are floating point so they are going to be scaled by 100 to keep most of the meaningful precision
     execute store result score foodExhaustionLevel OldCombatTemp run data get entity @s foodExhaustionLevel 100
@@ -856,6 +890,7 @@ dir noconfirm {
         scoreboard players set DisableNetheriteItems OldCombatSettings 0
         scoreboard players set ShieldNerf OldCombatSettings 0
         scoreboard players set DisableAttackSounds OldCombatSettings 0
+        scoreboard players set DisableSwimming OldCombatSettings 0
     }
 
     function defaults {
@@ -897,6 +932,7 @@ dir noconfirm {
         scoreboard players set ReturnMaterialsOfDisabledItems OldCombatSettings 1
         scoreboard players set ShieldNerf OldCombatSettings 1
         scoreboard players set DisableAttackSounds OldCombatSettings 1
+        scoreboard players set DisableSwimming OldCombatSettings 0
         scoreboard players operation PreviousDataVersion OldCombatSettings = DataVersion OldCombatSettings
         scoreboard players set DataVersion OldCombatSettings <%data_version%>
 
@@ -1037,8 +1073,8 @@ tag damage_type bypasses_sword_blocking {
 
 function sword_blocking {
     execute if score SwordBlocking OldCombatSettings matches 1 unless entity @s[tag=oldcombatignore] if items entity @s weapon.mainhand #minecraft:swords[!blocks_attacks] run {
-        modify_held_components {"minecraft:blocks_attacks":{disable_cooldown_scale:0,damage_reductions:[{base:0,factor:0.5,horizontal_blocking_angle:180}],block_sound:"entity.player.hurt",item_damage:{threshold:0f,base:0f,factor:0f},bypassed_by:"#oldcombat:bypasses_sword_blocking"}}
-    } else execute if score SwordBlocking OldCombatSettings matches 0 run {
+        modify_held_components {"minecraft:blocks_attacks":{disable_cooldown_scale:0,damage_reductions:[{base:0,factor:0.5,horizontal_blocking_angle:180}],block_sound:"entity.player.hurt",item_damage:{threshold:0f,base:0f,factor:0f},bypassed_by:"#oldcombat:bypasses_sword_blocking"},"minecraft:custom_data":{oldcombat.modified:true}}
+    } else execute if score SwordBlocking OldCombatSettings matches 0 if items entity @s weapon.mainhand #minecraft:swords[!custom_data={oldcombat.modified:true}] run {
         remove_held_component "minecraft:blocks_attacks"
     }
 }
@@ -1046,12 +1082,12 @@ function sword_blocking {
 function nerf_shields {
     execute if score ShieldNerf OldCombatSettings matches 1 unless entity @s[tag=oldcombatignore] if items entity @s weapon.mainhand shield[!custom_data={oldcombat.modified:true}] run {
         modify_held_components {"minecraft:blocks_attacks":{disable_cooldown_scale:1,damage_reductions:[{base:0,factor:0.66,horizontal_blocking_angle:90},{base:0,factor:1,horizontal_blocking_angle:90,type:"#minecraft:is_projectile"}],block_sound:"item.shield.block",item_damage:{threshold:0f,base:0f,factor:0f},block_delay_seconds:0.25,bypassed_by:"#bypasses_shield"},custom_data:{oldcombat.modified:true}}
-    } else execute if score ShieldNerf OldCombatSettings matches 0 run {
+    } else execute if score ShieldNerf OldCombatSettings matches 0 if items entity @s weapon.mainhand shield[!custom_data={oldcombat.modified:true}] run {
         remove_held_component "minecraft:blocks_attacks"
     }
     execute if score ShieldNerf OldCombatSettings matches 1 unless entity @s[tag=oldcombatignore] if items entity @s weapon.offhand shield[!custom_data={oldcombat.modified:true}] run {
         modify_offheld_components {"minecraft:blocks_attacks":{disable_cooldown_scale:1,damage_reductions:[{base:0,factor:0.66,horizontal_blocking_angle:90},{base:0,factor:1,horizontal_blocking_angle:90,type:"#minecraft:is_projectile"}],block_sound:"item.shield.block",item_damage:{threshold:0f,base:0f,factor:0f},block_delay_seconds:0.25,bypassed_by:"#bypasses_shield"},custom_data:{oldcombat.modified:true}}
-    } else execute if score ShieldNerf OldCombatSettings matches 0 run {
+    } else execute if score ShieldNerf OldCombatSettings matches 0 if items entity @s weapon.offhand shield[!custom_data={oldcombat.modified:true}] run {
         remove_offheld_component "minecraft:blocks_attacks"
     }
 
@@ -1109,3 +1145,34 @@ function heal {
     $execute store result entity @s Health float 0.1 run scoreboard players add Current OldCombatTemp $(value)
 }
 
+function disable_swimming {
+    execute if score DisableSwimming OldCombatSettings matches 1 at @s if block ~ ~ ~ water run {
+        scoreboard players set 20 OldCombatTemp 20
+
+        execute store result score foodLevel OldCombatTemp run data get entity @s foodLevel
+        execute store result score foodSaturationLevel OldCombatTemp run data get entity @s foodSaturationLevel
+        execute unless score @s Hunger matches -1 unless score @s Hunger matches ..6 run data modify entity @s foodLevel set value 6
+        execute if score @s Hunger matches -1 store result score @s HungerSat run scoreboard players get foodSaturationLevel OldCombatTemp
+        execute if score @s Hunger matches -1 store result score @s Hunger run scoreboard players get foodLevel OldCombatTemp
+        execute unless score @s Hunger matches -1 unless score @s Hunger matches ..6 run data modify entity @s foodLevel set value 6
+        execute store result score foodLevel OldCombatTemp run data get entity @s foodLevel
+        execute store result score foodExhaustionLevel OldCombatTemp run data get entity @s foodExhaustionLevel 100
+        scoreboard players operation Change OldCombatTemp = @s Food
+        scoreboard players remove Change OldCombatTemp 6
+        execute unless score @s TicksInWater matches 0 run scoreboard players operation @s Hunger += Change OldCombatTemp
+
+        scoreboard players operation Change OldCombatTemp = foodSaturationLevel OldCombatTemp
+        execute unless score @s TicksInWater matches 0 run scoreboard players operation @s HungerSat += Change OldCombatTemp
+
+        execute unless score @s Hunger matches ..6 run data modify entity @s foodLevel set value 6
+        data modify entity @s foodSaturationLevel set value 0
+        scoreboard players add @s TicksInWater 1
+        scoreboard players operation @s Hunger < 20 OldCombatTemp
+        scoreboard players operation @s HungerSat < 20 OldCombatTemp
+    } else execute run {
+        execute unless score @s Hunger matches -1 store result entity @s foodLevel int 1 run scoreboard players get @s Hunger
+        execute unless score @s Hunger matches -1 store result entity @s foodSaturationLevel float 1 run scoreboard players get @s HungerSat
+        scoreboard players set @s Hunger -1
+        scoreboard players set @s TicksInWater 0
+    }
+}
