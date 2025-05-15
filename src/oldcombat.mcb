@@ -52,6 +52,7 @@ function on_tick minecraft:tick {
                 execute store result score @s HurtByTimestamp run data get entity @s HurtByTimestamp
                 function buff_knockback
                 function air_knockback
+                # function responsive_kb
             }
             function disable_kb_resist
             function enforce_locked_settings
@@ -60,9 +61,47 @@ function on_tick minecraft:tick {
             execute store result storage oldcombat:temp distx float 1 run scoreboard players get FishingBobberBoost.X OldCombatSettings
             execute store result storage oldcombat:temp disty float 1 run scoreboard players get FishingBobberBoost.Y OldCombatSettings
             function further_fishing_bobber with storage oldcombat:temp
-
     }
 }
+
+# function responsive_kb {
+#     execute if score @s HurtByTimestamp = @s LastHurtByTimestamp unless entity @s[type=player] run return fail
+#     execute if score Responsive OldCombatSettings matches 1 if entity @s[type=!player,type=!#impact_projectiles,type=!item,type=!ender_dragon,type=!wither,type=!experience_orb] run {
+#         tellraw @s "hi"
+#         execute store result score x OldCombatTemp run data get entity @s Pos[0] 100
+#         execute store result score y OldCombatTemp run data get entity @s Pos[1] 1000
+#         execute store result score z OldCombatTemp run data get entity @s Pos[2] 100
+#         execute store result score dx OldCombatTemp run data get entity @s Motion[0] 100
+#         execute store result score dy OldCombatTemp run data get entity @s Motion[1] 1000
+#         execute store result score dz OldCombatTemp run data get entity @s Motion[2] 100
+#         scoreboard players operation nx OldCombatTemp = x OldCombatTemp
+#         scoreboard players operation ny OldCombatTemp = y OldCombatTemp
+#         scoreboard players operation nz OldCombatTemp = z OldCombatTemp
+#         execute store result entity @s Pos[0] double 0.01 run scoreboard players operation nx OldCombatTemp += dx OldCombatTemp
+#         execute store result entity @s Pos[1] double 0.001 run scoreboard players operation ny OldCombatTemp += dy OldCombatTemp
+#         execute store result entity @s Pos[2] double 0.01 run scoreboard players operation nz OldCombatTemp += dz OldCombatTemp
+#         
+#         execute at @s unless blocks ~-0.5 ~ ~-0.5 ~0.5 ~2 ~0.5 ~ ~0.8 ~ masked run {
+#             
+#             execute store result entity @s Pos[0] double 0.01 run scoreboard players get x OldCombatTemp
+#             tellraw @a "no"
+#             execute store result entity @s Pos[1] double 0.001 run scoreboard players get y OldCombatTemp
+#             execute store result entity @s Pos[2] double 0.01 run scoreboard players get z OldCombatTemp
+# 
+#         } else execute run {
+#             tellraw @a "ow"
+#         }
+#     }
+# }
+
+# function store_entity_data {
+#     execute unless entity @s[type=!player,type=!#impact_projectiles,type=!item,type=!ender_dragon,type=!wither,type=!experience_orb] run return fail
+#     data modify entity @s data.oldcombat.lastPos set from entity @s data.oldcombat.Pos
+#     data modify entity @s data.oldcombat.lastLastPos set from entity @s data.oldcombat.lastPos
+#     data modify entity @s data.oldcombat.lastMotion set from entity @s data.oldcombat.Motion
+#     data modify entity @s data.oldcombat.Pos set from entity @s Pos
+#     data modify entity @s data.oldcombat.Motion set from entity @s Motion
+# }
 
 function detect_aputils {
     execute store result score aputils OldCombatTemp run aputils heartbeat
@@ -258,6 +297,7 @@ advancement just_took_damage {
 function on_damage {
     function buff_knockback
     function air_knockback
+    # function responsive_kb
     advancement revoke @s only oldcombat:just_took_damage
 }
 
@@ -756,8 +796,9 @@ function buff_knockback {
         }
 
     }
-    tag @s add bkbprocessed
+    
     }
+    
 }
 
 
@@ -1151,28 +1192,32 @@ function disable_swimming {
 
         execute store result score foodLevel OldCombatTemp run data get entity @s foodLevel
         execute store result score foodSaturationLevel OldCombatTemp run data get entity @s foodSaturationLevel
-        execute unless score @s Hunger matches -1 unless score @s Hunger matches ..6 run data modify entity @s foodLevel set value 6
-        execute if score @s Hunger matches -1 store result score @s HungerSat run scoreboard players get foodSaturationLevel OldCombatTemp
+        execute unless score @s Hunger matches -1 unless score @s Hunger matches ..1 run data modify entity @s foodLevel set value 1
+        execute if score @s HungerSat matches -1 store result score @s HungerSat run scoreboard players get foodSaturationLevel OldCombatTemp
         execute if score @s Hunger matches -1 store result score @s Hunger run scoreboard players get foodLevel OldCombatTemp
-        execute unless score @s Hunger matches -1 unless score @s Hunger matches ..6 run data modify entity @s foodLevel set value 6
+        execute unless score @s Hunger matches -1 unless score @s Hunger matches ..1 run data modify entity @s foodLevel set value 1
         execute store result score foodLevel OldCombatTemp run data get entity @s foodLevel
         execute store result score foodExhaustionLevel OldCombatTemp run data get entity @s foodExhaustionLevel 100
+
         scoreboard players operation Change OldCombatTemp = @s Food
-        scoreboard players remove Change OldCombatTemp 6
+        scoreboard players remove Change OldCombatTemp 1
         execute unless score @s TicksInWater matches 0 run scoreboard players operation @s Hunger += Change OldCombatTemp
 
+        # execute store result score foodSaturationLevel OldCombatTemp run data get entity @s foodSaturationLevel
         scoreboard players operation Change OldCombatTemp = foodSaturationLevel OldCombatTemp
+        scoreboard players add Change OldCombatTemp 0
         execute unless score @s TicksInWater matches 0 run scoreboard players operation @s HungerSat += Change OldCombatTemp
 
-        execute unless score @s Hunger matches ..6 run data modify entity @s foodLevel set value 6
-        data modify entity @s foodSaturationLevel set value 0
+        execute unless score @s Hunger matches ..1 run data modify entity @s foodLevel set value 1
+        execute unless score @s HungerSat matches ..1 run data modify entity @s foodSaturationLevel set value 0.01f
         scoreboard players add @s TicksInWater 1
         scoreboard players operation @s Hunger < 20 OldCombatTemp
         scoreboard players operation @s HungerSat < 20 OldCombatTemp
     } else execute run {
         execute unless score @s Hunger matches -1 store result entity @s foodLevel int 1 run scoreboard players get @s Hunger
-        execute unless score @s Hunger matches -1 store result entity @s foodSaturationLevel float 1 run scoreboard players get @s HungerSat
+        execute unless score @s HungerSat matches -1 store result entity @s foodSaturationLevel float 1 run scoreboard players get @s HungerSat
         scoreboard players set @s Hunger -1
+        scoreboard players set @s HungerSat -1
         scoreboard players set @s TicksInWater 0
     }
 }
