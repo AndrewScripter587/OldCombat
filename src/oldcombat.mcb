@@ -1000,7 +1000,7 @@ function uninstall {
 function air_knockback {
     execute if score @s HurtByTimestamp = @s LastHurtByTimestamp unless entity @s[type=player] run return fail
     execute unless data entity @s {HurtTime:10s} unless data entity @s {HurtTime:9s} unless data entity @s {HurtTime:8s} unless entity @s[type=player] run return fail
-     
+    execute if entity @s[type=endrer_dragon] run return fail
     execute if score AirKB OldCombatSettings matches 1 unless entity @s[tag=tempIgnoreAirKB] run {
         execute unless data entity @s {Motion:[0.0d,0.0d,0.0d]} if entity @s[nbt={OnGround:0b}] run {
             execute on attacker if entity @s[tag=oldcombatignore] run return fail
