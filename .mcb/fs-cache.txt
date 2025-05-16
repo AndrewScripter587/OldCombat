@@ -1,4 +1,4 @@
-data/oldcombat/function/print_mcb_context.mcfunction:e05adf3ea329fb10dbe75f6677ed88d03336652d
+data/oldcombat/function/print_mcb_context.mcfunction:e17332e5fe8a74a39991da16afd0d4cdef25ba1b
 data/oldcombat/function/on_load.mcfunction:c137f583a39a0f10976c4f412edd3c0d6257e0ab
 data/oldcombat/function/check_ground.mcfunction:c984e8159ac14ed9dd2e0e3cc69dec0a1b9bec79
 data/oldcombat/function/zzz/0.mcfunction:c90cdb9593af0b4dfbc817ed07bec152fb70a3a5
@@ -57,11 +57,11 @@ data/oldcombat/function/config/zzz/32.mcfunction:d3480e8fcae318828ffef51b066914e
 data/oldcombat/function/config/zzz/33.mcfunction:205e880e9d458c279e0c2ac3bc6b8c1294a4efb7
 data/oldcombat/function/config/zzz/34.mcfunction:4df0a36cda6a0a28303a2479428ce61a9db16e7c
 data/oldcombat/function/config/zzz/35.mcfunction:a41c6866f89d856693714658c028e09831e9c0d7
-data/oldcombat/function/config/zzz/37.mcfunction:4b1e0017d6196523c36c6bd80dc44e561dd65c06
-data/oldcombat/function/config/zzz/38.mcfunction:4f7eaf6619008771e23293f4dd13fea453990907
+data/oldcombat/function/config/zzz/37.mcfunction:0e40f017630f83de29dc889da44e788ccdf928f3
+data/oldcombat/function/config/zzz/38.mcfunction:f2d81ac1ae7b5e0511927327b63948952c7cb295
 data/oldcombat/function/config/zzz/36.mcfunction:c373b1d695c5a5d9f789bd69f37a58772697ac0a
-data/oldcombat/function/config/zzz/40.mcfunction:c79173a7adab8a936647cdc4de17037c84528f19
-data/oldcombat/function/config/zzz/41.mcfunction:578d13dd0050f4511e67854cdec44af24ec85bf0
+data/oldcombat/function/config/zzz/40.mcfunction:b1702eefe4f1397875c4b63790868650b7d64d2f
+data/oldcombat/function/config/zzz/41.mcfunction:00997758910cbbcd387b1194f540205d188a4d9e
 data/oldcombat/function/config/zzz/39.mcfunction:d8e3cfd4d21d17c78e225bd2edbc58997576e703
 data/oldcombat/function/config/zzz/42.mcfunction:c496e4c8dde7cdf79e142e2dc23398235148e414
 data/oldcombat/function/config/zzz/43.mcfunction:f394db7841411218966a26651c0c61c951e1fec7
@@ -196,9 +196,9 @@ data/oldcombat/function/zzz/112.mcfunction:46a315d901974a5eb35a237403340f9767c45
 data/oldcombat/function/zzz/110.mcfunction:4aec380616063e973cd5cc5d2563b2795221932d
 data/oldcombat/function/buff_knockback.mcfunction:f9e53faf0869c512b3e53922df623aad58ec00c6
 data/oldcombat/function/zzz/114.mcfunction:048190cdfe7eb0b110b7b6d875ef3877654c9b34
-data/oldcombat/function/zzz/115.mcfunction:675675c0c26a6fc30ac31ef0b7cca065e366ce5b
+data/oldcombat/function/zzz/115.mcfunction:d0cf854c25e778959b4b90259a48f25ad7859723
 data/oldcombat/function/zzz/116.mcfunction:3571ddcef33f41bf7da525071b663c90f83bb7ae
-data/oldcombat/function/startup.mcfunction:5850207f5f41fa8e026924f89e9b65ad9d3ade03
+data/oldcombat/function/startup.mcfunction:299a0d649a30a1756e733d83768a67bf9bbb7ec8
 data/oldcombat/function/spawn_marker_adjacent.mcfunction:9346dbeeabfe048c325610b9544f077ae0a09ede
 data/oldcombat/function/defaults.mcfunction:2755df278395b7bb3044f7b14eb78ceb16f7d1ed
 data/oldcombat/function/reset.mcfunction:82a93d2e27d2fbcdf48bf298477c754093eb8707
@@ -210,7 +210,7 @@ data/oldcombat/function/zzz/121.mcfunction:0f193627be515ae01875fd32a9880db8b9749
 data/oldcombat/function/old_regen.mcfunction:05855839ec4d24e230c249059b45f2545614d3fa
 data/oldcombat/function/noconfirm/disable.mcfunction:d7da544300b24a4782e2f769ad016d81efa59a58
 data/oldcombat/function/noconfirm/zzz/0.mcfunction:048190cdfe7eb0b110b7b6d875ef3877654c9b34
-data/oldcombat/function/noconfirm/defaults.mcfunction:ae93123920c3ce3cac2daee4d434bd9786fd2f20
+data/oldcombat/function/noconfirm/defaults.mcfunction:830ffe8986d090abd64416387aec6db63d25432c
 data/oldcombat/function/noconfirm/reset.mcfunction:00c9b2f9153e99398ab88d62596faee242b79a22
 data/oldcombat/function/noconfirm/uninstall.mcfunction:5dbea6d95595891a89c7d8bfec933b10a2ff1f38
 data/oldcombat/function/disable.mcfunction:65757ff6572ad304afef861d814bc06290206544
@@ -238,7 +238,7 @@ data/oldcombat/tags/entitie/large_hitboxes.json:c20238abaecbcf56664faa290e12e7fb
 data/oldcombat/tags/damage_type/bypasses_sword_blocking.json:fdb462e0a6355dc348cc015b78cd0a8d56bd4623
 data/oldcombat/function/zzz/134.mcfunction:5ff767683af78cc780bb60ec2e0b5904cda9dd32
 data/oldcombat/function/zzz/135.mcfunction:7c53068bc655a41daa357f8d6b4e1fdcf84336f2
-data/oldcombat/function/sword_blocking.mcfunction:099169df1b4fd7739e90a4adccd6ba4210fd7b0c
+data/oldcombat/function/sword_blocking.mcfunction:596474c5bbfd5f14f98967c7c99a6f52669b89e7
 data/oldcombat/function/zzz/136.mcfunction:302dcf26f3a6f28be03be365c510707d0b35d308
 data/oldcombat/function/zzz/137.mcfunction:7c53068bc655a41daa357f8d6b4e1fdcf84336f2
 data/oldcombat/function/zzz/138.mcfunction:be970260d0e1ecfdc8133cb791ffa2edc89f3825
@@ -257,7 +257,7 @@ data/oldcombat/function/throw_held.mcfunction:c1c742e8d55c132b0ac31f0c016cab7e3b
 data/oldcombat/function/debug/repairheld.mcfunction:923411442b703c500e5a1a7add5d76fa6d84b091
 data/oldcombat/function/debug/modify_held_components.mcfunction:326e094f003b1b70c6cbd950b2a5d67001b21699
 data/oldcombat/function/debug/remove_held_component.mcfunction:8d2599697c41f66d40057f73f4292a3b363168fc
-data/oldcombat/function/debug/info.mcfunction:b53d91970b89e3ffdca762086bcf106f7f650d5b
+data/oldcombat/function/debug/info.mcfunction:39d5b0cb950e05e7011e816030c7f936b689ebea
 data/oldcombat/function/heal.mcfunction:49c014619d2c65a90506e1ec45b5aa6481349214
 data/oldcombat/function/zzz/145.mcfunction:5c1ec503789fbe3b6cd283078d63604789a39866
 data/oldcombat/function/zzz/146.mcfunction:343df9e003266fa2e2b081f68a7534c283f3077e
