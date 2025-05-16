@@ -199,7 +199,8 @@ dir config {
             boolean_input legacy <%"Nerf Shields"%> <%"Makes Shields block 66% of incoming melee damage like they did before 1.11. Damage from projectiles such as arrows are still completely blocked, because they were completely blocked before 1.11. You still take knockback from projectiles for unknown reasons. Disabled because you're using 1.21.4."%> OldCombatSettings ShieldNerf disabled true 
             boolean_input legacy <%"Disable Attack Sounds"%> <%"\"Disables\" attack sounds such as sweep attack, critical attack, knockback attack, etc. Not perfect, sounds will still play for 1 tick before being cancelled. However, this imperfection is usually masked out by other ongoing sounds, like a mob or player taking damage, so it doesn't really have to be perfect."%> OldCombatSettings DisableAttackSounds <%"oldcombat:config/page1"%>
             boolean_input legacy <%"Disable Swimming"%> <%"Sets the player's hunger to 3 bars while they're in water to effectively disable 1.13's swimming. Disables natural health regeneration when in water if Old Health Regeneration is off. Note: Saturation gain from eating and the Saturation effect is limited to 6 hunger points a tick for technical restrictions, so food like golden carrots are less effective."%> OldCombatSettings DisableSwimming disabled condition <%"unless score aputils OldCombatTemp matches 1"%> <%"oldcombat:config/page1"%>
-            emptyline 2
+            boolean_input legacy <%"Old Sharpness Damage"%> <%"Boosts sharpness to its old power, 1.25 damage per level."%> OldCombatSettings OldSharpness <%"oldcombat:config/page1"%> oldcombat:config/subconfig/sharpness
+            emptyline 1
             pagebar legacy 1 <%"oldcombat:config"%>
         } ELSE {
             tellraw @s "Old Combat Configuration"
@@ -219,7 +220,8 @@ dir config {
             boolean_input <%"Nerf Shields"%> <%"Makes Shields block 66% of incoming melee damage like they did before 1.11. Damage from projectiles such as arrows are still completely blocked, because they were completely blocked before 1.11. You still take knockback from projectiles for unknown reasons."%> OldCombatSettings ShieldNerf <%"oldcombat:config/page1"%>
             boolean_input <%"Disable Attack Sounds"%> <%"\\\"Disables\\\" attack sounds such as sweep attack, critical attack, knockback attack, etc. Not perfect, sounds will still play for 1 tick before being cancelled. However, this imperfection is usually masked out by other ongoing sounds, like a mob or player taking damage, so it doesn't really have to be perfect. However, the cutoff is very noticable for the 'no damage' sound, and there are some other imperfections, so this setting isn't defaulted to on."%> OldCombatSettings DisableAttackSounds <%"oldcombat:config/page1"%>
             boolean_input <%"Disable Swimming"%> <%"Requires Andrew's Datapack Utilities. Sets the player's food level to 3 bars while they're in water to effectively disable 1.13's swimming. Don't worry, the food level gets restored upon leaving the water, and all changes that would have been made to the food level will be reflected once you leave the water. Disables natural health regeneration when in water if Old Health Regeneration is off."%> OldCombatSettings DisableSwimming disabled condition <%"unless score aputils OldCombatTemp matches 1"%> <%"oldcombat:config/page1"%>
-            emptyline 2
+            boolean_input <%"Old Sharpness Damage"%> <%"Boosts sharpness to its old power, 1.25 damage per level."%> OldCombatSettings OldSharpness oldcombat:config/page1 oldcombat:config/subconfig/sharpness
+            emptyline 1
             pagebar 1 <%"oldcombat:config"%>
         }
     }
@@ -308,6 +310,23 @@ dir config {
             }
 
         }
+        function sharpness {
+            IF $1_21_4compile==true {
+                textline "Configuration for Old Sharpness"
+                single_button legacy <%"Go back"%> white <%"/function oldcombat:config/page1"%>
+                numeric_input legacy <%"Base Damage"%> <%"How much damage having sharpness at all deals extra. 100 = half a heart."%> OldCombatSettings SharpnessBase 5 oldcombat:config/subconfig/sharpness
+                numeric_input legacy <%"Level Damage"%> <%"How much damage is dealt extra per level of sharpness. 100 = half a heart."%> OldCombatSettings SharpnessBoost 5 oldcombat:config/subconfig/sharpness
+                emptyline 16
+            } ELSE {
+                textline "Configuration for Old Sharpness"
+                single_button <%"Go back"%> white <%"/function oldcombat:config/page1"%>
+                numeric_input <%"Base Damage"%> <%"How much damage having sharpness at all deals extra. 100 = half a heart."%> OldCombatSettings SharpnessBase 5 oldcombat:config/subconfig/sharpness
+                numeric_input <%"Level Damage"%> <%"How much damage is dealt extra per level of sharpness. 100 = half a heart."%> OldCombatSettings SharpnessBoost 5 oldcombat:config/subconfig/sharpness
+                emptyline 16
+            }
+
+        }
+
     }
     function quicksetup {
         function ./quicksetup/page1
@@ -360,6 +379,9 @@ dir presets {
         scoreboard players set ShieldNerf OldCombatSettings 1
         scoreboard players set DisableAttackSounds OldCombatSettings 0
         scoreboard players set DisableSwimming OldCombatSettings 1
+        scoreboard players set SharpnessBoost OldCombatSettings 125
+        scoreboard players set SharpnessBase OldCombatSettings 0
+        scoreboard players set OldSharpness OldCombatSettings 1
     }
     function 1.9 {
         scoreboard players set DisableOffhand OldCombatSettings 0
@@ -388,6 +410,9 @@ dir presets {
         scoreboard players set ShieldNerf OldCombatSettings 1
         scoreboard players set DisableAttackSounds OldCombatSettings 0
         scoreboard players set DisableSwimming OldCombatSettings 1
+        scoreboard players set SharpnessBoost OldCombatSettings 125
+        scoreboard players set SharpnessBase OldCombatSettings 0
+        scoreboard players set OldSharpness OldCombatSettings 0
     }
     function 1.11 {
         scoreboard players set DisableOffhand OldCombatSettings 0
@@ -416,6 +441,9 @@ dir presets {
         scoreboard players set ShieldNerf OldCombatSettings 0
         scoreboard players set DisableAttackSounds OldCombatSettings 0
         scoreboard players set DisableSwimming OldCombatSettings 1
+        scoreboard players set SharpnessBoost OldCombatSettings 125
+        scoreboard players set SharpnessBase OldCombatSettings 0
+        scoreboard players set OldSharpness OldCombatSettings 0
     }
     function 1.13 {
         scoreboard players set DisableOffhand OldCombatSettings 0
@@ -444,6 +472,9 @@ dir presets {
         scoreboard players set ShieldNerf OldCombatSettings 0
         scoreboard players set DisableAttackSounds OldCombatSettings 0
         scoreboard players set DisableSwimming OldCombatSettings 0
+        scoreboard players set SharpnessBoost OldCombatSettings 125
+        scoreboard players set SharpnessBase OldCombatSettings 0
+        scoreboard players set OldSharpness OldCombatSettings 0
     }
 
 }
@@ -1005,6 +1036,9 @@ dir noconfirm {
         scoreboard players set ShieldNerf OldCombatSettings 1
         scoreboard players set DisableAttackSounds OldCombatSettings 1
         scoreboard players set DisableSwimming OldCombatSettings 0
+        scoreboard players set SharpnessBoost OldCombatSettings 125
+        scoreboard players set SharpnessBase OldCombatSettings 0
+        scoreboard players set OldSharpness OldCombatSettings 1
         scoreboard players operation PreviousDataVersion OldCombatSettings = DataVersion OldCombatSettings
         scoreboard players set DataVersion OldCombatSettings <%data_version%>
 
@@ -1031,7 +1065,7 @@ function uninstall {
 function air_knockback {
     execute if score @s HurtByTimestamp = @s LastHurtByTimestamp unless entity @s[type=player] run return fail
     execute unless data entity @s {HurtTime:10s} unless data entity @s {HurtTime:9s} unless data entity @s {HurtTime:8s} unless entity @s[type=player] run return fail
-    execute if entity @s[type=endrer_dragon] run return fail
+    execute if entity @s[type=ender_dragon] run return fail
     execute if score AirKB OldCombatSettings matches 1 unless entity @s[tag=tempIgnoreAirKB] run {
         execute unless data entity @s {Motion:[0.0d,0.0d,0.0d]} if entity @s[nbt={OnGround:0b}] run {
             execute on attacker if entity @s[tag=oldcombatignore] run return fail
