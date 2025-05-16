@@ -54,6 +54,7 @@ function on_tick minecraft:tick {
                 function air_knockback
                 # function responsive_kb
             }
+            execute as @e run function old_sharpness
             function disable_kb_resist
             function enforce_locked_settings
             function fishing_rod_kb
@@ -62,6 +63,36 @@ function on_tick minecraft:tick {
             execute store result storage oldcombat:temp disty float 1 run scoreboard players get FishingBobberBoost.Y OldCombatSettings
             function further_fishing_bobber with storage oldcombat:temp
     }
+}
+
+function old_sharpness {
+    execute if score OldSharpness OldCombatSettings matches 1 unless entity @s[tag=oldcombatignore] run {
+        execute if entity @s[type=player] store result score Sharpness OldCombatTemp run data get entity @s SelectedItem.components."minecraft:enchantments"."minecraft:sharpness"
+        execute unless entity @s[type=player] store result score Sharpness OldCombatTemp run data get entity @s equipment.mainhand.components."minecraft:enchantments"."minecraft:sharpness" 
+        execute unless score Sharpness OldCombatTemp matches 1.. run attribute @s attack_damage modifier remove oldcombat:sharpness
+        execute unless score Sharpness OldCombatTemp matches 1.. run return fail
+        scoreboard players operation Modifier OldCombatTemp = SharpnessBoost OldCombatSettings
+
+        scoreboard players operation Boost OldCombatTemp = Sharpness OldCombatTemp
+        scoreboard players operation Boost OldCombatTemp *= Modifier OldCombatTemp
+        scoreboard players remove Boost OldCombatTemp 100
+        scoreboard players operation Boost OldCombatTemp += SharpnessBase OldCombatSettings
+        execute store result storage oldcombat:temp boost double 0.01 run scoreboard players get Boost OldCombatTemp
+        execute unless score OldTooltips OldCombatSettings matches 1 run {
+            block { with storage oldcombat:temp
+                attribute @s attack_damage modifier remove oldcombat:sharpness
+                $attribute @s attack_damage modifier add oldcombat:sharpness $(boost) add_value
+            }
+        }
+    } else execute run {
+        attribute @s attack_damage modifier remove oldcombat:sharpness
+    }
+}
+
+# Gonna do something with this later
+
+function old_tooltip {
+    
 }
 
 # function responsive_kb {
@@ -1114,21 +1145,21 @@ tag damage_type bypasses_sword_blocking {
 
 function sword_blocking {
     execute if score SwordBlocking OldCombatSettings matches 1 unless entity @s[tag=oldcombatignore] if items entity @s weapon.mainhand #minecraft:swords[!blocks_attacks] run {
-        modify_held_components {"minecraft:blocks_attacks":{disable_cooldown_scale:0,damage_reductions:[{base:0,factor:0.5,horizontal_blocking_angle:180}],block_sound:"entity.player.hurt",item_damage:{threshold:0f,base:0f,factor:0f},bypassed_by:"#oldcombat:bypasses_sword_blocking"},"minecraft:custom_data":{oldcombat.modified:true}}
-    } else execute if score SwordBlocking OldCombatSettings matches 0 if items entity @s weapon.mainhand #minecraft:swords[!custom_data={oldcombat.modified:true}] run {
+        modify_held_components {"minecraft:blocks_attacks":{disable_cooldown_scale:0,damage_reductions:[{base:0,factor:0.5,horizontal_blocking_angle:180}],block_sound:"entity.player.hurt",item_damage:{threshold:0f,base:0f,factor:0f},bypassed_by:"#oldcombat:bypasses_sword_blocking"},"minecraft:custom_data":{oldcombat.blocking:true}}
+    } else execute if score SwordBlocking OldCombatSettings matches 0 if items entity @s weapon.mainhand #minecraft:swords[!custom_data={oldcombat.blocking:true}] run {
         remove_held_component "minecraft:blocks_attacks"
     }
 }
 
 function nerf_shields {
-    execute if score ShieldNerf OldCombatSettings matches 1 unless entity @s[tag=oldcombatignore] if items entity @s weapon.mainhand shield[!custom_data={oldcombat.modified:true}] run {
-        modify_held_components {"minecraft:blocks_attacks":{disable_cooldown_scale:1,damage_reductions:[{base:0,factor:0.66,horizontal_blocking_angle:90},{base:0,factor:1,horizontal_blocking_angle:90,type:"#minecraft:is_projectile"}],block_sound:"item.shield.block",item_damage:{threshold:0f,base:0f,factor:0f},block_delay_seconds:0.25,bypassed_by:"#bypasses_shield"},custom_data:{oldcombat.modified:true}}
-    } else execute if score ShieldNerf OldCombatSettings matches 0 if items entity @s weapon.mainhand shield[!custom_data={oldcombat.modified:true}] run {
+    execute if score ShieldNerf OldCombatSettings matches 1 unless entity @s[tag=oldcombatignore] if items entity @s weapon.mainhand shield[!custom_data={oldcombat.blocking:true}] run {
+        modify_held_components {"minecraft:blocks_attacks":{disable_cooldown_scale:1,damage_reductions:[{base:0,factor:0.66,horizontal_blocking_angle:90},{base:0,factor:1,horizontal_blocking_angle:90,type:"#minecraft:is_projectile"}],block_sound:"item.shield.block",item_damage:{threshold:0f,base:0f,factor:0f},block_delay_seconds:0.25,bypassed_by:"#bypasses_shield"},custom_data:{oldcombat.blocking:true}}
+    } else execute if score ShieldNerf OldCombatSettings matches 0 if items entity @s weapon.mainhand shield[!custom_data={oldcombat.blocking:true}] run {
         remove_held_component "minecraft:blocks_attacks"
     }
-    execute if score ShieldNerf OldCombatSettings matches 1 unless entity @s[tag=oldcombatignore] if items entity @s weapon.offhand shield[!custom_data={oldcombat.modified:true}] run {
-        modify_offheld_components {"minecraft:blocks_attacks":{disable_cooldown_scale:1,damage_reductions:[{base:0,factor:0.66,horizontal_blocking_angle:90},{base:0,factor:1,horizontal_blocking_angle:90,type:"#minecraft:is_projectile"}],block_sound:"item.shield.block",item_damage:{threshold:0f,base:0f,factor:0f},block_delay_seconds:0.25,bypassed_by:"#bypasses_shield"},custom_data:{oldcombat.modified:true}}
-    } else execute if score ShieldNerf OldCombatSettings matches 0 if items entity @s weapon.offhand shield[!custom_data={oldcombat.modified:true}] run {
+    execute if score ShieldNerf OldCombatSettings matches 1 unless entity @s[tag=oldcombatignore] if items entity @s weapon.offhand shield[!custom_data={oldcombat.blocking:true}] run {
+        modify_offheld_components {"minecraft:blocks_attacks":{disable_cooldown_scale:1,damage_reductions:[{base:0,factor:0.66,horizontal_blocking_angle:90},{base:0,factor:1,horizontal_blocking_angle:90,type:"#minecraft:is_projectile"}],block_sound:"item.shield.block",item_damage:{threshold:0f,base:0f,factor:0f},block_delay_seconds:0.25,bypassed_by:"#bypasses_shield"},custom_data:{oldcombat.blocking:true}}
+    } else execute if score ShieldNerf OldCombatSettings matches 0 if items entity @s weapon.offhand shield[!custom_data={oldcombat.blocking:true}] run {
         remove_offheld_component "minecraft:blocks_attacks"
     }
 
