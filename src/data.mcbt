@@ -1,0 +1,19 @@
+# useful data manipulation utilities
+template object_to_nbt_key {
+    with object:js block:literal x:word y:word z:word path:raw {
+        REPEAT (object) as key, value {
+            data modify block <%x%> <%y%> <%z%> <%path%>.<%key%> set value <%value%>
+        }
+    }
+    with object:js entity:literal entity_and_path:raw {
+        REPEAT (object) as key, value {
+            data modify entity <%entity_and_path%>.<%key%> set value <%value%>
+        }
+    }
+    with object:js storage:literal storageid:word path:raw {
+        REPEAT (object) as key, value {
+            data modify storage <%storageid%> <%path%>.<%key%> set value <%value%>
+        }
+    }
+
+}

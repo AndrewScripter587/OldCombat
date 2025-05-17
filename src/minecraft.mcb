@@ -22,3 +22,9 @@ tag damage_type bypasses_cooldown {
 #    trident
 #    fly_into_wall
 #}
+
+damage_type fishing_bobber {
+    "message_id":"generic",
+    "exhaustion":0.1,
+    "scaling":"never"
+}
