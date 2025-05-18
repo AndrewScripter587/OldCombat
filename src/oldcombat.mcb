@@ -7,7 +7,7 @@ import ./data.mcbt
 <%%
     $1_21_4compile = false
     build_time = Date()
-    data_version = 8
+    data_version = 9
     vector_names = ["x","y","z"]
 %%>
 
