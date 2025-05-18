@@ -120,7 +120,7 @@ function on_tick minecraft:tick {
         scoreboard players remove StartDelay OldCombatTemp 1
     } else execute run {
             execute as @a run {
-                execute unless score @s Hunger matches -1 store result entity @s foodLevel int 1 run scoreboard players get @s Hunger
+                execute if score @s Hunger matches 0.. store result entity @s foodLevel int 1 run scoreboard players get @s Hunger
                 
                 function disable_modern_items
                 function disable_netherite_items
@@ -377,7 +377,7 @@ function detect_aputils {
 
 function fishing_rod_kb {
     execute if score FishingRodKnockback OldCombatSettings matches 1 run {
-        execute as @e[type=fishing_bobber,tag=!hit,tag=!oldcombatignore] at @s run {
+        execute as @e[type=fishing_bobber,tag=!hit,tag=!oldcombatignore,nbt=!{OnGround:1b}] at @s run {
             execute on origin if entity @s[tag=oldcombatignore] run return fail
             execute on origin run tag @s add origin
             tag @s add this
@@ -441,7 +441,7 @@ dir config {
             boolean_input legacy <%"Disable Attack Sounds"%> <%"\\\"Disables\\\" attack sounds such as sweep attack, critical attack, knockback attack, etc. Not perfect, sounds will still play for 1 tick before being cancelled. However, this imperfection is usually masked out by other ongoing sounds, like a mob or player taking damage, so it doesn't really have to be perfect. However, the cutoff is very noticable when spam-clicking, and there are some other imperfections, so this setting isn't defaulted to on."%> OldCombatSettings DisableAttackSounds <%"oldcombat:config/page1"%>
             boolean_input legacy <%"Disable Swimming"%> <%"Sets the player's hunger to 1/2 a bar while they're in water to effectively disable 1.13's swimming. Disables natural health regeneration when in water if Old Health Regeneration is off. Note: Saturation gain from eating and the Saturation effect is limited to 6 hunger points a tick for technical restrictions, so food like golden carrots are less effective."%> OldCombatSettings DisableSwimming disabled condition <%"unless score aputils OldCombatTemp matches 1"%> <%"oldcombat:config/page1"%>
             boolean_input legacy <%"Old Sharpness Damage"%> <%"Boosts sharpness to its old power, 1.25 damage per level."%> OldCombatSettings OldSharpness <%"oldcombat:config/page1"%> oldcombat:config/subconfig/sharpness
-            boolean_input legacy <%"Old Tooltips §6§n§l/§c§n§l!§6§n§l\\\\§r"%> <%"WARNING: CAN BE VERY LAGGY, ESPECIALLY ON LARGE MULTIPLAYER SERVERS AND WEAKER HARDWARE, DUE TO THIS TWEAK SCANNING AND MODIFYING A LOT OF INVENTORY SLOTS! Reverts the held item tooltip to the tooltip from 1.8. Changes with the states of Old Tool Damages and Old Sharpness to reflect their changes."%> OldCombatSettings OldTooltips oldcombat:config/page1 oldcombat:config/subconfig/tooltips
+            boolean_input legacy <%"Old Tooltips"%> <%"WARNING: CAN BE VERY LAGGY, ESPECIALLY ON LARGE MULTIPLAYER SERVERS AND WEAKER HARDWARE, DUE TO THIS TWEAK SCANNING AND MODIFYING A LOT OF INVENTORY SLOTS! Reverts the held item tooltip to the tooltip from 1.8. Changes with the states of Old Tool Damages and Old Sharpness to reflect their changes."%> OldCombatSettings OldTooltips oldcombat:config/page1 oldcombat:config/subconfig/tooltips
             pagebar legacy 1 <%"oldcombat:config"%>
         } ELSE {
             tellraw @s "Old Combat Configuration"
@@ -462,7 +462,7 @@ dir config {
             boolean_input <%"Disable Attack Sounds"%> <%"\\\"Disables\\\" attack sounds such as sweep attack, critical attack, knockback attack, etc. Not perfect, sounds will still play for 1 tick before being cancelled. However, this imperfection is usually masked out by other ongoing sounds, like a mob or player taking damage, so it doesn't really have to be perfect. However, the cutoff is very noticable when spam-clicking, and there are some other imperfections, so this setting isn't defaulted to on."%> OldCombatSettings DisableAttackSounds <%"oldcombat:config/page1"%>
             boolean_input <%"Disable Swimming"%> <%"Requires Andrew's Datapack Utilities. Sets the player's food level to 1/2 a bar while they're in water to effectively disable 1.13's swimming. Don't worry, the food level gets restored upon leaving the water, and all changes that would have been made to the food level will be reflected once you leave the water. Disables natural health regeneration when in water if Old Health Regeneration is off."%> OldCombatSettings DisableSwimming disabled condition <%"unless score aputils OldCombatTemp matches 1"%> <%"oldcombat:config/page1"%>
             boolean_input <%"Old Sharpness Damage"%> <%"Boosts sharpness to its old power, 1.25 damage per level."%> OldCombatSettings OldSharpness oldcombat:config/page1 oldcombat:config/subconfig/sharpness
-            boolean_input <%"Old Tooltips §6§n§l/§c§n§l!§6§n§l\\\\§r"%> <%"WARNING: CAN BE VERY LAGGY, ESPECIALLY ON LARGE MULTIPLAYER SERVERS AND WEAKER HARDWARE, DUE TO THIS TWEAK SCANNING AND MODIFYING A LOT OF INVENTORY SLOTS! Reverts the held item tooltip to the tooltip from 1.8. Changes with the states of Old Tool Damages and Old Sharpness to reflect their changes."%> OldCombatSettings OldTooltips oldcombat:config/page1 oldcombat:config/subconfig/tooltips
+            boolean_input <%"Old Tooltips"%> <%"WARNING: CAN BE VERY LAGGY, ESPECIALLY ON LARGE MULTIPLAYER SERVERS AND WEAKER HARDWARE, DUE TO THIS TWEAK SCANNING AND MODIFYING A LOT OF INVENTORY SLOTS! Reverts the held item tooltip to the tooltip from 1.8. Changes with the states of Old Tool Damages and Old Sharpness to reflect their changes."%> OldCombatSettings OldTooltips oldcombat:config/page1 oldcombat:config/subconfig/tooltips
             pagebar 1 <%"oldcombat:config"%>
         }
     }
@@ -565,7 +565,21 @@ dir config {
                 numeric_input <%"Level Damage"%> <%"How much damage is dealt extra per level of sharpness. 100 = half a heart."%> OldCombatSettings SharpnessBoost 5 oldcombat:config/subconfig/sharpness
                 emptyline 16
             }
-
+        function tooltips {
+            IF $1_21_4compile==true {
+                textline "Configuration for Old Tooltips"
+                single_button legacy <%"Go back"%> white <%"/function oldcombat:config/page1"%>
+                boolean_input legacy <%"Modify All Slots"%> <%"Scans all slots on a player when looking for tooltips to modify. A bit slower, but it ensures all tooltips are changed to the old one. If off, it only scans your hotbar, armor slots, offhand, and whatever you're grabbing with your cursor in an inventory."%> OldCombatSettings ApplyToolTipToAll oldcombat:config/subconfig/sharpness
+                
+                emptyline 17
+            } ELSE {
+                textline "Configuration for Old Tooltips"
+                single_button <%"Go back"%> white <%"/function oldcombat:config/page1"%>
+                boolean_input <%"Modify All Slots"%> <%"Scans all slots on a player when looking for tooltips to modify. A bit slower, but it ensures all tooltips are changed to the old one. If off, it only scans your hotbar, armor slots, offhand, and whatever you're grabbing with your cursor in an inventory."%> OldCombatSettings ApplyToolTipToAll oldcombat:config/subconfig/sharpness
+                
+                emptyline 17
+            }
+        }
         }
 
     }
@@ -623,6 +637,7 @@ dir presets {
         scoreboard players set SharpnessBoost OldCombatSettings 125
         scoreboard players set SharpnessBase OldCombatSettings 0
         scoreboard players set OldSharpness OldCombatSettings 1
+        scoreboard players set OldTooltips OldCombatSettings 1
     }
     function 1.9 {
         scoreboard players set DisableOffhand OldCombatSettings 0
@@ -651,9 +666,10 @@ dir presets {
         scoreboard players set ShieldNerf OldCombatSettings 1
         scoreboard players set DisableAttackSounds OldCombatSettings 0
         scoreboard players set DisableSwimming OldCombatSettings 1
-        scoreboard players set SharpnessBoost OldCombatSettings 125
-        scoreboard players set SharpnessBase OldCombatSettings 0
+        scoreboard players set SharpnessBoost OldCombatSettings 50
+        scoreboard players set SharpnessBase OldCombatSettings 50
         scoreboard players set OldSharpness OldCombatSettings 0
+        scoreboard players set OldTooltips OldCombatSettings 0
     }
     function 1.11 {
         scoreboard players set DisableOffhand OldCombatSettings 0
@@ -682,9 +698,10 @@ dir presets {
         scoreboard players set ShieldNerf OldCombatSettings 0
         scoreboard players set DisableAttackSounds OldCombatSettings 0
         scoreboard players set DisableSwimming OldCombatSettings 1
-        scoreboard players set SharpnessBoost OldCombatSettings 125
-        scoreboard players set SharpnessBase OldCombatSettings 0
+        scoreboard players set SharpnessBoost OldCombatSettings 50
+        scoreboard players set SharpnessBase OldCombatSettings 50
         scoreboard players set OldSharpness OldCombatSettings 0
+        scoreboard players set OldTooltips OldCombatSettings 0
     }
     function 1.13 {
         scoreboard players set DisableOffhand OldCombatSettings 0
@@ -713,9 +730,10 @@ dir presets {
         scoreboard players set ShieldNerf OldCombatSettings 0
         scoreboard players set DisableAttackSounds OldCombatSettings 0
         scoreboard players set DisableSwimming OldCombatSettings 0
-        scoreboard players set SharpnessBoost OldCombatSettings 125
-        scoreboard players set SharpnessBase OldCombatSettings 0
+        scoreboard players set SharpnessBoost OldCombatSettings 50
+        scoreboard players set SharpnessBase OldCombatSettings 50
         scoreboard players set OldSharpness OldCombatSettings 0
+        scoreboard players set OldTooltips OldCombatSettings 0
     }
 
 }
@@ -1165,6 +1183,11 @@ function startup minecraft:load {
         scoreboard players set ShieldNerf OldCombatSettings 1
         scoreboard players set DisableAttackSounds OldCombatSettings 0
         scoreboard players set DisableSwimming OldCombatSettings 0
+        scoreboard players set OldTooltips OldCombatSettings 1
+        scoreboard players set OldSharpness OldCombatSettings 0
+        scoreboard players set SharpnessBase OldCombatSettings 0
+        scoreboard players set SharpnessBoost OldCombatSettings 125
+        scoreboard players set ApplyToolTipToAll OldCombatSettings 1
         scoreboard players operation PreviousDataVersion OldCombatSettings = DataVersion OldCombatSettings
         scoreboard players set DataVersion OldCombatSettings <%data_version%>
     } else execute run {
@@ -1236,6 +1259,8 @@ dir noconfirm {
         scoreboard players set ShieldNerf OldCombatSettings 0
         scoreboard players set DisableAttackSounds OldCombatSettings 0
         scoreboard players set DisableSwimming OldCombatSettings 0
+        scoreboard players set OldTooltips OldCombatSettings 0
+        scoreboard players set OldSharpness OldCombatSettings 0
     }
 
     function defaults {
@@ -1283,6 +1308,8 @@ dir noconfirm {
         scoreboard players set OldSharpness OldCombatSettings 1
         scoreboard players operation PreviousDataVersion OldCombatSettings = DataVersion OldCombatSettings
         scoreboard players set DataVersion OldCombatSettings <%data_version%>
+        scoreboard players set ApplyToolTipToAll OldCombatSettings 1
+        scoreboard players set OldTooltips OldCombatSettings 1
 
     }
     function reset {
@@ -1523,8 +1550,8 @@ function disable_swimming {
         scoreboard players operation @s Hunger < 20 OldCombatTemp
         scoreboard players operation @s HungerSat < 20 OldCombatTemp
     } else execute run {
-        execute unless score @s Hunger matches -1 store result entity @s foodLevel int 1 run scoreboard players get @s Hunger
-        execute unless score @s HungerSat matches -1 store result entity @s foodSaturationLevel float 1 run scoreboard players get @s HungerSat
+        execute if score @s Hunger matches 0.. store result entity @s foodLevel int 1 run scoreboard players get @s Hunger
+        execute if score @s HungerSat matches 0.. store result entity @s foodSaturationLevel float 1 run scoreboard players get @s HungerSat
         scoreboard players set @s Hunger -1
         scoreboard players set @s HungerSat -1
         scoreboard players set @s TicksInWater 0
