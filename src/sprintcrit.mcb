@@ -72,8 +72,6 @@ function load minecraft:load {
 
 function player {
     scoreboard players set Sharpness Temp 0
-    scoreboard players operation @s WereSprinting = @s Sprinting
-    execute store result score @s Sprinting run attribute @s movement_speed modifier value get sprinting 100
     scoreboard players operation @s WereFalling = @s Falling
     scoreboard players set @s Falling 0
     execute store result score YV Temp run data get entity @s Motion[1] 100
@@ -105,6 +103,9 @@ function player {
 
 function tick minecraft:tick {
     execute as @a store result score @s EntityInteractionRange run attribute @s entity_interaction_range get
+    execute as @a run scoreboard players operation @s WereSprinting = @s Sprinting
+    execute as @a store result score @s Sprinting run attribute @s movement_speed modifier value get sprinting 100
+
     execute if score SprintingCrits OldCombatSettings matches 1 run {
         execute as @a at @s run function sprintcrit:player
         execute as @e[nbt={HurtTime:10s},type=!ender_dragon,type=!armor_stand] at @s run function sprintcrit:livingentity

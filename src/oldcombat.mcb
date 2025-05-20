@@ -7,7 +7,7 @@ import ./data.mcbt
 <%%
     $1_21_4compile = false
     build_time = Date()
-    data_version = 9
+    data_version = 10
     vector_names = ["x","y","z"]
 %%>
 
@@ -539,15 +539,21 @@ dir config {
             IF $1_21_4compile==true {
                 textline "Configuration for Increase Damage Knockback"
                 single_button legacy <%"Go back"%> white <%"/function oldcombat:config/page1"%>
-                numeric_input legacy <%"Horizontal"%> <%"Horizontal Vector (Default 150)"%> OldCombatSettings BuffKBValue.X 5 oldcombat:config/subconfig/knockback
-                numeric_input legacy <%"Vertical"%> <%"Vertical Vector (Default 105)"%> OldCombatSettings BuffKBValue.Y 5 oldcombat:config/subconfig/knockback
-                emptyline 16
+                numeric_input legacy <%"Horizontal"%> <%"Horizontal knockback boost (Default 150)"%> OldCombatSettings BuffKBValue.X 5 oldcombat:config/subconfig/knockback
+                numeric_input legacy <%"Vertical"%> <%"Vertical knockback boost (Default 105)"%> OldCombatSettings BuffKBValue.Y 5 oldcombat:config/subconfig/knockback
+                boolean_input legacy <%"Buff Sprint-Knockback attacks"%> <%"Increases/Decreases the force of the knockback boost applied while sprinting."%> OldCombatSettings BuffSprintKB oldcombat:config/subconfig/knockback
+                numeric_input legacy <%"Horizontal (Sprinting)"%> <%"Horizontal Knockback to apply while sprinting (Default 150)"%> OldCombatSettings BuffKBValueSprint.X 5 oldcombat:config/subconfig/knockback
+                numeric_input legacy <%"Vertical (Sprinting)"%> <%"Vertical Knockback to apply while sprinting (Default 150)"%> OldCombatSettings BuffKBValueSprint.Y 5 oldcombat:config/subconfig/knockback
+                emptyline 13
             } ELSE {
                 textline "Configuration for Increase Damage Knockback"
                 single_button <%"Go back"%> white <%"/function oldcombat:config/page1"%>
-                numeric_input <%"Horizontal"%> <%"Horizontal Vector (Default 150)"%> OldCombatSettings BuffKBValue.X 5 oldcombat:config/subconfig/knockback
-                numeric_input <%"Vertical"%> <%"Vertical Vector (Default 105)"%> OldCombatSettings BuffKBValue.Y 5 oldcombat:config/subconfig/knockback
-                emptyline 16
+                numeric_input <%"Horizontal"%> <%"Horizontal knockback boost (Default 150)"%> OldCombatSettings BuffKBValue.X 5 oldcombat:config/subconfig/knockback
+                numeric_input <%"Vertical"%> <%"Vertical knockback boost (Default 105)"%> OldCombatSettings BuffKBValue.Y 5 oldcombat:config/subconfig/knockback
+                boolean_input <%"Buff Sprint-Knockback attacks"%> <%"Increases/Decreases the force of the knockback boost applied while sprinting."%> OldCombatSettings BuffSprintKB oldcombat:config/subconfig/knockback
+                numeric_input <%"Horizontal (Sprinting)"%> <%"Horizontal Knockback to apply while sprinting (Default 150)"%> OldCombatSettings BuffKBValueSprint.X 5 oldcombat:config/subconfig/knockback
+                numeric_input <%"Vertical (Sprinting)"%> <%"Vertical Knockback to apply while sprinting (Default 150)"%> OldCombatSettings BuffKBValueSprint.Y 5 oldcombat:config/subconfig/knockback
+                emptyline 13
             }
 
         }
@@ -565,6 +571,7 @@ dir config {
                 numeric_input <%"Level Damage"%> <%"How much damage is dealt extra per level of sharpness. 100 = half a heart."%> OldCombatSettings SharpnessBoost 5 oldcombat:config/subconfig/sharpness
                 emptyline 16
             }
+        }
         function tooltips {
             IF $1_21_4compile==true {
                 textline "Configuration for Old Tooltips"
@@ -580,7 +587,7 @@ dir config {
                 emptyline 17
             }
         }
-        }
+        
 
     }
     function quicksetup {
@@ -1103,15 +1110,32 @@ function buff_knockback {
     execute unless data entity @s {HurtTime:10s} unless data entity @s {HurtTime:9s} unless data entity @s {HurtTime:8s} run return fail
     execute store result storage oldcombat:temp horizontal int 1 run scoreboard players get BuffKBValue.X OldCombatSettings
     execute store result storage oldcombat:temp vertical int 1 run scoreboard players get BuffKBValue.Y OldCombatSettings
+    execute store result storage oldcombat:temp sprinthorizontal int 1 run scoreboard players get BuffKBValueSprint.X OldCombatSettings
+    execute store result storage oldcombat:temp sprintvertical int 1 run scoreboard players get BuffKBValueSprint.Y OldCombatSettings
+    execute on attacker run tag @s add attacker
+    execute store result score Sprinting OldCombatTemp run scoreboard players get @n[tag=attacker] WereSprinting
+    execute if score BuffSprintKB OldCombatSettings matches 1 if score Sprinting OldCombatTemp matches 1 run say ow 
     execute if score BuffKB OldCombatSettings matches 1 unless entity @s[tag=oldcombatignore] run { with storage oldcombat:temp
     execute if score aputils OldCombatTemp matches 0 run {
         $execute store result entity @s Motion[0] double 0.01 run data get entity @s Motion[0] $(horizontal)
         $execute store result entity @s Motion[1] double 0.01 run data get entity @s Motion[1] $(vertical)
         $execute store result entity @s Motion[2] double 0.01 run data get entity @s Motion[2] $(horizontal)
+        
+        
+
+        $execute if score BuffSprintKB OldCombatSettings matches 1 if score Sprinting OldCombatTemp matches 1.. store result entity @s Motion[0] double 0.01 run data get entity @s Motion[0] $(sprinthorizontal)
+        $execute if score BuffSprintKB OldCombatSettings matches 1 if score Sprinting OldCombatTemp matches 1.. store result entity @s Motion[1] double 0.01 run data get entity @s Motion[1] $(sprintvertical)
+        $execute if score BuffSprintKB OldCombatSettings matches 1 if score Sprinting OldCombatTemp matches 1.. store result entity @s Motion[2] double 0.01 run data get entity @s Motion[2] $(sprinthorizontal)
+
     } else execute run { with storage oldcombat:temp
         $execute store result storage oldcombat:temp x double 0.01 run data get entity @s Motion[0] $(horizontal)
         $execute store result storage oldcombat:temp y double 0.01 run data get entity @s Motion[1] $(vertical)
         $execute store result storage oldcombat:temp z double 0.01 run data get entity @s Motion[2] $(horizontal)
+
+        $execute if score BuffSprintKB OldCombatSettings matches 1 if score Sprinting OldCombatTemp matches 1.. store result storage oldcombat:temp x double 0.01 run data get storage oldcombat:temp x $(sprinthorizontal)
+        $execute if score BuffSprintKB OldCombatSettings matches 1 if score Sprinting OldCombatTemp matches 1.. store result storage oldcombat:temp y double 0.01 run data get storage oldcombat:temp y $(sprintvertical)
+        $execute if score BuffSprintKB OldCombatSettings matches 1 if score Sprinting OldCombatTemp matches 1.. store result storage oldcombat:temp z double 0.01 run data get storage oldcombat:temp z $(sprinthorizontal)
+
         block { with storage oldcombat:temp
             $aputils velocity @s $(x) $(y) $(z) set
         }
@@ -1119,12 +1143,13 @@ function buff_knockback {
     }
     
     }
-    
+    tag @e remove attacker    
 }
 
 
 function startup minecraft:load {
     scoreboard objectives add OldCombatSettings dummy
+    scoreboard objectives add OldCombatTemp.Sprinting dummy
     scoreboard objectives add OldCombatTemp dummy
     scoreboard objectives add foodTickTimer dummy
     scoreboard objectives add WasOnGround dummy
@@ -1156,11 +1181,15 @@ function startup minecraft:load {
         logger info "Loading Default Settings"
         # Add a start delay to ensure no issues arise while the world is loading, offhand items will turn into a single block of stone if this didn't exist. Issue still exists in multiplayer, though. Trying to figure out how to fix that on servers too.
         scoreboard players set StartDelay OldCombatTemp 60
+        
         scoreboard players set RegenExhaustion OldCombatSettings 300
         scoreboard players set DisableOffhand OldCombatSettings 1
         scoreboard players set BuffKB OldCombatSettings 1
         scoreboard players set BuffKBValue.X OldCombatSettings 125
         scoreboard players set BuffKBValue.Y OldCombatSettings 105
+        scoreboard players set BuffSprintKB OldCombatSettings 1
+        scoreboard players set BuffKBValueSprint.X OldCombatSettings 115
+        scoreboard players set BuffKBValueSprint.Y OldCombatSettings 105
         scoreboard players set DisableAttackCooldown OldCombatSettings 1
         scoreboard players set SwordBlocking OldCombatSettings 1
         scoreboard players set OldToolDamage OldCombatSettings 1
@@ -1252,6 +1281,8 @@ dir noconfirm {
         scoreboard players set DisableSprint OldCombatSettings 0
         scoreboard players set DisableKBResist OldCombatSettings 0
         scoreboard players set AirKB OldCombatSettings 0
+        scoreboard players set BuffSprintKB OldCombatSettings 0
+        scoreboard players set BuffKB OldCombatSettings 0
         scoreboard players set FishingRodKnockback OldCombatSettings 0
         scoreboard players set OldRegen OldCombatSettings 0
         scoreboard players set DisableModernPVPItems OldCombatSettings 0
@@ -1277,6 +1308,9 @@ dir noconfirm {
 
         # Add a start delay to ensure no issues arise while the world is loading, offhand items will turn into a single block of stone if this didn't exist
         scoreboard players set StartDelay OldCombatTemp 60
+        scoreboard players set BuffSprintKB OldCombatSettings 1
+        scoreboard players set BuffKBValueSprint.X OldCombatSettings 115
+        scoreboard players set BuffKBValueSprint.Y OldCombatSettings 105
         scoreboard players set DisableOffhand OldCombatSettings 1
         scoreboard players set BuffKB OldCombatSettings 1
         scoreboard players set BuffKBValue.X OldCombatSettings 125

@@ -6,4 +6,4 @@
 - [x] Correct the old tool damages to the actual old tool damages (Status: Finished, Priority: Low)
 - [ ] Remove Hunger System (Status: Not started, Priority: Very Low)
 - [ ] Weak Projectiles Knock Back Players (Status: Partially Complete (Fishing Rod Knockback), Priority: Medium)
-- [ ] Buff Sprint-Knockback Attacks (Like buff knockback, but only for sprint-knockback attacks) (Status: Not Started, Priority: High)
+- [x] Buff Sprint-Knockback Attacks (Like buff knockback, but only for sprint-knockback attacks) (Status: Finished, Priority: High)
