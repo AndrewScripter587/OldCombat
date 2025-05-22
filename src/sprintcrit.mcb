@@ -44,7 +44,7 @@ function livingentity {
 
     scoreboard players operation CritDamage Temp = @e[tag=attacker,limit=1] TotalDamageDealt
     execute store result storage temp damage float 0.001 run scoreboard players operation CritDamage Temp *= 15 Temp
-    execute if score aputilsver OldCombatTemp matches 1 run {
+    execute if score aputilsver OldCombatTemp matches 0 run {
         execute store result score CorrectDamageType OldCombatTemp run aputils check_damage @s "minecraft:player_attack"
     } else execute run {
         scoreboard players set CorrectDamageType OldCombatTemp 1

@@ -373,6 +373,7 @@ damage_type fishing_bobber {
 function detect_aputils {
     execute store result score aputils OldCombatTemp run aputils heartbeat
     execute store result score aputilsver OldCombatTemp run aputils loader
+    return run aputils loader
 }
 
 function fishing_rod_kb {
@@ -1496,7 +1497,7 @@ function nerf_shields {
         remove_held_component "minecraft:blocks_attacks"
         remove_held_component "minecraft:custom_data".oldcombat_blocking
     }
-    execute if score ShieldNerf OldCombatSettings matches 1 unless entity @s[tag=oldcombatignore] run {
+    execute if score ShieldNerf OldCombatSettings matches 1 unless entity @s[tag=oldcombatignore] if items entity @s weapon.mainhand shield unless data entity @s {equipment:{offhand:{components:{"minecraft:custom_data":{oldcombat_blocking:1b}}}}} run {
         modify_offheld_components {"minecraft:blocks_attacks":{disable_cooldown_scale:1,damage_reductions:[{base:0,factor:0.66,horizontal_blocking_angle:90},{base:0,factor:1,horizontal_blocking_angle:90,type:"#minecraft:is_projectile"}],block_sound:"item.shield.block",item_damage:{threshold:0f,base:0f,factor:0f},block_delay_seconds:0.25,bypassed_by:"#bypasses_shield"},"minecraft:custom_data":{oldcombat_blocking:1b}}
     } else execute if score ShieldNerf OldCombatSettings matches 0 if items entity @s weapon.offhand shield if data entity @s {equipment:{offhand:{components:{"minecraft:custom_data":{oldcombat_blocking:1b}}}}} run {
         remove_offheld_component "minecraft:blocks_attacks"
