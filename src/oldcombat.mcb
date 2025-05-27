@@ -150,10 +150,65 @@ function on_tick minecraft:tick {
             function enforce_locked_settings
             function fishing_rod_kb
             function disable_attack_sounds
+            function bedrock_fishing_bobber_physics
+            function old_fishing_bobber_velocity
+            function bedrock_fishing_bobber_physics2
             execute store result storage oldcombat:temp distx float 1 run scoreboard players get FishingBobberBoost.X OldCombatSettings
             execute store result storage oldcombat:temp disty float 1 run scoreboard players get FishingBobberBoost.Y OldCombatSettings
             function further_fishing_bobber with storage oldcombat:temp
     }
+}
+
+function bedrock_fishing_bobber_physics2 {
+    execute if score BedrockFishingBobberPhysics OldCombatSettings matches 1 as @e[type=fishing_bobber] at @s run {
+        execute unless entity @s[tag=bfbp.processed] run {
+            data modify storage oldcombat:temp Motion set from entity @s Motion
+            tag @s add this
+            execute on origin rotated as @s rotated ~ 0 as @e[tag=this] run tp ^ ^ ^0.2
+            tag @s remove this
+            data modify entity @s Motion set from storage oldcombat:temp Motion
+
+            execute store result score yv OldCombatTemp run data get entity @s Motion[1] 1000
+            execute store result entity @s Motion[1] double 0.001 run scoreboard players add yv OldCombatTemp 100
+            execute store result score y OldCombatTemp run data get entity @s Pos[1] 1000
+            execute store result entity @s Pos[1] double 0.001 run scoreboard players remove y OldCombatTemp 500
+        }
+    }
+    execute as @e[type=fishing_bobber] run tag @s add bfbp.processed
+}
+
+function bedrock_fishing_bobber_physics {
+    execute if score BedrockFishingBobberPhysics OldCombatSettings matches 1 as @e[type=fishing_bobber] at @s run {
+        execute if block ~ ~-0.25 ~ water run return 0
+        execute if block ~ ~ ~ water run return 0
+        execute if block ~ ~-0.25 ~ kelp run return 0
+        execute if block ~ ~-0.25 ~ seagrass run return 0
+        execute if block ~ ~-0.25 ~ #corals run return 0
+        execute if block ~ ~ ~ kelp run return 0
+        execute if block ~ ~ ~ seagrass run return 0
+        execute if block ~ ~ ~ #corals run return 0
+        execute store result score y OldCombatTemp run data get entity @s Pos[1] 1000
+        execute store result score yv OldCombatTemp run data get entity @s Motion[1] 1000
+        execute store result entity @s Motion[1] double 0.001 run scoreboard players operation yv OldCombatTemp -= FishingBobberGravity OldCombatSettings
+    }
+    
+}
+
+function old_fishing_bobber_velocity {
+    execute if score OldFishingBobberVel OldCombatSettings matches 1 as @e[type=fishing_bobber,tag=!ofbv.processed] run {
+        tag @s add this
+        execute on origin run tag @s add origin
+        execute on origin at @s run function utils/get_vectors_from_dir
+        execute on origin at @s anchored eyes positioned ^ ^ ^ as @n[tag=this] run tp @s ~ ~ ~
+        execute store result entity @s Motion[0] double 0.001 run scoreboard players get VecX OldCombatTemp
+        execute store result entity @s Motion[1] double 0.001 run scoreboard players get VecY OldCombatTemp
+        execute store result entity @s Motion[2] double 0.001 run scoreboard players get VecZ OldCombatTemp
+        
+        tag @s remove this
+        execute on origin run tag @s remove origin
+        
+    }
+    execute as @e[type=fishing_bobber] run tag @s add ofbv.processed
 }
 
 function disable_vanilla_sharpness {
@@ -426,7 +481,7 @@ dir config {
         IF $1_21_4compile==true {
             tellraw @s "Old Combat Configuration"
             boolean_input legacy <%"Sword Blocking"%> <%"If true, allows blocking using a sword. Sword blocking halves the damage taken for most damage types. Disabled because you're using 1.21.4."%> OldCombatSettings SwordBlocking disabled true 
-            boolean_input legacy <%"Disable Offhand Slot"%> <%"If true, completely disables the offhand slot. Any items in the offhand slot when this is true will be dropped on the ground."%> OldCombatSettings DisableOffhand oldcombat:config
+            boolean_input legacy <%"Disable Offhand Slot"%> <%"If true, completely disables the offhand slot. Any items in the offhand slot when this is true will be dropped on the ground."%> OldCombatSettings DisableOffhand oldcombat:config oldcombat:config/subconfig/offhand
             boolean_input legacy <%"Disable Attack Cooldown"%> <%"If true, completely disables the attack cooldown mechanic."%> OldCombatSettings DisableAttackCooldown oldcombat:config
             boolean_input legacy <%"Old Tool Damages"%> <%"If true, tools (mainly axes) will do their pre-1.9 attack damage. Note: the attack damage tooltip on the tool will still show the normal amount, but the tool will deal the old amount of damage."%> OldCombatSettings OldToolDamage oldcombat:config
             boolean_input legacy <%"Allow Critical Hits While Sprinting"%> <%"Enables getting critical hits while sprinting. After the combat update, you can no longer get a critical hit for your first hit during a sprint, you would just do a knockback attack instead. This setting, if true, allows players to crit for that first hit. This doesn't stop the knockback attack from happening, though, so you can get a crit and knockback attack at the same time. Due to technical restrictions, the critical hit will happen one tick after the player attacks a mob. Technical restrictions prevent the hitting a mob detection from happening on the same tick the attack happens. See https://modrinth.com/datapack/sprinting-crits for more about this mechanic."%> OldCombatSettings SprintingCrits disabled condition <%"if score DisableSprint OldCombatSettings matches 1"%> oldcombat:config
@@ -443,11 +498,11 @@ dir config {
             boolean_input legacy <%"Disable Swimming"%> <%"Sets the player's hunger to 1/2 a bar while they're in water to effectively disable 1.13's swimming. Disables natural health regeneration when in water if Old Health Regeneration is off. Note: Saturation gain from eating and the Saturation effect is limited to 6 hunger points a tick for technical restrictions, so food like golden carrots are less effective."%> OldCombatSettings DisableSwimming disabled condition <%"unless score aputils OldCombatTemp matches 1"%> <%"oldcombat:config/page1"%>
             boolean_input legacy <%"Old Sharpness Damage"%> <%"Boosts sharpness to its old power, 1.25 damage per level."%> OldCombatSettings OldSharpness <%"oldcombat:config/page1"%> oldcombat:config/subconfig/sharpness
             boolean_input legacy <%"Old Tooltips"%> <%"WARNING: CAN BE VERY LAGGY, ESPECIALLY ON LARGE MULTIPLAYER SERVERS AND WEAKER HARDWARE, DUE TO THIS TWEAK SCANNING AND MODIFYING A LOT OF INVENTORY SLOTS! Reverts the held item tooltip to the tooltip from 1.8. Changes with the states of Old Tool Damages and Old Sharpness to reflect their changes."%> OldCombatSettings OldTooltips oldcombat:config/page1 oldcombat:config/subconfig/tooltips
-            pagebar legacy 1 <%"oldcombat:config"%>
+            pagebar legacy 2 <%"oldcombat:config"%>
         } ELSE {
             tellraw @s "Old Combat Configuration"
             boolean_input <%"Sword Blocking"%> <%"If true, allows blocking using a sword. Sword blocking halves the damage taken for most damage types."%> OldCombatSettings SwordBlocking oldcombat:config
-            boolean_input <%"Disable Offhand Slot"%> <%"If true, completely disables the offhand slot. Any items in the offhand slot when this is true will be dropped on the ground."%> OldCombatSettings DisableOffhand oldcombat:config
+            boolean_input <%"Disable Offhand Slot"%> <%"If true, completely disables the offhand slot. Any items in the offhand slot when this is true will be dropped on the ground."%> OldCombatSettings DisableOffhand oldcombat:config oldcombat:config/subconfig/offhand
             boolean_input <%"Disable Attack Cooldown"%> <%"If true, completely disables the attack cooldown mechanic."%> OldCombatSettings DisableAttackCooldown oldcombat:config
             boolean_input <%"Old Tool Damages"%> <%"If true, tools (mainly axes) will do their pre-1.9 attack damage. Note: the attack damage tooltip on the tool will still show the normal amount, but the tool will deal the old amount of damage."%> OldCombatSettings OldToolDamage oldcombat:config
             boolean_input <%"Allow Critical Hits While Sprinting"%> <%"Enables getting critical hits while sprinting. After the combat update, you can no longer get a critical hit for your first hit during a sprint, you would just do a knockback attack instead. This setting, if true, allows players to crit for that first hit. This doesn't stop the knockback attack from happening, though, so you can get a crit and knockback attack at the same time. Due to technical restrictions, the critical hit will happen one tick after the player attacks a mob. Technical restrictions prevent the hitting a mob detection from happening on the same tick the attack happens.  Direct port of my Sprinting Crits datapack, with better detection if Andrew's Datapack Utilities is installed. See https://modrinth.com/datapack/sprinting-crits for more about this mechanic."%> OldCombatSettings SprintingCrits disabled condition <%"if score DisableSprint OldCombatSettings matches 1"%> oldcombat:config
@@ -464,7 +519,22 @@ dir config {
             boolean_input <%"Disable Swimming"%> <%"Requires Andrew's Datapack Utilities. Sets the player's food level to 1/2 a bar while they're in water to effectively disable 1.13's swimming. Don't worry, the food level gets restored upon leaving the water, and all changes that would have been made to the food level will be reflected once you leave the water. Disables natural health regeneration when in water if Old Health Regeneration is off."%> OldCombatSettings DisableSwimming disabled condition <%"unless score aputils OldCombatTemp matches 1"%> <%"oldcombat:config/page1"%>
             boolean_input <%"Old Sharpness Damage"%> <%"Boosts sharpness to its old power, 1.25 damage per level."%> OldCombatSettings OldSharpness oldcombat:config/page1 oldcombat:config/subconfig/sharpness
             boolean_input <%"Old Tooltips"%> <%"WARNING: CAN BE VERY LAGGY, ESPECIALLY ON LARGE MULTIPLAYER SERVERS AND WEAKER HARDWARE, DUE TO THIS TWEAK SCANNING AND MODIFYING A LOT OF INVENTORY SLOTS! Reverts the held item tooltip to the tooltip from 1.8. Changes with the states of Old Tool Damages and Old Sharpness to reflect their changes."%> OldCombatSettings OldTooltips oldcombat:config/page1 oldcombat:config/subconfig/tooltips
-            pagebar 1 <%"oldcombat:config"%>
+            pagebar 2 <%"oldcombat:config"%>
+        }
+    }
+    function page2 {
+        IF $1_21_4compile==true {
+            tellraw @s "Old Combat Configuration"
+            boolean_input legacy <%"Bedrock Fishing Bobber Physics"%> <%"Makes fishing rod bobbers have their physics from Bedrock Edition. Note: the physics are weird and have a couple issues."%> OldCombatSettings BedrockFishingBobberPhysics oldcombat:config/page2
+            boolean_input legacy <%"Old Fishing Bobber Velocity"%> <%"Makes fishing rod bobbers have their old velocity calculations when thrown, where the bobber will go in your looking direction correctly instead of acting weird when you look more towards up or down. Note: this setting makes fishing bobbers not move for 1 tick when they spawn as to get the correct positioning."%> OldCombatSettings OldFishingBobberVel oldcombat:config/page2
+            emptyline 16
+            pagebar legacy 2 <%"oldcombat:config"%>
+        } ELSE {
+            tellraw @s "Old Combat Configuration"
+            boolean_input <%"Bedrock Fishing Bobber Physics"%> <%"Makes fishing rod bobbers have their physics from Bedrock Edition. Note: the physics are weird and have a couple issues."%> OldCombatSettings BedrockFishingBobberPhysics oldcombat:config/page2
+            boolean_input <%"Old Fishing Bobber Velocity"%> <%"Makes fishing rod bobbers have their old velocity calculations when thrown, where the bobber will go in your looking direction correctly instead of acting weird when you look more towards up or down. Note: this setting makes fishing bobbers not move for 1 tick when they spawn as to get the correct positioning."%> OldCombatSettings OldFishingBobberVel oldcombat:config/page2
+            emptyline 16
+            pagebar 2 <%"oldcombat:config"%>
         }
     }
     dir subconfig {
@@ -474,14 +544,14 @@ dir config {
                 single_button legacy <%"Go back"%> white <%"/function oldcombat:config/page1"%>
                 textline {"text":"IMPORTANT (See tooltip)","hoverEvent":{"action":"show_text","value":"When this screen refers to 'velocity', it actually means only the entity's vertical velocity, NOT horizontal."}}
                 numeric_input legacy <%"Air Knockback Strength"%> <%"Amount of vertical knockback applied to entities in the air by the above setting, in centimeters per tick. For reference, 1 cubic meter = 1 minecraft block, 100 cm = 1 meter, 20 ticks in 1 second."%> OldCombatSettings AirKBForce 10 oldcombat:config/subconfig/airkb
-                numeric_input legacy <%"Air Knockback Mix Amount"%> <%"Mix amount for the above setting. A value of 0 means no mixing will happen and the entity's velocity won't change, a value of 100 means the entity's velocity will get set to the Air Knockback Strength. A value of 50 means the entity's velocity will get set to the value in the middle of the entity's current velocity and the Air Knockback Strength. Weird effects happen above 100 and below 0."%> OldCombatSettings AirKBMix 5 oldcombat:config/subconfig/airkb
+                numeric_input legacy <%"Air Knockback Mix Amount"%> <%"Mix amount for the knockback, mixing the above value with the current velocity. A value of 0 means no mixing will happen and the entity's velocity won't change, a value of 100 means the entity's velocity will get set to the Air Knockback Strength. A value of 50 means the entity's velocity will get set to the value in the middle of the entity's current velocity and the Air Knockback Strength. Weird (and cool) effects happen above 100 and below 0. Values slightly above 100 are good for compensating the 1-tick delay between an entity taking damage and the air knockback applying."%> OldCombatSettings AirKBMix 5 oldcombat:config/subconfig/airkb
                 emptyline 14
             } ELSE {
                 textline "Sub-configuration for Knockback Effective In Air"
                 single_button <%"Go back"%> white <%"/function oldcombat:config/page1"%>
                 textline {text:"IMPORTANT (See tooltip)",hover_event:{action:show_text,value:"When this screen refers to 'velocity', it actually means only the entity's vertical velocity, NOT horizontal."}}
                 numeric_input <%"Air Knockback Strength"%> <%"Amount of vertical knockback applied to entities in the air by the above setting, in centimeters per tick. For reference, 1 cubic meter = 1 minecraft block, 100 cm = 1 meter, 20 ticks in 1 second."%> OldCombatSettings AirKBForce 10 oldcombat:config/subconfig/airkb
-                numeric_input <%"Air Knockback Mix Amount"%> <%"Mix amount for the knockback, mixing the above value with the current velocity. A value of 0 means no mixing will happen and the entity's velocity won't change, a value of 100 means the entity's velocity will get set to the Air Knockback Strength. A value of 50 means the entity's velocity will get set to the value in the middle of the entity's current velocity and the Air Knockback Strength. Weird effects happen above 100 and below 0."%> OldCombatSettings AirKBMix 5 oldcombat:config/subconfig/airkb
+                numeric_input <%"Air Knockback Mix Amount"%> <%"Mix amount for the knockback, mixing the above value with the current velocity. A value of 0 means no mixing will happen and the entity's velocity won't change, a value of 100 means the entity's velocity will get set to the Air Knockback Strength. A value of 50 means the entity's velocity will get set to the value in the middle of the entity's current velocity and the Air Knockback Strength. Weird (and cool) effects happen above 100 and below 0. Values slightly above 100 are good for compensating the 1-tick delay between an entity taking damage and the air knockback applying."%> OldCombatSettings AirKBMix 5 oldcombat:config/subconfig/airkb
                 emptyline 15
             }
         }
@@ -577,17 +647,33 @@ dir config {
             IF $1_21_4compile==true {
                 textline "Configuration for Old Tooltips"
                 single_button legacy <%"Go back"%> white <%"/function oldcombat:config/page1"%>
-                boolean_input legacy <%"Modify All Slots"%> <%"Scans all slots on a player when looking for tooltips to modify. A bit slower, but it ensures all tooltips are changed to the old one. If off, it only scans your hotbar, armor slots, offhand, and whatever you're grabbing with your cursor in an inventory."%> OldCombatSettings ApplyToolTipToAll oldcombat:config/subconfig/sharpness
+                boolean_input legacy <%"Modify All Slots"%> <%"Scans all slots on a player when looking for tooltips to modify. A bit slower, but it ensures all tooltips are changed to the old one. If off, it only scans your hotbar, armor slots, offhand, and whatever you're grabbing with your cursor in an inventory."%> OldCombatSettings ApplyToolTipToAll oldcombat:config/subconfig/tooltips
                 
                 emptyline 17
             } ELSE {
                 textline "Configuration for Old Tooltips"
                 single_button <%"Go back"%> white <%"/function oldcombat:config/page1"%>
-                boolean_input <%"Modify All Slots"%> <%"Scans all slots on a player when looking for tooltips to modify. A bit slower, but it ensures all tooltips are changed to the old one. If off, it only scans your hotbar, armor slots, offhand, and whatever you're grabbing with your cursor in an inventory."%> OldCombatSettings ApplyToolTipToAll oldcombat:config/subconfig/sharpness
+                boolean_input <%"Modify All Slots"%> <%"Scans all slots on a player when looking for tooltips to modify. A bit slower, but it ensures all tooltips are changed to the old one. If off, it only scans your hotbar, armor slots, offhand, and whatever you're grabbing with your cursor in an inventory."%> OldCombatSettings ApplyToolTipToAll oldcombat:config/subconfig/tooltips
                 
                 emptyline 17
             }
         }
+        function offhand {
+            IF $1_21_4compile==true {
+                textline "Configuration for Disable Offhand"
+                single_button legacy <%"Go back"%> white <%"/function oldcombat:config/page1"%>
+                boolean_input legacy <%"Allow Using Offhand For Certain Items"%> <%"Allows items that are in the #oldcombat:acceptable_offhand item tag to be placed in the offhand regardless of the state of Disable Offhand. By default the acceptable items are all the items that Bedrock Edition allows to be placed in the offhand."%> OldCombatSettings AllowOffhandForSomeItems oldcombat:config/subconfig/offhand
+                
+                emptyline 17
+            } ELSE {
+                textline "Configuration for Disable Offhand"
+                single_button <%"Go back"%> white <%"/function oldcombat:config/page1"%>
+                boolean_input <%"Allow Using Offhand For Certain Items"%> <%"Allows items that are in the #oldcombat:acceptable_offhand item tag to be placed in the offhand regardless of the state of Disable Offhand. By default the acceptable items are all the items that Bedrock Edition allows to be placed in the offhand."%> OldCombatSettings AllowOffhandForSomeItems oldcombat:config/subconfig/offhand
+                
+                emptyline 17
+            }
+        }
+
         
 
     }
@@ -617,6 +703,7 @@ function on_damage {
 dir presets {
     function 1.8 {
         scoreboard players set DisableOffhand OldCombatSettings 1
+        scoreboard players set AllowOffhandForSomeItems OldCombatSettings 0
         scoreboard players set BuffKB OldCombatSettings 0
         scoreboard players set BuffKBValue.X OldCombatSettings 125
         scoreboard players set BuffKBValue.Y OldCombatSettings 105
@@ -628,11 +715,11 @@ dir presets {
         scoreboard players set DisableSprint OldCombatSettings 0
         scoreboard players set DisableKBResist OldCombatSettings 1
         scoreboard players set AirKB OldCombatSettings 1
-        scoreboard players set AirKBMix OldCombatSettings 85
+        scoreboard players set AirKBMix OldCombatSettings 110
         scoreboard players set FishingRodKnockback OldCombatSettings 1
         scoreboard players set FishingBobberBoost.X OldCombatSettings 150
-        scoreboard players set FishingBobberBoost.Y OldCombatSettings 100
-        scoreboard players set AirKBForce OldCombatSettings 50
+        scoreboard players set FishingBobberBoost.Y OldCombatSettings 150
+        scoreboard players set AirKBForce OldCombatSettings 30
         scoreboard players set OldRegen OldCombatSettings 1
         scoreboard players set regenRate OldCombatSettings 80
         scoreboard players set DisableModernPVPItems OldCombatSettings 0
@@ -646,9 +733,13 @@ dir presets {
         scoreboard players set SharpnessBase OldCombatSettings 0
         scoreboard players set OldSharpness OldCombatSettings 1
         scoreboard players set OldTooltips OldCombatSettings 1
+        scoreboard players set OldFishingBobberVel OldCombatSettings 1
+        scoreboard players set BedrockFishingBobberPhysics OldCombatSettings 0
+        scoreboard players set FishingBobberGravity OldCombatSettings 50
     }
     function 1.9 {
         scoreboard players set DisableOffhand OldCombatSettings 0
+        scoreboard players set AllowOffhandForSomeItems OldCombatSettings 0
         scoreboard players set BuffKB OldCombatSettings 0
         scoreboard players set BuffKBValue.X OldCombatSettings 125
         scoreboard players set BuffKBValue.Y OldCombatSettings 105
@@ -660,10 +751,10 @@ dir presets {
         scoreboard players set DisableSprint OldCombatSettings 0
         scoreboard players set DisableKBResist OldCombatSettings 0
         scoreboard players set AirKB OldCombatSettings 0
-        scoreboard players set AirKBMix OldCombatSettings 85
+        scoreboard players set AirKBMix OldCombatSettings 110
         scoreboard players set FishingRodKnockback OldCombatSettings 0
         scoreboard players set FishingBobberBoost.X OldCombatSettings 150
-        scoreboard players set FishingBobberBoost.Y OldCombatSettings 100
+        scoreboard players set FishingBobberBoost.Y OldCombatSettings 150
         scoreboard players set AirKBForce OldCombatSettings 40
         scoreboard players set OldRegen OldCombatSettings 0
         scoreboard players set regenRate OldCombatSettings 80
@@ -678,9 +769,13 @@ dir presets {
         scoreboard players set SharpnessBase OldCombatSettings 50
         scoreboard players set OldSharpness OldCombatSettings 0
         scoreboard players set OldTooltips OldCombatSettings 0
+        scoreboard players set OldFishingBobberVel OldCombatSettings 1
+        scoreboard players set BedrockFishingBobberPhysics OldCombatSettings 0
+        scoreboard players set FishingBobberGravity OldCombatSettings 50
     }
     function 1.11 {
         scoreboard players set DisableOffhand OldCombatSettings 0
+        scoreboard players set AllowOffhandForSomeItems OldCombatSettings 0
         scoreboard players set BuffKB OldCombatSettings 0
         scoreboard players set BuffKBValue.X OldCombatSettings 125
         scoreboard players set BuffKBValue.Y OldCombatSettings 105
@@ -692,11 +787,11 @@ dir presets {
         scoreboard players set DisableSprint OldCombatSettings 0
         scoreboard players set DisableKBResist OldCombatSettings 0
         scoreboard players set AirKB OldCombatSettings 0
-        scoreboard players set AirKBMix OldCombatSettings 85
+        scoreboard players set AirKBMix OldCombatSettings 110
         scoreboard players set FishingRodKnockback OldCombatSettings 0
         scoreboard players set FishingBobberBoost.X OldCombatSettings 150
-        scoreboard players set FishingBobberBoost.Y OldCombatSettings 100
-        scoreboard players set AirKBForce OldCombatSettings 50
+        scoreboard players set FishingBobberBoost.Y OldCombatSettings 150
+        scoreboard players set AirKBForce OldCombatSettings 30
         scoreboard players set OldRegen OldCombatSettings 0
         scoreboard players set regenRate OldCombatSettings 80
         scoreboard players set DisableModernPVPItems OldCombatSettings 0
@@ -710,9 +805,13 @@ dir presets {
         scoreboard players set SharpnessBase OldCombatSettings 50
         scoreboard players set OldSharpness OldCombatSettings 0
         scoreboard players set OldTooltips OldCombatSettings 0
+        scoreboard players set OldFishingBobberVel OldCombatSettings 0
+        scoreboard players set BedrockFishingBobberPhysics OldCombatSettings 0
+        scoreboard players set FishingBobberGravity OldCombatSettings 50
     }
     function 1.13 {
         scoreboard players set DisableOffhand OldCombatSettings 0
+        scoreboard players set AllowOffhandForSomeItems OldCombatSettings 0
         scoreboard players set BuffKB OldCombatSettings 0
         scoreboard players set BuffKBValue.X OldCombatSettings 125
         scoreboard players set BuffKBValue.Y OldCombatSettings 105
@@ -724,11 +823,11 @@ dir presets {
         scoreboard players set DisableSprint OldCombatSettings 0
         scoreboard players set DisableKBResist OldCombatSettings 0
         scoreboard players set AirKB OldCombatSettings 0
-        scoreboard players set AirKBMix OldCombatSettings 85
+        scoreboard players set AirKBMix OldCombatSettings 110
         scoreboard players set FishingRodKnockback OldCombatSettings 0
         scoreboard players set FishingBobberBoost.X OldCombatSettings 150
-        scoreboard players set FishingBobberBoost.Y OldCombatSettings 100
-        scoreboard players set AirKBForce OldCombatSettings 50
+        scoreboard players set FishingBobberBoost.Y OldCombatSettings 150
+        scoreboard players set AirKBForce OldCombatSettings 30
         scoreboard players set OldRegen OldCombatSettings 0
         scoreboard players set regenRate OldCombatSettings 80
         scoreboard players set DisableModernPVPItems OldCombatSettings 0
@@ -742,7 +841,57 @@ dir presets {
         scoreboard players set SharpnessBase OldCombatSettings 50
         scoreboard players set OldSharpness OldCombatSettings 0
         scoreboard players set OldTooltips OldCombatSettings 0
+        scoreboard players set OldFishingBobberVel OldCombatSettings 0
+        scoreboard players set BedrockFishingBobberPhysics OldCombatSettings 0
+        scoreboard players set FishingBobberGravity OldCombatSettings 50
     }
+    function bedrock {
+        scoreboard players set DisableOffhand OldCombatSettings 1
+        scoreboard players set AllowOffhandForSomeItems OldCombatSettings 1
+        scoreboard players set BuffKB OldCombatSettings 0
+        scoreboard players set BuffKBValue.X OldCombatSettings 125
+        scoreboard players set BuffKBValue.Y OldCombatSettings 105
+        scoreboard players set DisableAttackCooldown OldCombatSettings 1
+        scoreboard players set SwordBlocking OldCombatSettings 0
+        scoreboard players set RegenExhaustion OldCombatSettings 300
+        scoreboard players set OldToolDamage OldCombatSettings 1
+        scoreboard players set SprintingCrits OldCombatSettings 1
+        scoreboard players set DisableSprint OldCombatSettings 0
+        scoreboard players set DisableKBResist OldCombatSettings 0
+        scoreboard players set AirKB OldCombatSettings 1
+        scoreboard players set AirKBMix OldCombatSettings 110
+        scoreboard players set FishingRodKnockback OldCombatSettings 1
+        scoreboard players set FishingBobberBoost.X OldCombatSettings 150
+        scoreboard players set FishingBobberBoost.Y OldCombatSettings 170
+        scoreboard players set AirKBForce OldCombatSettings 30
+        scoreboard players set OldRegen OldCombatSettings 1
+        scoreboard players set regenRate OldCombatSettings 80
+        scoreboard players set DisableModernPVPItems OldCombatSettings 0
+        scoreboard players set DisableNetheriteItems OldCombatSettings 0
+        scoreboard players set BreakDisabledTools OldCombatSettings 1
+        scoreboard players set ReturnMaterialsOfDisabledItems OldCombatSettings 1
+        scoreboard players set ShieldNerf OldCombatSettings 0
+        scoreboard players set DisableAttackSounds OldCombatSettings 0
+        scoreboard players set DisableSwimming OldCombatSettings 0
+        scoreboard players set SharpnessBoost OldCombatSettings 125
+        scoreboard players set SharpnessBase OldCombatSettings 0
+        scoreboard players set OldSharpness OldCombatSettings 1
+        scoreboard players set OldTooltips OldCombatSettings 1
+        scoreboard players set OldFishingBobberVel OldCombatSettings 1
+        scoreboard players set FishingBobberGravity OldCombatSettings 50
+        scoreboard players set BedrockFishingBobberPhysics OldCombatSettings 1
+    }
+
+    function legacy_console {
+        function bedrock
+        scoreboard players set SwordBlocking OldCombatSettings 1
+        scoreboard players set DisableKBResist OldCombatSettings 1
+        scoreboard players set AirKB OldCombatSettings 0
+        scoreboard players set OldRegen OldCombatSettings 0
+        scoreboard players set OldFishingBobberVel OldCombatSettings 1
+        scoreboard players set BedrockFishingBobberPhysics OldCombatSettings 0
+    }
+
 
 }
 
@@ -893,6 +1042,21 @@ function disable_modern_items {
         }
 
 
+    }
+}
+
+dir utils {
+    function get_vectors_from_dir {
+        execute store result score IsCenterForceLoaded OldCombatTemp run forceload query 0 0
+        execute unless score IsCenterForceLoaded OldCombatTemp matches 1 run forceload add 0 0
+        execute positioned 0.0 0.0 0.0 rotated ~ ~ run summon marker ^ ^ ^1 {Tags:["vector"]}
+        # tellraw @a {nbt:"Pos",entity:"@n[type=marker,tag=vector]"}
+        execute store result score VecX OldCombatTemp run data get entity @n[tag=vector,type=marker] Pos[0] 1000
+        execute store result score VecY OldCombatTemp run data get entity @n[tag=vector,type=marker] Pos[1] 1000
+        execute store result score VecZ OldCombatTemp run data get entity @n[tag=vector,type=marker] Pos[2] 1000
+        data modify storage oldcombat:temp vectors set from entity @n[tag=vector,type=marker] Pos
+        kill @e[type=marker,tag=vector]
+        execute unless score IsCenterForceLoaded OldCombatTemp matches 1 run forceload remove 0 0
     }
 }
 
@@ -1177,7 +1341,8 @@ function startup minecraft:load {
     # tellraw @a {score:{objective:"OldCombatSettings",name:"DataVersion"}}
     execute unless score DataVersion OldCombatSettings matches 0.. run scoreboard players set DataVersion OldCombatSettings 0
     execute if score DataVersion OldCombatSettings < PackVersion OldCombatTemp run {
-        schedule function oldcombat:changelog 3s
+        # changelog is now deprecated, keep forgetting to update it and it also takes a little bit of extra time
+        # schedule function oldcombat:changelog 3s
         say Old Combat: Reloading the Config
         logger info "Loading Default Settings"
         # Add a start delay to ensure no issues arise while the world is loading, offhand items will turn into a single block of stone if this didn't exist. Issue still exists in multiplayer, though. Trying to figure out how to fix that on servers too.
@@ -1198,12 +1363,12 @@ function startup minecraft:load {
         scoreboard players set DisableSprint OldCombatSettings 0
         scoreboard players set DisableKBResist OldCombatSettings 1
         scoreboard players set AirKB OldCombatSettings 1
-        scoreboard players set AirKBMix OldCombatSettings 85
+        scoreboard players set AirKBMix OldCombatSettings 110
         scoreboard players set FishingRodKnockback OldCombatSettings 1
         scoreboard players set FurtherFishingBobber OldCombatSettings 1
         scoreboard players set FishingBobberBoost.X OldCombatSettings 150
-        scoreboard players set FishingBobberBoost.Y OldCombatSettings 100
-        scoreboard players set AirKBForce OldCombatSettings 50
+        scoreboard players set FishingBobberBoost.Y OldCombatSettings 150
+        scoreboard players set AirKBForce OldCombatSettings 30
         scoreboard players set OldRegen OldCombatSettings 1
         scoreboard players set regenRate OldCombatSettings 80
         scoreboard players set DisableModernPVPItems OldCombatSettings 0
@@ -1214,9 +1379,12 @@ function startup minecraft:load {
         scoreboard players set DisableAttackSounds OldCombatSettings 0
         scoreboard players set DisableSwimming OldCombatSettings 0
         scoreboard players set OldTooltips OldCombatSettings 1
-        scoreboard players set OldSharpness OldCombatSettings 0
+        scoreboard players set OldSharpness OldCombatSettings 1
         scoreboard players set SharpnessBase OldCombatSettings 0
         scoreboard players set SharpnessBoost OldCombatSettings 125
+        scoreboard players set FishingBobberGravity OldCombatSettings 50
+        scoreboard players set BedrockFishingBobberPhysics OldCombatSettings 0
+        scoreboard players set OldFishingBobberVel OldCombatSettings 1
         scoreboard players set ApplyToolTipToAll OldCombatSettings 1
         scoreboard players operation PreviousDataVersion OldCombatSettings = DataVersion OldCombatSettings
         scoreboard players set DataVersion OldCombatSettings <%data_version%>
@@ -1293,6 +1461,9 @@ dir noconfirm {
         scoreboard players set DisableSwimming OldCombatSettings 0
         scoreboard players set OldTooltips OldCombatSettings 0
         scoreboard players set OldSharpness OldCombatSettings 0
+        scoreboard players set BedrockFishingBobberPhysics OldCombatSettings 0
+        scoreboard players set OldFishingBobberVel OldCombatSettings 0
+
     }
 
     function defaults {
@@ -1326,9 +1497,9 @@ dir noconfirm {
         scoreboard players set AirKB OldCombatSettings 1
         scoreboard players set FishingRodKnockback OldCombatSettings 1
         scoreboard players set FishingBobberBoost.X OldCombatSettings 150
-        scoreboard players set FishingBobberBoost.Y OldCombatSettings 100
-        scoreboard players set AirKBForce OldCombatSettings 50
-        scoreboard players set AirKBMix OldCombatSettings 85
+        scoreboard players set FishingBobberBoost.Y OldCombatSettings 150
+        scoreboard players set AirKBForce OldCombatSettings 30
+        scoreboard players set AirKBMix OldCombatSettings 110
         scoreboard players set OldRegen OldCombatSettings 1
         scoreboard players set regenRate OldCombatSettings 80
         scoreboard players set DisableModernPVPItems OldCombatSettings 0
@@ -1345,6 +1516,10 @@ dir noconfirm {
         scoreboard players set DataVersion OldCombatSettings <%data_version%>
         scoreboard players set ApplyToolTipToAll OldCombatSettings 1
         scoreboard players set OldTooltips OldCombatSettings 1
+        scoreboard players set FishingBobberGravity OldCombatSettings 50
+        scoreboard players set BedrockFishingBobberPhysics OldCombatSettings 0
+        scoreboard players set OldFishingBobberVel OldCombatSettings 1
+
 
     }
     function reset {
@@ -1506,12 +1681,32 @@ function nerf_shields {
 
 }
 
+tag items acceptable_offhand {
+    minecraft:arrow
+    minecraft:spectral_arrow
+    minecraft:nautilus_shell
+    minecraft:firework_rocket
+    minecraft:shield
+    minecraft:tipped_arrow
+    minecraft:totem_of_undying
+    minecraft:filled_map
+}
 
 function block_offhand {
-    execute if score DisableOffhand OldCombatSettings matches 1 unless entity @s[tag=oldcombatignore] if items entity @s weapon.offhand * run {
-        execute at @s anchored eyes positioned ^ ^ ^ positioned ~ ~-0.1 ~ run function throw_offhand
-        tellraw @s {"color":"red","text":"[Old Combat]: Offhand is disabled. Your offhanded item(s) were dropped on the ground."}
-        item replace entity @s weapon.offhand with air
+    execute if score DisableOffhand OldCombatSettings matches 1 unless entity @s[tag=oldcombatignore] run {
+        execute if score AllowOffhandForSomeItems OldCombatSettings matches 1 run {
+            execute if items entity @s weapon.offhand * unless items entity @s weapon.offhand #oldcombat:acceptable_offhand run {
+                execute at @s anchored eyes positioned ^ ^ ^ positioned ~ ~-0.1 ~ run function throw_offhand
+                tellraw @s [{"color":"red","text":"[Old Combat]: This item can't be placed in this slot. "},{"color":"yellow","text":"[What can?]","hover_event":{"action":"show_text","value":["Your server/world's Old Combat settings are set to disallow items from entering the offhand slot, but the settings also allow certain items to be placed in the offhand anyways. The acceptable items tag can be changed by other datapacks, but by default the allowed items are the same as the allowed offhand items in Bedrock Edition, those being: Shields, any kind of arrow (for overriding the arrow that bows and crossbows should use), any map (except empty maps, you need to use (interact with) the map first), firework rockets (for loading fireworks into crossbows), Totems of Undying, and nautilus shells (don't ask me why, it's a bedrock thing)."]},"hoverEvent":{"action":"show_text","contents":["Your server/world's Old Combat settings are set to disallow items from entering the offhand slot, but the settings also allow certain items to be placed in the offhand anyways. The acceptable items tag can be changed by other datapacks, but by default the allowed items are the same as the allowed offhand items in Bedrock Edition, those being: Shields, any kind of arrow (for overriding the arrow that bows and crossbows should use), any map (except empty maps, you need to use (interact with) the map first), firework rockets (for loading fireworks into crossbows), Totems of Undying, and nautilus shells (don't ask me why, it's a bedrock thing)."]}}]
+                item replace entity @s weapon.offhand with air
+            }
+        } else execute run {
+            execute if items entity @s weapon.offhand * run {
+                execute at @s anchored eyes positioned ^ ^ ^ positioned ~ ~-0.1 ~ run function throw_offhand
+                tellraw @s [{"color":"red","text":"[Old Combat]: Items can't be placed in this slot. "},{"color":"yellow","text":"[Why?]","hover_event":{"action":"show_text","value":["Your server/world's Old Combat settings are set to disallow items from entering the offhand slot. If you're an operator (or on a singleplayer world with cheats enabled), you can change this in /function oldcombat:config. If you don't have cheats enabled in your world but want to change the settings, enable them with the Open to LAN feature."]},"hoverEvent":{"action":"show_text","contents":["Your server/world's Old Combat settings are set to disallow items from entering the offhand slot. If you're an operator (or on a singleplayer world with cheats enabled), you can change this in /function oldcombat:config. If you don't have cheats enabled in your world but want to change the settings, enable them with the Open to LAN feature."]}}]
+                item replace entity @s weapon.offhand with air
+            }
+        }
     }
 }
 
