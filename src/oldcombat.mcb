@@ -551,7 +551,6 @@ function farsight {
 
 function old_hunger_system {
     @Using OldCombatTemp
-    @Requires aputils
     load {
         scoreboard players set @a ActualFoodLevel -1
         scoreboard players set @a OldHungerApplied 0
@@ -1965,7 +1964,7 @@ function reset {
 
 function old_regen {
     @Using OldCombatTemp
-    @Requires aputils
+
     execute unless score OldHungerSystem OldCombatSettings matches 1 if score OldRegen OldCombatSettings matches 1 as @a unless entity @s[tag=oldcombatignore] unless entity @s[nbt={Health:0f}] run {
         execute if score @s Hunger matches -1.. store result score foodLevel OldCombatTemp run data get entity @s foodLevel 1
         execute unless score @s Hunger matches -1.. run scoreboard players operation @s foodLevel = @s Hunger
@@ -2328,7 +2327,6 @@ function heal {
 
 function disable_swimming {
     @Using OldCombatTemp
-    @Requires aputils
 
     execute if score DisableSwimming OldCombatSettings matches 1 as @a at @s if block ~ ~ ~ water run {
         scoreboard players set 20 OldCombatTemp 20

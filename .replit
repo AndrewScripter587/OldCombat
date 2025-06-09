@@ -1,0 +1,5 @@
+modules = ["bash", "nodejs-20"]
+
+[nix]
+channel = "stable-24_05"
+packages = ["zip"]
