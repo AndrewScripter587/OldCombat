@@ -4,6 +4,9 @@ template logger {
     with info json:raw {
         tellraw @a ["§2[<%context.namespace%> - INFO]: §r",<%json%>]
     }
+    with report_header {
+        tellraw @a ["§2[<%context.namespace%> - ERROR DIAGNOSIS]: §r","The datapack has detected an issue. Please screenshot the following messages (including this one) and send them in AndrewGaming587's discord server as they could contain vital information about a possible bug. Reporting this issue will help me fix the bug later! ",{"text":"[Discord Server]","color":"blue","click_event":{"action":"open_url","url":"https://discord.gg/ER7tZ7TnhA"}},"§r If the button doesn't work, visit https://discord.gg/ER7tZ7TnhA in a browser."]
+    }
     with log json:raw {
         tellraw @a ["§2[<%context.namespace%> - INFO]: §r",<%json%>]
     }
@@ -15,6 +18,9 @@ template logger {
     }
     with except json:raw {
         tellraw @a ["§4[§c<%context.namespace%> - EXCEPTION§4]: Exception recieved: ",<%json%>]
+    }
+    with trace json:raw {
+        tellraw @a ["§4[§c<%context.namespace%> - ERROR TRACE§4]: ",<%json%>]
     }
     with fatal json:raw {
         tellraw @a ["§4[<%context.namespace%> - FATAL]: ",<%json%>]

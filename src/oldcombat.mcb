@@ -112,7 +112,7 @@ function on_load minecraft:load{
 
     object_to_nbt_key <%damages.new%> storage oldcombat:data damages.new
     object_to_nbt_key <%damages.old%> storage oldcombat:data damages.old
-
+    function leak_detector
 }
 
 tag items consumable {
@@ -180,6 +180,30 @@ tag entity_type old_ai_supported {
     minecraft:enderman
 }
 
+<%%
+    //I need to do some JS shenanigans like this because otherwise it f**ks up the code highlighting in VSCode with the mcbuild extension making everything green instead of what it should be. really annoying.
+    execute = "execute"
+%%>
+
+function leak_detector {
+    load {
+        scoreboard objectives add oldcombat.detect_bugs dummy
+    }
+    <%execute%> store result score any_marker oldcombat.detect_bugs if entity @e[type=marker]
+    execute if score any_marker oldcombat.detect_bugs matches 4000.. run {
+        logger report_header
+        logger warn "The datapack detected a large amount of Markers (entities of type minecraft:marker) in the world. Too many markers will cause large amounts of server lag, and the pack will start to break due to hitting minecraft's execution limit."
+        logger warn [{"score":{"name":"any_marker","objective":"oldcombat.detect_bugs"}}," minecraft:marker entities are currently loaded in your world"]
+        logger info "To temporarily fix the issue, run '/kill @e[type=marker]'."
+        <%execute%> store result score wander_marker oldcombat.detect_bugs if entity @e[type=marker,tag=wander]
+        execute if score wander_marker oldcombat.detect_bugs matches 1000.. run logger trace "Possible cause: The markers that oldcombat:old_mob_ai uses for calculation aren't properly getting deleted when no longer in use."
+        <%execute%> store result score vector_marker oldcombat.detect_bugs if entity @e[type=marker,tag=wander]
+        execute if score vector_marker oldcombat.detect_bugs matches 1000.. run logger trace "Possible cause: The markers that the pack uses for vector calculation aren't properly getting deleted when no longer in use."
+        logger info "This error will show up every 15 seconds until the issue is resolved."
+    }
+    schedule function leak_detector 15s
+}
+
 function on_tick minecraft:tick {
     execute if score Disable OldCombatSettings matches 1 run return fail
     execute as @e run block check_ground {
@@ -229,7 +253,8 @@ function on_tick minecraft:tick {
             execute store result storage oldcombat:temp distx float 1 run scoreboard players get FishingBobberBoost.X OldCombatSettings
             execute store result storage oldcombat:temp disty float 1 run scoreboard players get FishingBobberBoost.Y OldCombatSettings
             function further_fishing_bobber with storage oldcombat:temp
-            
+            function compatibility
+            scoreboard players reset @a BedrockSneakTime
     }
 }
 
@@ -372,7 +397,10 @@ function old_mob_ai {
             scoreboard players set yv2 OldCombatTemp 0
             scoreboard players operation zv2 OldCombatTemp = VecZ OldCombatTemp
             execute store result score speed OldCombatTemp run attribute @s movement_speed get 100
-            
+            execute if block ~ ~-0.2 ~ ice store result score speed OldCombatTemp run attribute @s movement_speed get 65
+            execute if block ~ ~-0.2 ~ packed_ice store result score speed OldCombatTemp run attribute @s movement_speed get 60
+            execute if block ~ ~-0.2 ~ blue_ice store result score speed OldCombatTemp run attribute @s movement_speed get 55
+            execute if block ~ ~-0.2 ~ frosted_ice store result score speed OldCombatTemp run attribute @s movement_speed get 65
             scoreboard players operation sm1 OldCombatTemp = speed OldCombatTemp
             execute if block ~ ~ ~ water unless entity @s[type=drowned] run scoreboard players set yv2 OldCombatTemp 100
             scoreboard players set sm2 OldCombatTemp 350
@@ -385,7 +413,7 @@ function old_mob_ai {
             execute store result entity @s Motion[0] double 0.001 run scoreboard players operation xv OldCombatTemp += xv2 OldCombatTemp
             execute store result entity @s Motion[1] double 0.001 run scoreboard players operation yv OldCombatTemp += yv2 OldCombatTemp
             execute store result entity @s Motion[2] double 0.001 run scoreboard players operation zv OldCombatTemp += zv2 OldCombatTemp
-            execute at @s if data entity @s {OnGround:true} rotated ~ 0 unless block ^ ^ ^1 air unless block ^ ^ ^1 #flowers unless block ^ ^ ^1 short_grass unless block ^ ^ ^1 #coral_plants unless block ^ ^ ^1 bush unless block ^ ^ ^1 tall_grass unless block ^ ^ ^1 leaf_litter run {
+            execute at @s if data entity @s {OnGround:true} rotated ~ 0 unless block ^ ^ ^1 air unless block ^ ^ ^1 #flowers unless block ^ ^ ^1 short_grass unless block ^ ^ ^1 #coral_plants unless block ^ ^ ^1 bush unless block ^ ^ ^1 tall_grass unless block ^ ^ ^1 leaf_litter unless block ^ ^ ^1 cave_air unless block ^ ^ ^1 void_air unless block ^ ^ ^1 snow run {
                 data modify entity @s Motion[1] set value 0.5d
                 execute store result entity @s Motion[0] double 0.001 run data get entity @s Motion[0] 1500
                 execute store result entity @s Motion[2] double 0.001 run data get entity @s Motion[2] 1500
@@ -396,7 +424,7 @@ function old_mob_ai {
             execute if entity @n[tag=target] run attribute @s movement_speed modifier add oldcombat:nonormalmove -1 add_multiplied_total
             execute if entity @n[tag=target] run attribute @s jump_strength modifier add oldcombat:nonormalmove -1 add_multiplied_total
 
-        } else execute run {
+        } else execute if entity @s[type=!spider,type=!cave_spider,type=!wolf,type=!fox] run {
             # execute anchored eyes run particle minecraft:electric_spark ^ ^ ^1
             execute store result score xv OldCombatTemp run data get entity @s Motion[0] 1000
             execute store result score yv OldCombatTemp run data get entity @s Motion[1] 1000
@@ -430,7 +458,7 @@ function old_mob_ai {
             execute store result entity @s Motion[2] double 0.001 run scoreboard players operation zv OldCombatTemp += zv2 OldCombatTemp
             # execute if block ~ ~0.1 ~ water if entity @s[type=#undead] run data modify entity @s Motion[1] set value 0.25d
             execute if entity @n[tag=target] run attribute @s movement_speed modifier add oldcombat:nonormalmove -1 add_multiplied_total
-        } else execute run {
+        } else execute if entity @s[type=!spider,type=!cave_spider,type=!wolf] run {
             # execute anchored eyes run particle minecraft:electric_spark ^ ^ ^1
             execute store result score xv OldCombatTemp run data get entity @s Motion[0] 1000
             # execute store result score yv OldCombatTemp run data get entity @s Motion[1] 1000
@@ -650,7 +678,7 @@ function disable_vanilla_sharpness {
             attribute @s attack_damage modifier remove oldcombat:disable_vanilla_sharp
             $attribute @s attack_damage modifier add oldcombat:disable_vanilla_sharp $(damage) add_value
         }
-    } else execute as @3 run {
+    } else execute as @e run {
         attribute @s attack_damage modifier remove oldcombat:disable_vanilla_sharp
     }
 }
@@ -1119,6 +1147,47 @@ dir config {
 
 advancement just_took_damage {
     "display":{"icon": {"id": "iron_sword"},"title": "Taken Damage","announce_to_chat": false,"description": "You took damage! Yayyyyy!!......","show_toast": true,"hidden": true},"criteria": {"hurt":{"trigger": "entity_hurt_player"}},"rewards":{"function":"oldcombat:on_damage"}
+}
+
+advancement sword_blocking {
+    "display":{"icon": {"id": "iron_sword"},"title": "Blocking with a non-shield item","announce_to_chat": false,"description": "You're blocking with a sword!","show_toast": false,"hidden": true},"criteria": {"blocking":{"trigger": "using_item","conditions":{"item":{"items":"#minecraft:swords"}},"rewards":{"function":"oldcombat:while_blocking"}}}
+}
+
+function while_blocking {
+    advancement revoke @s only oldcombat:blocking
+    load {
+        scoreboard objectives add IsSwordBlocking dummy
+    }
+    scoreboard players set @s IsSwordBlocking 1
+}
+
+function compatibility {
+    execute if score EnableCompatibilityTools OldCombatSettings matches 1 run {
+        block geyser_compatibility {
+            load {
+                scoreboard objectives add BedrockSneakTime minecraft.custom:minecraft.sneak_time
+            }
+            # Better compatibility with Bedrock Edition clients connected using Geyser
+            execute as @a[tag=bedrock] if items entity @s weapon.mainhand *[blocks_attacks] run {
+            execute if items entity @s weapon.offhand shield[custom_data~{oldcombat_type:compat}] run return 0
+                data remove storage oldcombat:temp offhand
+                data modify storage oldcombat:temp offhand set from entity @s equipment.offhand
+                execute if items entity @s weapon.offhand * run { with storage oldcombat:temp
+                    $item replace entity @s weapon.offhand with shield[item_name="KEEP IN OFFHAND",lore=["This item is meant to assist Bedrock Edition players connected using Geyser in being \nable to sword-block properly. \nRemoving this shield from the offhand slot could cause problems, namely: \nloss of the item that was previously in the offhand slot, \nall the side effects of having this shield that has weird data in your inventory, \nto name a few. If removed from the offhand, DO NOT UNSNEAK OR ISSUES MAY ARISE. \nInstead, return it to the offhand immediately."],custom_data={oldcombat_type:compat,original_item:$(offhand)},blocks_attacks={disable_cooldown_scale:0,damage_reductions:[{base:0,factor:0.5,horizontal_blocking_angle:180}],block_sound:"entity.player.hurt",item_damage:{threshold:0f,base:0f,factor:0f},bypassed_by:"#oldcombat:bypasses_sword_blocking"}]
+                } else execute run {
+                    item replace entity @s weapon.offhand with shield[item_name="KEEP IN OFFHAND",lore=["This item is meant to assist Bedrock Edition players connected using Geyser in being \nable to sword-block properly. \nRemoving this shield from the offhand slot could cause problems, namely: \nloss of the item that was previously in the offhand slot, \nall the side effects of having this shield that has weird data in your inventory, \nto name a few. If removed from the offhand, DO NOT UNSNEAK OR ISSUES MAY ARISE. \nInstead, return it to the offhand immediately."],custom_data={oldcombat_type:compat,original_item:{id:air}},blocks_attacks={disable_cooldown_scale:0,damage_reductions:[{base:0,factor:0.5,horizontal_blocking_angle:180}],block_sound:"entity.player.hurt",item_damage:{threshold:0f,base:0f,factor:0f},bypassed_by:"#oldcombat:bypasses_sword_blocking"}]
+                }
+            } else execute as @a[tag=bedrock] if items entity @s weapon.offhand shield[custom_data~{oldcombat_type:compat}] run {
+                data modify storage oldcombat:temp offhand set from entity @s equipment.offhand.components.minecraft:custom_data.original_item
+                execute at @s run {
+                    execute at @s run summon armor_stand ~ ~ ~ {Tags:["compat"],Marker:1b,Invisible:1b,Invulnerable:1b,ShowArms:1b}
+                    data modify entity @n[tag=compat] equipment.offhand set from storage oldcombat:temp offhand
+                    item replace entity @s weapon.offhand from entity @n[tag=compat] weapon.offhand
+                    kill @e[tag=compat]
+                }
+            }
+        }
+    }
 }
 
 function on_damage {
@@ -2225,6 +2294,8 @@ tag damage_type bypasses_sword_blocking {
     minecraft:freeze
 }
 
+
+
 function sword_blocking {
     execute if score SwordBlocking OldCombatSettings matches 1 as @a unless entity @s[tag=oldcombatignore] if items entity @s weapon.mainhand #minecraft:swords unless data entity @s {SelectedItem:{components:{"minecraft:custom_data":{oldcombat_blocking:1b}}}} run {
         modify_held_components {"minecraft:blocks_attacks":{disable_cooldown_scale:0,damage_reductions:[{base:0,factor:0.5,horizontal_blocking_angle:180}],block_sound:"entity.player.hurt",item_damage:{threshold:0f,base:0f,factor:0f},bypassed_by:"#oldcombat:bypasses_sword_blocking"},"minecraft:custom_data":{oldcombat_blocking:1b}}
@@ -2242,7 +2313,7 @@ function nerf_shields {
         remove_held_component "minecraft:blocks_attacks"
         remove_held_component "minecraft:custom_data".oldcombat_blocking
     }
-    execute if score ShieldNerf OldCombatSettings matches 1 as @a unless entity @s[tag=oldcombatignore] if items entity @s weapon.offhand shield unless data entity @s {equipment:{offhand:{components:{"minecraft:custom_data":{oldcombat_blocking:1b}}}}} run {
+    execute if score ShieldNerf OldCombatSettings matches 1 as @a unless entity @s[tag=oldcombatignore] if items entity @s weapon.offhand shield unless items entity @s weapon.offhand shield[custom_data~{oldcombat_type:compat}] unless data entity @s {equipment:{offhand:{components:{"minecraft:custom_data":{oldcombat_blocking:1b}}}}} run {
         modify_offheld_components {"minecraft:blocks_attacks":{disable_cooldown_scale:1,damage_reductions:[{base:0,factor:0.66,horizontal_blocking_angle:90},{base:0,factor:1,horizontal_blocking_angle:90,type:"#minecraft:is_projectile"}],block_sound:"item.shield.block",item_damage:{threshold:0f,base:0f,factor:0f},block_delay_seconds:0.25,bypassed_by:"#bypasses_shield"},"minecraft:custom_data":{oldcombat_blocking:1b}}
     } else execute if score ShieldNerf OldCombatSettings matches 0 as @a if items entity @s weapon.offhand shield if data entity @s {equipment:{offhand:{components:{"minecraft:custom_data":{oldcombat_blocking:1b}}}}} run {
         remove_offheld_component "minecraft:blocks_attacks"
@@ -2264,6 +2335,7 @@ tag items acceptable_offhand {
 
 function block_offhand {
     execute if score DisableOffhand OldCombatSettings matches 1 as @a unless entity @s[tag=oldcombatignore] run {
+        execute if items entity @s weapon.offhand *[custom_data~{oldcombat_type:compat}] run return 0
         execute if score AllowOffhandForSomeItems OldCombatSettings matches 1 run {
             execute if items entity @s weapon.offhand * unless items entity @s weapon.offhand #oldcombat:acceptable_offhand run {
                 execute at @s anchored eyes positioned ^ ^ ^ positioned ~ ~-0.1 ~ run function throw_offhand
