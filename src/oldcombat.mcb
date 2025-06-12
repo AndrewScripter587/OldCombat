@@ -223,6 +223,7 @@ function on_tick minecraft:tick {
                 function air_knockback
                 
             }
+            
             function disable_sprinting
             function old_tool_damages
             function disable_cooldown
@@ -963,7 +964,8 @@ dir config {
             boolean_input legacy <%"Old Mob AI"%> <%"WARNING: Unfinished, has a couple bugs. Makes mobs have their AI from before 1.2.1, where they generally follow a two-step rule: 1. Go towards target in straight line regardless of any ledges or any blocks in the way, and 2. if there is a block in front of you, try to jump regardless of if there is a block above or if it is too tall to jump up onto. Creepers also strafe around the player in circles instead of standing still while exploding like they did before 1.2.1. Skeletons (and its variants) no longer strafe from side to side when attacking its target, like they didn't before 1.9. Currently only affects mobs when they are actively targeting something, otherwise they use normal idle ai. Reverting the wander system of mobs that aren't targeting an entity can cause some server lag, so you can disable it in the subconfig of this option."%> OldCombatSettings OldMobAI oldcombat:config/page2 oldcombat:config/subconfig/oldai
             boolean_input legacy <%"Mobs see further"%> <%"Makes mobs see 400% as far as they normally would. Not related to any old game version, just a utility. Useful for minigames."%> OldCombatSettings MobFarSight oldcombat:config/page2
             boolean_input legacy <%"Disable Critical Hit"%> <%"Disables the critical hit damage boost and sound(-ish). Note: Doesn't get rid of the crit particles."%> OldCombatSettings DisableCrits oldcombat:config/page2
-            emptyline 11
+            boolean_input legacy <%"Enable Compatibility Patches"%> <%"Enables various patches, such as allowing bedrock edition players connected using Geyser to sword block by giving them a temporary shield with the same effects as java sword blocking."%> OldCombatSettings EnableCompatibilityTools oldcombat:config/page2
+            emptyline 10
             pagebar legacy 2 <%"oldcombat:config"%>
         } ELSE {
             tellraw @s "Old Combat Configuration"
@@ -974,7 +976,8 @@ dir config {
             boolean_input <%"Old Mob AI"%> <%"WARNING: Unfinished, has a couple bugs. Makes mobs have their AI from before 1.2.1, where they generally follow a two-step rule: 1. Go towards target in straight line regardless of any ledges or any blocks in the way, and 2. if there is a block in front of you, try to jump regardless of if there is a block above or if it is too tall to jump up onto. Creepers also strafe around the player in circles instead of standing still while exploding like they did before 1.2.1. Skeletons (and its variants) no longer strafe from side to side when attacking its target, like they didn't before 1.9. Currently only affects mobs when they are actively targeting something, otherwise they use normal idle ai. Reverting the wander system of mobs that aren't targeting an entity can cause some server lag, so you can disable it in the subconfig of this option."%> OldCombatSettings OldMobAI oldcombat:config/page2 oldcombat:config/subconfig/oldai
             boolean_input <%"Mobs see further"%> <%"Makes mobs see 400% as far as they normally would. Not related to any old game version, just a utility. Useful for minigames."%> OldCombatSettings MobFarSight oldcombat:config/page2
             boolean_input <%"Disable Critical Hit"%> <%"Disables the critical hit damage boost and sound(-ish). Note: Doesn't get rid of the crit particles."%> OldCombatSettings DisableCrits oldcombat:config/page2
-            emptyline 11
+            boolean_input <%"Enable Compatibility Patches"%> <%"Enables various patches, such as allowing bedrock edition players connected using Geyser to sword block by giving them a temporary shield with the same effects as java sword blocking."%> OldCombatSettings EnableCompatibilityTools oldcombat:config/page2
+            emptyline 10
             pagebar 2 <%"oldcombat:config"%>
         }
     }
@@ -1165,10 +1168,19 @@ function compatibility {
     execute if score EnableCompatibilityTools OldCombatSettings matches 1 run {
         block geyser_compatibility {
             load {
-                scoreboard objectives add BedrockSneakTime minecraft.custom:minecraft.sneak_time
+                scoreboard objectives add ExistTicks dummy
+                scoreboard objectives add BEClient trigger
             }
+            scoreboard players enable @a BEClient
+            scoreboard players add @a ExistTicks 1
+            execute as @a if score @s ExistTicks matches 100 run {
+                tellraw @s "Hello! This world has bedrock compatibility enabled for Old Combat. If you are currently playing using Bedrock Edition, please run the command '/trigger BEClient' so you can use features like Sword Blocking that otherwise won't work on Bedrock Edition. After running the command, you can undo it by running it again."
+            }
+            scoreboard players set @a[scores={BEClient=2..}] BEClient 0
+            execute as @a if score @s BEClient matches 1 run tag @s add bedrock
+            execute as @a unless score @s BEClient matches 1 run tag @s remove bedrock
             # Better compatibility with Bedrock Edition clients connected using Geyser
-            execute as @a[tag=bedrock] if items entity @s weapon.mainhand *[blocks_attacks] run {
+            execute as @a[tag=bedrock] if items entity @s weapon.mainhand *[blocks_attacks] unless items entity @s weapon.mainhand shield run {
             execute if items entity @s weapon.offhand shield[custom_data~{oldcombat_type:compat}] run return 0
                 data remove storage oldcombat:temp offhand
                 data modify storage oldcombat:temp offhand set from entity @s equipment.offhand
@@ -1607,6 +1619,7 @@ function disable_modern_items {
             $clear @s $(item) 1
         }
         block { {item:shield}
+        execute if entity @s[tag=bedrock] if score EnableCompatibilityTools OldCombatSettings matches 1 run return fail
             $execute unless items entity @s armor.* $(item) unless items entity @s weapon.* $(item) unless items entity @s inventory.* $(item) unless items entity @s hotbar.* $(item) run return fail
             tellraw @s "§4[Old Combat]: Shields are disabled."
             execute if score ReturnMaterialsOfDisabledItems OldCombatSettings matches 1 anchored eyes positioned ^ ^ ^ positioned ~ ~-0.1 ~ run {
@@ -1966,6 +1979,7 @@ function startup minecraft:load {
         # Add a start delay to ensure no issues arise while the world is loading, offhand items will turn into a single block of stone if this didn't exist. Issue still exists in multiplayer, though. Trying to figure out how to fix that on servers too.
         scoreboard players set StartDelay OldCombatTemp 60
         scoreboard players set MobFarSight OldCombatSettings 0
+        scoreboard players set EnableCompatibilityTools OldCombatSettings 0
         scoreboard players set RegenExhaustion OldCombatSettings 300
         scoreboard players set DisableOffhand OldCombatSettings 1
         scoreboard players set BuffKB OldCombatSettings 1
