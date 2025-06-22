@@ -4,10 +4,20 @@ import ./Logger.mcbt
 import ./data.mcbt
 import ./utils.mcbt
 
+# NOTICE: Some of the code comments here will contain profanity because I am so fed up with some of this stuff.
+
+
 <%%
-    $1_21_4compile = false
+    $1_21_4compile = true
     build_time = Date()
-    data_version = 11
+    data_version = 15
+    global.version = {
+        string: "Old Combat Datapack Version 1.5.0",
+        number: "1.5.0",
+        channel: "beta"
+    };
+    
+    
     vector_names = ["x","y","z"]
 %%>
 
@@ -15,9 +25,29 @@ import ./utils.mcbt
     spacing = "\\t".repeat(0);
 %%>
 
+function triggers minecraft:tick {
+load {
+    addobj OCVer trigger
+}
+scoreboard players enable @a OCVer
+execute as @a[scores={OCVer=1..}] run function version
+}
+
+function version {
+    tellraw @s "Version Info"
+    tellraw @s "<%global.version.string%>"
+    tellraw @s "Version <%global.version.number%>"
+    tellraw @s "Channel <%global.version.channel%>"
+    tellraw @s "Build Timestamp <%build_time%>"
+    tellraw @s "Is 1.21.4: <%$1_21_4compile%>"
+    tellraw @s "DV <%data_version%>"
+}
+
 function print_mcb_context {
     tellraw @s '<%JSON.stringify(context)%>'
 }
+
+
 
 <%%
     // Not including the default 1 base point of damage from your fist
@@ -99,16 +129,18 @@ function print_mcb_context {
 
 
 function on_load minecraft:load{
-    
+    say Loading Old Combat Datapack by AndrewGaming587
     # you can use MC-Build without its internal scoreboard but this will limit the available features
     scoreboard objectives add mcb.internal dummy
     scoreboard objectives add OldCombatTemp dummy
+    say Old Combat Version: <%global.version.string%>
     IF ($1_21_4compile) {
         scoreboard players set IsLegacy OldCombatTemp 1
+        logger warn "1.21.4 and older isn't fully supported and this datapack is likely to have a few bugs and has some missing features."
     } ELSE {
         scoreboard players set IsLegacy OldCombatTemp 0
     }
-    tellraw @a "Loading Old Combat Datapack by AndrewGaming587"
+    
 
     object_to_nbt_key <%damages.new%> storage oldcombat:data damages.new
     object_to_nbt_key <%damages.old%> storage oldcombat:data damages.old
@@ -164,10 +196,11 @@ tag entity_type old_ai_supported {
     minecraft:creeper
     #minecraft:zombies
     #minecraft:skeletons
-    #minecraft:arthropod
+    minecraft:silverfish
+    minecraft:endermite
     minecraft:iron_golem
     #minecraft:raiders
-    minecraft:wolf
+    
     minecraft:piglin
     minecraft:piglin_brute
     minecraft:zombified_piglin
@@ -189,19 +222,35 @@ function leak_detector {
     load {
         scoreboard objectives add oldcombat.detect_bugs dummy
     }
+    @Using oldcombat.detect_bugs
+    set previous_markers any_marker
     <%execute%> store result score any_marker oldcombat.detect_bugs if entity @e[type=marker]
-    execute if score any_marker oldcombat.detect_bugs matches 4000.. run {
+
+    execute if score any_marker oldcombat.detect_bugs matches 2000.. unless score previous_markers oldcombat.detect_bugs matches 2000.. run {
         logger report_header
         logger warn "The datapack detected a large amount of Markers (entities of type minecraft:marker) in the world. Too many markers will cause large amounts of server lag, and the pack will start to break due to hitting minecraft's execution limit."
         logger warn [{"score":{"name":"any_marker","objective":"oldcombat.detect_bugs"}}," minecraft:marker entities are currently loaded in your world"]
-        logger info "To temporarily fix the issue, run '/kill @e[type=marker]'."
+        execute if score DontAutoFixMarkerOverload OldCombatSettings matches 1 run logger info "To temporarily fix the issue, run '/kill @e[type=marker]'."
+        execute unless score DontAutoFixMarkerOverload OldCombatSettings matches 1 run logger info "The pack is currently resolving the issue by removing all markers."
         <%execute%> store result score wander_marker oldcombat.detect_bugs if entity @e[type=marker,tag=wander]
         execute if score wander_marker oldcombat.detect_bugs matches 1000.. run logger trace "Possible cause: The markers that oldcombat:old_mob_ai uses for calculation aren't properly getting deleted when no longer in use."
         <%execute%> store result score vector_marker oldcombat.detect_bugs if entity @e[type=marker,tag=wander]
         execute if score vector_marker oldcombat.detect_bugs matches 1000.. run logger trace "Possible cause: The markers that the pack uses for vector calculation aren't properly getting deleted when no longer in use."
-        logger info "This error will show up every 15 seconds until the issue is resolved."
+        execute unless score DontAutoFixMarkerOverload OldCombatSettings matches 1 run kill @e[type=marker]
     }
-    schedule function leak_detector 15s
+    execute if score any_marker oldcombat.detect_bugs matches 5000.. unless score previous_markers oldcombat.detect_bugs matches 5000.. run {
+        crash hard Too many markers! Datapack hard crash initiated to prevent worsening of the issue!
+    }
+    @Using oldcombat.detect_bugs
+    set previous_entities any_entity
+    <%execute%> store result score any_entity oldcombat.detect_bugs if entity @e[type=!marker]
+    execute if score any_entity oldcombat.detect_bugs matches 5000.. unless score previous_entities oldcombat.detect_bugs matches 5000.. run {
+        logger report_header
+        logger warn "The datapack detected a large amount of entities in the world. Too many markers will cause large amounts of server lag, and the pack will start to break due to hitting minecraft's execution limit."
+        logger warn [{"score":{"name":"any_entity","objective":"oldcombat.detect_bugs"}}," entities are currently loaded in your world"]
+        logger warn "The issue cannot be automatically resolved. To fix the issue, please remove any unneeded entities such as item entities, experience orbs, shot arrows, etc, with /kill."
+    }
+    schedule function leak_detector 3s
 }
 
 function on_tick minecraft:tick {
@@ -236,7 +285,8 @@ function on_tick minecraft:tick {
             function old_sharpness
             function old_regen
             function disable_swimming
-
+            function old_bows_setup
+            function old_bows
             function sword_blocking
             function nerf_shields
             function disable_kb_resist
@@ -285,6 +335,12 @@ function fix_illegal_offhand_stack {
 }
 
 function old_mob_ai {
+    # This is so fucking jank
+    # This feature is the reason for 90% of the performance impact caused by this pack
+    # This feature is also known to have "marker leaks", where markers used for calculations aren't removed
+    # properly when they aren't needed.
+    # With the amount of kill commands in this function it should be impossible,
+    # yet it still fucking manages to somehow leak markers that should be getting killed.
     load {
         addobj WanderTargetX
         addobj WanderTargetY
@@ -293,6 +349,7 @@ function old_mob_ai {
         addobj WanderTime
         addobj JumpTimer
     }
+    tag @e remove old_ai_valid_entity
     # execute if score OldMobAI OldCombatSettings matches 1 run tag @e[type=#undead] add old_ai_valid_entity
     execute if score OldMobAI OldCombatSettings matches 1 run tag @e[type=#oldcombat:old_ai_supported] add old_ai_valid_entity
     execute if score OldMobAI OldCombatSettings matches 1 as @e[tag=old_ai_valid_entity] at @s run {
@@ -315,7 +372,8 @@ function old_mob_ai {
         # execute unless entity @n[tag=target] run return fail
         execute unless entity @n[tag=target] unless score EnableWander OldCombatSettings matches 1 run return fail
         execute unless entity @n[tag=target] run {
-            
+            execute unless score @s TicksUntilWander matches 0.. run scoreboard players set @s TicksUntilWander 100
+            execute unless score @s WanderTime matches 0.. run scoreboard players set @s WanderTime 0
             @Using OldCombatTemp
             set HasTarget 0
             @Using TicksUntilWander
@@ -426,6 +484,8 @@ function old_mob_ai {
             execute if entity @n[tag=target] run attribute @s jump_strength modifier add oldcombat:nonormalmove -1 add_multiplied_total
 
         } else execute if entity @s[type=!spider,type=!cave_spider,type=!wolf,type=!fox] run {
+            # Mobs that jump to attack like spiders aren't included because if they were they
+            # would be able to SOMEHOW FLY. I don't know why this fucking happens but I just can't fix it
             # execute anchored eyes run particle minecraft:electric_spark ^ ^ ^1
             execute store result score xv OldCombatTemp run data get entity @s Motion[0] 1000
             execute store result score yv OldCombatTemp run data get entity @s Motion[1] 1000
@@ -459,43 +519,6 @@ function old_mob_ai {
             execute store result entity @s Motion[2] double 0.001 run scoreboard players operation zv OldCombatTemp += zv2 OldCombatTemp
             # execute if block ~ ~0.1 ~ water if entity @s[type=#undead] run data modify entity @s Motion[1] set value 0.25d
             execute if entity @n[tag=target] run attribute @s movement_speed modifier add oldcombat:nonormalmove -1 add_multiplied_total
-        } else execute if entity @s[type=!spider,type=!cave_spider,type=!wolf] run {
-            # execute anchored eyes run particle minecraft:electric_spark ^ ^ ^1
-            execute store result score xv OldCombatTemp run data get entity @s Motion[0] 1000
-            # execute store result score yv OldCombatTemp run data get entity @s Motion[1] 1000
-            execute store result score zv OldCombatTemp run data get entity @s Motion[2] 1000
-            
-            # execute at @s facing entity @n[tag=target] feet run tp @s ~ ~ ~ ~ ~
-            scoreboard players set xv2 OldCombatTemp 0
-            scoreboard players set yv2 OldCombatTemp 0
-            scoreboard players set zv2 OldCombatTemp 0
-            execute if data entity @s {HurtTime:0s} run {
-            scoreboard players operation xv2 OldCombatTemp = VecX OldCombatTemp
-            scoreboard players set yv2 OldCombatTemp 0
-            scoreboard players operation zv2 OldCombatTemp = VecZ OldCombatTemp
-            scoreboard players set sm1 OldCombatTemp 0
-            execute if score @s JumpTimer matches 1.. run scoreboard players set sm1 OldCombatTemp 64
-            execute unless data entity @s {HurtTime:0s} run scoreboard players set sm1 OldCombatTemp -128
-            
-            execute if score @s JumpTimer matches 1.. run scoreboard players remove @s JumpTimer 1
-            # execute if block ~ ~ ~ water run scoreboard players set sm1 OldCombatTemp 16
-            scoreboard players set yv2 OldCombatTemp 0
-            # execute if block ~ ~ ~ water unless entity @s[type=drowned] run scoreboard players set yv2 OldCombatTemp 100
-            scoreboard players set sm2 OldCombatTemp 2048
-            scoreboard players operation xv2 OldCombatTemp *= sm1 OldCombatTemp
-            scoreboard players operation xv2 OldCombatTemp /= sm2 OldCombatTemp
-            # execute if entity @s[type=drowned] if block ~ ~ ~ water run scoreboard players operation yv2 OldCombatTemp *= sm1 OldCombatTemp
-            # execute if entity @s[type=drowned] if block ~ ~ ~ water run scoreboard players operation yv2 OldCombatTemp /= sm2 OldCombatTemp
-            scoreboard players operation zv2 OldCombatTemp *= sm1 OldCombatTemp
-            scoreboard players operation zv2 OldCombatTemp /= sm2 OldCombatTemp
-            }
-            execute store result entity @s Motion[0] double 0.001 run scoreboard players operation xv OldCombatTemp += xv2 OldCombatTemp
-            #execute store result entity @s Motion[1] double 0.001 run scoreboard players get yv OldCombatTemp
-            execute store result entity @s Motion[2] double 0.001 run scoreboard players operation zv OldCombatTemp += zv2 OldCombatTemp
-            # execute if block ~ ~0.1 ~ water if entity @s[type=#undead] run data modify entity @s Motion[1] set value 0.25d
-            execute if entity @n[tag=target] run attribute @s movement_speed modifier add oldcombat:nonormalmove -1 add_multiplied_total
-            execute if entity @n[tag=target] run attribute @s jump_strength modifier add oldcombat:nonormalmove -1 add_multiplied_total
-
         }
         kill @e[type=marker,tag=wander]
         execute if entity @n[tag=target] run attribute @s movement_speed modifier add oldcombat:nonormalmove -1 add_multiplied_total
@@ -623,6 +646,7 @@ function bedrock_fishing_bobber_physics2 {
 }
 
 function bedrock_fishing_bobber_physics {
+    # Don't know why I added this but it taught me just how weird bedrock's fishing rod is.
     execute if score BedrockFishingBobberPhysics OldCombatSettings matches 1 as @e[type=fishing_bobber] at @s run {
         execute if block ~ ~-0.25 ~ water run return 0
         execute if block ~ ~ ~ water run return 0
@@ -640,6 +664,14 @@ function bedrock_fishing_bobber_physics {
 }
 
 function old_fishing_bobber_velocity {
+    # Pardon my excessive profanity in the following comments, but I need to rant about this thing for a short moment.
+    # This feature will completely fucking break or just stop fucking working entirely at the most random fucking times
+    # and I don't fucking know why. There is no rhyme or reason to this, it just breaks in the most random fucking ways at random for no reason.
+    # Only thing constant about it is that once it breaks, it never, and I mean NEVER, fixes with or without assistance.
+    # It's so fucking random it's impossible to predict it. 
+    # Sometimes the fishing bobber just won't have a starting velocity but just spawn and fall to the ground and do nothing,
+    # sometimes it won't have a starting velocity, except if you're facing more towards the south than you are the north, I know, weird condition,
+    # other times it'll just fucking yeet into space. I'm so fucking tired of trying to fix this fucking problem. I give up.
     execute if score OldFishingBobberVel OldCombatSettings matches 1 as @e[type=fishing_bobber,tag=!ofbv.processed] run {
         tag @s add this
         execute on origin run tag @s add origin
@@ -765,7 +797,7 @@ function old_sharpness {
 
 
 function iterate_player_slots {
-    
+    # This function has code that iterates for all player slots and makes up like 90% or so of the generated files from MC-Build and about 5% of the performance impact the pack causes in-game
     
     REPEAT (player_inventory_slots) as id, path {
     
@@ -885,12 +917,8 @@ function fishing_rod_kb {
 }
 
 function enforce_locked_settings {
-    execute if score DisableSprint OldCombatSettings matches 1 run scoreboard players set SprintingCrits OldCombatSettings 0
-    IF ($1_21_4compile) {
-        scoreboard players set SwordBlocking OldCombatSettings 0
-        scoreboard players set ShieldNerf OldCombatSettings 0
-        scoreboard players set SprintingCrits OldCombatSettings 0
-    }
+    @Deprecated
+    # ^ Logic for conflicts is now handled in the features themselves.
 }
 
 function further_fishing_bobber {
@@ -911,7 +939,7 @@ function config {
 dir config {
     function page1 {
         IF $1_21_4compile==true {
-            tellraw @s "Old Combat Configuration"
+            tellraw @s {"text":"Combat Config - Hover for info","hoverEvent":{"action":"show_text","value":"This screen allows you to configure Minecraft's Combat System (and some other mechanics) however you'd like. NOTICE: 1.21.4 is buggy and is missing features, as you could probably tell by the grayed out options below. It is recommended you update to 1.21.5 or later for the best experience"}}
             boolean_input legacy <%"Sword Blocking"%> <%"If true, allows blocking using a sword. Sword blocking halves the damage taken for most damage types. Disabled because you're using 1.21.4."%> OldCombatSettings SwordBlocking disabled true 
             boolean_input legacy <%"Disable Offhand Slot"%> <%"If true, completely disables the offhand slot. Any items in the offhand slot when this is true will be dropped on the ground."%> OldCombatSettings DisableOffhand oldcombat:config oldcombat:config/subconfig/offhand
             boolean_input legacy <%"Disable Attack Cooldown"%> <%"If true, completely disables the attack cooldown mechanic."%> OldCombatSettings DisableAttackCooldown oldcombat:config
@@ -932,7 +960,7 @@ dir config {
             boolean_input legacy <%"Old Tooltips"%> <%"Reverts the held item tooltip to the tooltip from 1.8. Changes with the states of Old Tool Damages and Old Sharpness to reflect their changes."%> OldCombatSettings OldTooltips oldcombat:config/page1 oldcombat:config/subconfig/tooltips
             pagebar legacy 2 <%"oldcombat:config"%>
         } ELSE {
-            tellraw @s "Old Combat Configuration"
+            tellraw @s {"text":"Combat Config - Hover for info","hoverEvent":{"action":"show_text","value":"This screen allows you to configure Minecraft's Combat System (and some other mechanics) however you'd like. NOTE: This datapack has features that require Andrew's Datapack Utilities (a fabric/neoforge helper mod) to work properly. If it isn't installed, please install it for the best experience. The datapack still mostly works without it, though."}}
             boolean_input <%"Sword Blocking"%> <%"If true, allows blocking using a sword. Sword blocking halves the damage taken for most damage types."%> OldCombatSettings SwordBlocking oldcombat:config
             boolean_input <%"Disable Offhand Slot"%> <%"If true, completely disables the offhand slot. Any items in the offhand slot when this is true will be dropped on the ground."%> OldCombatSettings DisableOffhand oldcombat:config oldcombat:config/subconfig/offhand
             boolean_input <%"Disable Attack Cooldown"%> <%"If true, completely disables the attack cooldown mechanic."%> OldCombatSettings DisableAttackCooldown oldcombat:config
@@ -961,10 +989,10 @@ dir config {
             boolean_input legacy <%"Old Fishing Bobber Velocity"%> <%"WARNING: This setting is known to bug out for unknown reasons at random times in different ways. It is unknown why this happens but it is most likely a Minecraft bug because my code is completely fine. Makes fishing rod bobbers have their old velocity calculations when thrown, where the bobber will go in your looking direction correctly instead of acting weird when you look more towards up or down. Note: this setting makes fishing bobbers not move for 1 tick when they spawn as to get the correct positioning."%> OldCombatSettings OldFishingBobberVel oldcombat:config/page2
             boolean_input legacy <%"Beta 1.7.3 and older Hunger System"%> <%"Requires Andrew's Datapack Utilities. Removes hunger and sprinting (except in creative and spectator), making food restore health instead of hunger. When this is on, you'll notice that your hunger bar is completely empty. Do not worry, you won't take starvation damage. Eating food will restore the same amount of health as it would hunger normally. Hunger effect is disabled as it does nothing with this setting on, effectively making any food that normally applies/has a chance to apply the hunger effect completely safe to eat."%> OldCombatSettings OldHungerSystem oldcombat:config/page2
             boolean_input legacy <%"Disable Food Stacking & Instant Eating"%> <%"Disables every food/drink item's ability to stack, and makes eating/drinking instant, like in Beta 1.7.3 and older. Any food item that has more than 1 in a stack when it enters your main/off hand will be split into stacks of 1 in your inventory (if your inventory can't fit all of them the excess food will drop on the ground at your feet)."%> OldCombatSettings OldFood oldcombat:config/page2
-            boolean_input legacy <%"Old Mob AI"%> <%"WARNING: Unfinished, has a couple bugs. Makes mobs have their AI from before 1.2.1, where they generally follow a two-step rule: 1. Go towards target in straight line regardless of any ledges or any blocks in the way, and 2. if there is a block in front of you, try to jump regardless of if there is a block above or if it is too tall to jump up onto. Creepers also strafe around the player in circles instead of standing still while exploding like they did before 1.2.1. Skeletons (and its variants) no longer strafe from side to side when attacking its target, like they didn't before 1.9. Currently only affects mobs when they are actively targeting something, otherwise they use normal idle ai. Reverting the wander system of mobs that aren't targeting an entity can cause some server lag, so you can disable it in the subconfig of this option."%> OldCombatSettings OldMobAI oldcombat:config/page2 oldcombat:config/subconfig/oldai
+            boolean_input legacy <%"Old Mob AI"%> <%"WARNING: Unfinished, has a couple bugs and some performance issues. Makes mobs have their AI from before 1.2.1, where they generally follow a two-step rule: 1. Go towards target in straight line regardless of any ledges or any blocks in the way, and 2. if there is a block in front of you, try to jump regardless of if there is a block above or if it is too tall to jump up onto. Creepers also strafe around the player in circles instead of standing still while exploding like they did before 1.2.1. Skeletons (and its variants) no longer strafe from side to side when attacking its target, like they didn't before 1.9. Reverting the wander system of mobs that aren't targeting an entity can cause some server lag on weaker servers or hardware, so you can disable it in the subconfig of this option. Currently doesn't affect entities that jump to attack, such as spiders, due to a bug that MAKES THEM SOMEHOW ABLE TO FLY."%> OldCombatSettings OldMobAI oldcombat:config/page2 oldcombat:config/subconfig/oldai
             boolean_input legacy <%"Mobs see further"%> <%"Makes mobs see 400% as far as they normally would. Not related to any old game version, just a utility. Useful for minigames."%> OldCombatSettings MobFarSight oldcombat:config/page2
             boolean_input legacy <%"Disable Critical Hit"%> <%"Disables the critical hit damage boost and sound(-ish). Note: Doesn't get rid of the crit particles."%> OldCombatSettings DisableCrits oldcombat:config/page2
-            boolean_input legacy <%"Enable Compatibility Patches"%> <%"Enables various patches, such as allowing bedrock edition players connected using Geyser to sword block by giving them a temporary shield with the same effects as java sword blocking."%> OldCombatSettings EnableCompatibilityTools oldcombat:config/page2
+            boolean_input legacy <%"Enable Compatibility Patches"%> <%"Enables various patches, such as allowing players connected with a different game version to properly sword block when it otherwise looks visually strange, e.g. bedrock players connected with Geyser, by giving them a temporary shield with the same effects as java sword blocking. Disabled because this only works on 1.21.5+."%> OldCombatSettings EnableCompatibilityTools disabled true
             emptyline 10
             pagebar legacy 2 <%"oldcombat:config"%>
         } ELSE {
@@ -973,10 +1001,10 @@ dir config {
             boolean_input <%"Old Fishing Bobber Velocity"%> <%"WARNING: This setting is known to bug out for unknown reasons at random times in different ways. It is unknown why this happens but it is most likely a Minecraft bug because my code is completely fine. Makes fishing rod bobbers have their old velocity calculations when thrown, where the bobber will go in your looking direction correctly instead of acting weird when you look more towards up or down. Note: this setting makes fishing bobbers not move for 1 tick when they spawn as to get the correct positioning. "%> OldCombatSettings OldFishingBobberVel oldcombat:config/page2
             boolean_input <%"Beta 1.7.3 and older Hunger System"%> <%"Requires Andrew's Datapack Utilities. Removes hunger and sprinting (except in creative and spectator), making food restore health instead of hunger. When this is on, you'll notice that your hunger bar is completely empty. Do not worry, you won't take starvation damage. Eating food will restore the same amount of health as it would hunger normally. Hunger effect is disabled as it does nothing with this setting on, effectively making any food that normally applies/has a chance to apply the hunger effect completely safe to eat."%> OldCombatSettings OldHungerSystem oldcombat:config/page2
             boolean_input <%"Disable Food Stacking & Instant Eating"%> <%"Disables every food/drink item's ability to stack, and makes eating/drinking instant, like in Beta 1.7.3 and older. Any food item that has more than 1 in a stack when it enters your main/off hand will be split into stacks of 1 in your inventory (if your inventory can't fit all of them the excess food will drop on the ground at your feet)."%> OldCombatSettings OldFood oldcombat:config/page2
-            boolean_input <%"Old Mob AI"%> <%"WARNING: Unfinished, has a couple bugs. Makes mobs have their AI from before 1.2.1, where they generally follow a two-step rule: 1. Go towards target in straight line regardless of any ledges or any blocks in the way, and 2. if there is a block in front of you, try to jump regardless of if there is a block above or if it is too tall to jump up onto. Creepers also strafe around the player in circles instead of standing still while exploding like they did before 1.2.1. Skeletons (and its variants) no longer strafe from side to side when attacking its target, like they didn't before 1.9. Currently only affects mobs when they are actively targeting something, otherwise they use normal idle ai. Reverting the wander system of mobs that aren't targeting an entity can cause some server lag, so you can disable it in the subconfig of this option."%> OldCombatSettings OldMobAI oldcombat:config/page2 oldcombat:config/subconfig/oldai
+            boolean_input <%"Old Mob AI"%> <%"WARNING: Unfinished, has a couple bugs and some performance issues. Makes mobs have their AI from before 1.2.1, where they generally follow a two-step rule: 1. Go towards target in straight line regardless of any ledges or any blocks in the way, and 2. if there is a block in front of you, try to jump regardless of if there is a block above or if it is too tall to jump up onto. Creepers also strafe around the player in circles instead of standing still while exploding like they did before 1.2.1. Skeletons (and its variants) no longer strafe from side to side when attacking its target, like they didn't before 1.9. Reverting the wander system of mobs that aren't targeting an entity can cause some server lag on weaker servers or hardware, so you can disable it in the subconfig of this option. Currently doesn't affect entities that jump to attack, such as spiders, due to a bug that MAKES THEM SOMEHOW ABLE TO FLY."%> OldCombatSettings OldMobAI oldcombat:config/page2 oldcombat:config/subconfig/oldai
             boolean_input <%"Mobs see further"%> <%"Makes mobs see 400% as far as they normally would. Not related to any old game version, just a utility. Useful for minigames."%> OldCombatSettings MobFarSight oldcombat:config/page2
             boolean_input <%"Disable Critical Hit"%> <%"Disables the critical hit damage boost and sound(-ish). Note: Doesn't get rid of the crit particles."%> OldCombatSettings DisableCrits oldcombat:config/page2
-            boolean_input <%"Enable Compatibility Patches"%> <%"Enables various patches, such as allowing bedrock edition players connected using Geyser to sword block by giving them a temporary shield with the same effects as java sword blocking."%> OldCombatSettings EnableCompatibilityTools oldcombat:config/page2
+            boolean_input <%"Enable Compatibility Patches"%> <%"Enables various patches, such as allowing players connected with a different game version to properly sword block when it otherwise looks visually strange, e.g. bedrock players connected with Geyser, by giving them a temporary shield with the same effects as java sword blocking."%> OldCombatSettings EnableCompatibilityTools oldcombat:config/page2
             emptyline 10
             pagebar 2 <%"oldcombat:config"%>
         }
@@ -1156,6 +1184,10 @@ advancement sword_blocking {
     "display":{"icon": {"id": "iron_sword"},"title": "Blocking with a non-shield item","announce_to_chat": false,"description": "You're blocking with a sword!","show_toast": false,"hidden": true},"criteria": {"blocking":{"trigger": "using_item","conditions":{"item":{"items":"#minecraft:swords"}},"rewards":{"function":"oldcombat:while_blocking"}}}
 }
 
+advancement bow {
+    "display":{"icon": {"id": "bow"},"title": "Using a Bow","announce_to_chat": false,"description": "You're pulling the string of a bow! ","show_toast": false,"hidden": true},"criteria": {"pulling":{"trigger": "using_item","conditions":{"item":{"items":"minecraft:bow"}},"rewards":{"function":"oldcombat:while_using_bow"}}}
+}
+
 function while_blocking {
     advancement revoke @s only oldcombat:blocking
     load {
@@ -1164,17 +1196,54 @@ function while_blocking {
     scoreboard players set @s IsSwordBlocking 1
 }
 
+function while_using_bow {
+    advancement revoke @s only oldcombat:bow
+    
+}
+
+function old_bows_setup {
+    execute if score OldBows OldCombatSettings matches 1.. as @a run {
+        execute if items entity @s weapon.mainhand bow run {
+            item replace entity @s weapon.mainhand with stick[item_name='Beta 1.7.3 Bow',item_model=bow,consumable={consume_seconds:0},max_stack_size=1,use_remainder={id:stick,components:{item_name:'Used Bow',custom_data:{used:1b,type:bow}}},custom_data={type:bow}]
+        }
+    } else execute as @a if items entity @s weapon.mainhand stick[custom_data~{type:bow}] run {
+        item replace entity @s weapon.mainhand with bow
+    }
+}
+
+
+function old_bows {
+    execute if score OldBows OldCombatSettings matches 1.. as @a if items entity @s weapon.mainhand stick[custom_data~{used:1b,type:bow}] at @s run {
+        function utils/get_vectors_from_dir
+        execute anchored eyes positioned ^ ^ ^ run {
+            execute unless items entity @s weapon.* arrow unless items entity @s hotbar.* arrow unless items entity @s inventory.* arrow run return fail
+            tag @s add shooter
+            summon arrow ~ ~ ~ {Tags:["this"],pickup:1}
+            data modify entity @n[tag=this] Owner set from entity @n[tag=shooter] UUID
+            execute store result entity @n[tag=this] Motion[0] double 0.001 run data get storage oldcombat:temp vectors[0] 2500
+            execute store result entity @n[tag=this] Motion[1] double 0.001 run data get storage oldcombat:temp vectors[1] 2500
+            execute store result entity @n[tag=this] Motion[2] double 0.001 run data get storage oldcombat:temp vectors[2] 2500
+            
+            tag @s remove shooter
+            tag @n[tag=this] remove this
+            clear @s arrow 1
+        }
+        item replace entity @s weapon.mainhand with stick[item_name='Beta 1.7.3 Bow',item_model=bow,consumable={consume_seconds:0},max_stack_size=1,use_remainder={id:stick,components:{item_name:'Bow',custom_data:{used:1b,type:bow}}},custom_data={type:bow}]
+    }
+}
+
+
 function compatibility {
     execute if score EnableCompatibilityTools OldCombatSettings matches 1 run {
-        block geyser_compatibility {
+        block sword_blocking_helper {
             load {
                 scoreboard objectives add ExistTicks dummy
-                scoreboard objectives add BEClient trigger
+                scoreboard objectives add SwordBlockAssist trigger
             }
-            scoreboard players enable @a BEClient
+            scoreboard players enable @a SwordBlockAssist
             scoreboard players add @a ExistTicks 1
             execute as @a if score @s ExistTicks matches 100 run {
-                tellraw @s "Hello! This world has bedrock compatibility enabled for Old Combat. If you are currently playing using Bedrock Edition, please run the command '/trigger BEClient' so you can use features like Sword Blocking that otherwise won't work on Bedrock Edition. After running the command, you can undo it by running it again."
+                tellraw @s "Hello! This world has some compatibility features enabled for Old Combat. \nIf you are currently playing using a game version where sword blocking doesn't display properly (e.g. Bedrock edition connected through Geyser), please run the command '/trigger SwordBlockAssist' so you can use features like Sword Blocking that otherwise looks weird without this. After running the command, you can undo it by running it again."
             }
             scoreboard players set @a[scores={BEClient=2..}] BEClient 0
             execute as @a if score @s BEClient matches 1 run tag @s add bedrock
@@ -1189,7 +1258,7 @@ function compatibility {
                 } else execute run {
                     item replace entity @s weapon.offhand with shield[item_name="KEEP IN OFFHAND",lore=["This item is meant to assist Bedrock Edition players connected using Geyser in being \nable to sword-block properly. \nRemoving this shield from the offhand slot could cause problems, namely: \nloss of the item that was previously in the offhand slot, \nall the side effects of having this shield that has weird data in your inventory, \nto name a few. If removed from the offhand, DO NOT UNSNEAK OR ISSUES MAY ARISE. \nInstead, return it to the offhand immediately."],custom_data={oldcombat_type:compat,original_item:{id:air}},blocks_attacks={disable_cooldown_scale:0,damage_reductions:[{base:0,factor:0.5,horizontal_blocking_angle:180}],block_sound:"entity.player.hurt",item_damage:{threshold:0f,base:0f,factor:0f},bypassed_by:"#oldcombat:bypasses_sword_blocking"}]
                 }
-            } else execute as @a[tag=bedrock] if items entity @s weapon.offhand shield[custom_data~{oldcombat_type:compat}] run {
+            } else execute as @a if items entity @s weapon.offhand shield[custom_data~{oldcombat_type:compat}] run {
                 data modify storage oldcombat:temp offhand set from entity @s equipment.offhand.components.minecraft:custom_data.original_item
                 execute at @s run {
                     execute at @s run summon armor_stand ~ ~ ~ {Tags:["compat"],Marker:1b,Invisible:1b,Invulnerable:1b,ShowArms:1b}
@@ -2388,6 +2457,17 @@ dir debug {
 
     }
 
+
+    function modify_held_item {
+        summon armor_stand ~ ~ ~ {ShowArms:1b,Tags:["modify_slot"],Marker:true,Invisible:true,Invulnerable:true}
+        item replace entity @n[type=armor_stand,tag=modify_slot] weapon.mainhand from entity @s weapon.mainhand
+        $data merge entity @n[type=armor_stand,tag=modify_slot] {equipment:{mainhand:$(data)}}
+        item replace entity @s weapon.mainhand from entity @n[type=armor_stand,tag=modify_slot] weapon.mainhand
+        kill @e[type=armor_stand,tag=modify_slot]
+
+    }
+
+    
     function remove_held_component {
         summon armor_stand ~ ~ ~ {ShowArms:1b,Tags:["modify_slot"],Marker:true,Invisible:true,Invulnerable:true}
         item replace entity @n[type=armor_stand,tag=modify_slot] weapon.mainhand from entity @s weapon.mainhand
@@ -2396,6 +2476,8 @@ dir debug {
         kill @e[type=armor_stand,tag=modify_slot]
 
     }
+
+    
 
     function info {
         tellraw @s "$1_21_4compile = <%$1_21_4compile%>"

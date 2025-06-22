@@ -1,7 +1,38 @@
 import ./data.mcbt
+import ./utils.mcbt
+import ./Logger.mcbt
 # This template contains most of the code that the pack uses.
 
-
+template crash {
+    with soft reason:raw {
+        logger soft_crash_header
+        logger except <%reason%>
+        logger trace "A walkthrough of the error, and all known details are as follows:"
+        REPEAT (context.functions) as tracemsg {
+            logger trace "...at <%tracemsg%>"
+        }
+    }
+    with hard reason:raw {
+        logger hard_crash_header
+        logger fatal <%reason%>
+        logger trace "A walkthrough of the error, and all known details are as follows:"
+        REPEAT (context.functions) as tracemsg {
+            logger trace "...at <%tracemsg%>"
+        }
+        @Using OldCombatSettings
+        set Disable 1
+    }
+    with {
+        logger hard_crash_header
+        logger trace "A walkthrough of the error, and all known details are as follows:"
+        REPEAT (context.functions) as tracemsg {
+            logger trace "...at <%tracemsg%>"
+        }
+        logger error "No error info provided! This will make debugging harder."
+        @Using OldCombatSettings
+        set Disable 1
+    }
+}
 
 template throw_held_stack {
     load {
