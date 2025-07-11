@@ -22,7 +22,7 @@ author = 39646367
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "~/workspace/makezip.sh"
+args = "sh ~/workspace/makezip OldCombat"
 
 [[workflows.workflow]]
 name = "Build and zip"

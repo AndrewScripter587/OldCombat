@@ -9,7 +9,10 @@ template crash {
         logger except <%reason%>
         logger trace "A walkthrough of the error, and all known details are as follows:"
         REPEAT (context.functions) as tracemsg {
-            logger trace "...at <%tracemsg%>"
+            <%%
+                trace_premsg = "...at "
+            %%>
+            logger trace <%"\"" + trace_premsg + tracemsg + "\""%>
         }
     }
     with hard reason:raw {
@@ -17,7 +20,10 @@ template crash {
         logger fatal <%reason%>
         logger trace "A walkthrough of the error, and all known details are as follows:"
         REPEAT (context.functions) as tracemsg {
-            logger trace "...at <%tracemsg%>"
+            <%%
+                trace_premsg = "...at "
+            %%>
+            logger trace <%"\"" + trace_premsg + tracemsg + "\""%>
         }
         @Using OldCombatSettings
         set Disable 1
@@ -26,7 +32,10 @@ template crash {
         logger hard_crash_header
         logger trace "A walkthrough of the error, and all known details are as follows:"
         REPEAT (context.functions) as tracemsg {
-            logger trace "...at <%tracemsg%>"
+            <%%
+                trace_premsg = "...at "
+            %%>
+            logger trace <%"\"" + trace_premsg + tracemsg + "\""%>
         }
         logger error "No error info provided! This will make debugging harder."
         @Using OldCombatSettings

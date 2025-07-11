@@ -25,6 +25,9 @@ template logger {
     with except json:raw {
         tellraw @a ["§4[§c<%context.namespace%> - EXCEPTION§4]: Exception recieved: ",<%json%>]
     }
+    with trace json:js {
+        tellraw @a ["§4[§c<%context.namespace%> - ERROR TRACE§4]: ",<%json%>]
+    }
     with trace json:raw {
         tellraw @a ["§4[§c<%context.namespace%> - ERROR TRACE§4]: ",<%json%>]
     }
