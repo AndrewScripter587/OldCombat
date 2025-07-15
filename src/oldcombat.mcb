@@ -319,7 +319,7 @@ function on_tick minecraft:tick {
         execute store result score @s WasOnGround run scoreboard players get @s OnGround
         execute store result score @s OnGround run data get entity @s OnGround
     }
-
+    forceload add -16 -16 16 16
     execute if score StartDelay OldCombatTemp matches 1.. run {
         scoreboard players remove StartDelay OldCombatTemp 1
     } else execute run {
@@ -338,7 +338,7 @@ function on_tick minecraft:tick {
             function block_offhand
             function disable_modern_items
             function disable_netherite_items
-
+            function disable_experience
             function disable_vanilla_sharpness
             function iterate_player_slots
             function old_sharpness
@@ -616,9 +616,9 @@ function farsight {
 
 function old_hunger_system {
     @Using OldCombatTemp
-    load {
-        scoreboard players set @a ActualFoodLevel -1
-        scoreboard players set @a OldHungerApplied 0
+    execute as @a run {
+        execute unless score @s OldHungerApplied matches 0.. run scoreboard players set @a ActualFoodLevel -1
+        execute unless score @s OldHungerApplied matches 0.. run scoreboard players set @a OldHungerApplied 0
     }
     execute if score OldHungerSystem OldCombatSettings matches 1 as @a run {
         execute unless score @s ActualFoodLevel matches -1 unless data entity @s {foodLevel:0} run {
@@ -1029,6 +1029,14 @@ function further_fishing_bobber {
     }
 }
 
+function disable_experience {
+    execute if score DisableEXP OldCombatSettings matches 1 run {
+        kill @e[type=experience_orb]
+        xp set @a 0 levels
+        xp set @a 0 points
+    }
+}
+
 function config {
     function ./config/page1
 }
@@ -1302,7 +1310,7 @@ function while_using_bow {
 function old_bows_setup {
     execute if score OldBows OldCombatSettings matches 1.. as @a run {
         execute if items entity @s weapon.mainhand bow run {
-            item replace entity @s weapon.mainhand with stick[item_name='Beta 1.7.3 Bow',item_model=bow,consumable={consume_seconds:0},max_stack_size=1,use_remainder={id:stick,components:{item_name:'Used Bow',custom_data:{used:1b,type:bow}}},custom_data={type:bow}]
+            item replace entity @s weapon.mainhand with stick[item_name='Bow',item_model=bow,consumable={consume_seconds:0,sound:"minecraft:intentionally_empty",has_consume_particles:false,animation:none},max_stack_size=1,use_remainder={id:stick,components:{item_name:'Bow',custom_data:{used:1b,type:bow},item_model:bow}},custom_data={type:bow}]
         }
     } else execute as @a if items entity @s weapon.mainhand stick[custom_data~{type:bow}] run {
         item replace entity @s weapon.mainhand with bow
@@ -1326,7 +1334,7 @@ function old_bows {
             tag @n[tag=this] remove this
             clear @s arrow 1
         }
-        item replace entity @s weapon.mainhand with stick[item_name='Beta 1.7.3 Bow',item_model=bow,consumable={consume_seconds:0},max_stack_size=1,use_remainder={id:stick,components:{item_name:'Bow',custom_data:{used:1b,type:bow}}},custom_data={type:bow}]
+        item replace entity @s weapon.mainhand with stick[item_name='Bow',item_model=bow,consumable={consume_seconds:0,sound:"minecraft:intentionally_empty",has_consume_particles:false,animation:none},max_stack_size=1,use_remainder={id:stick,components:{item_name:'Bow',custom_data:{used:1b,type:bow},item_model:bow}},custom_data={type:bow}]
     }
 }
 
@@ -1411,12 +1419,13 @@ dir presets {
         scoreboard players set OldHungerSystem OldCombatSettings 1
         scoreboard players set OldFood OldCombatSettings 1
         scoreboard players set OldSharpness OldCombatSettings 1
-        scoreboard players set EnableWander OldCombatSettings 1
+        scoreboard players set EnableWander OldCombatSettings 0
         scoreboard players set DisableCrits OldCombatSettings 1
         scoreboard players set OldTooltips OldCombatSettings 1
         scoreboard players set OldFishingBobberVel OldCombatSettings 1
         scoreboard players set BedrockFishingBobberPhysics OldCombatSettings 0
         scoreboard players set FishingBobberGravity OldCombatSettings 50
+        scoreboard players set DisableEXP OldCombatSettings 1
     }
 
     function 1.1 {
@@ -1445,7 +1454,7 @@ dir presets {
         scoreboard players set BreakDisabledTools OldCombatSettings 1
         scoreboard players set ReturnMaterialsOfDisabledItems OldCombatSettings 1
         scoreboard players set ShieldNerf OldCombatSettings 1
-        scoreboard players set EnableWander OldCombatSettings 1
+        scoreboard players set EnableWander OldCombatSettings 0
         scoreboard players set DisableCrits OldCombatSettings 0
         scoreboard players set DisableAttackSounds OldCombatSettings 0
         scoreboard players set DisableSwimming OldCombatSettings 1
@@ -1459,6 +1468,7 @@ dir presets {
         scoreboard players set OldFishingBobberVel OldCombatSettings 1
         scoreboard players set BedrockFishingBobberPhysics OldCombatSettings 0
         scoreboard players set FishingBobberGravity OldCombatSettings 50
+        scoreboard players set DisableEXP OldCombatSettings 0
     }
 
     function 1.8 {
@@ -1502,6 +1512,7 @@ dir presets {
         scoreboard players set OldFishingBobberVel OldCombatSettings 1
         scoreboard players set BedrockFishingBobberPhysics OldCombatSettings 0
         scoreboard players set FishingBobberGravity OldCombatSettings 50
+        scoreboard players set DisableEXP OldCombatSettings 0
     }
     function 1.9 {
         scoreboard players set DisableOffhand OldCombatSettings 0
@@ -1543,6 +1554,7 @@ dir presets {
         scoreboard players set OldFishingBobberVel OldCombatSettings 1
         scoreboard players set BedrockFishingBobberPhysics OldCombatSettings 0
         scoreboard players set FishingBobberGravity OldCombatSettings 50
+        scoreboard players set DisableEXP OldCombatSettings 0
     }
     function 1.11 {
         scoreboard players set EnableWander OldCombatSettings 1
@@ -1584,6 +1596,7 @@ dir presets {
         scoreboard players set OldFishingBobberVel OldCombatSettings 0
         scoreboard players set BedrockFishingBobberPhysics OldCombatSettings 0
         scoreboard players set FishingBobberGravity OldCombatSettings 50
+        scoreboard players set DisableEXP OldCombatSettings 0
     }
     function 1.13 {
         scoreboard players set EnableWander OldCombatSettings 0
@@ -1626,6 +1639,7 @@ dir presets {
         scoreboard players set OldFishingBobberVel OldCombatSettings 0
         scoreboard players set BedrockFishingBobberPhysics OldCombatSettings 0
         scoreboard players set FishingBobberGravity OldCombatSettings 50
+        scoreboard players set DisableEXP OldCombatSettings 0
     }
     function bedrock {
         scoreboard players set EnableWander OldCombatSettings 1
@@ -1667,6 +1681,7 @@ dir presets {
         scoreboard players set OldFishingBobberVel OldCombatSettings 1
         scoreboard players set FishingBobberGravity OldCombatSettings 50
         scoreboard players set BedrockFishingBobberPhysics OldCombatSettings 1
+        scoreboard players set DisableEXP OldCombatSettings 0
     }
 
     function legacy_console {
@@ -1677,6 +1692,7 @@ dir presets {
         scoreboard players set OldRegen OldCombatSettings 0
         scoreboard players set OldFishingBobberVel OldCombatSettings 1
         scoreboard players set BedrockFishingBobberPhysics OldCombatSettings 0
+        scoreboard players set DisableEXP OldCombatSettings 0
     }
 
 
@@ -2149,6 +2165,7 @@ function startup minecraft:load {
         logger info "Loading Default Settings"
         # Add a start delay to ensure no issues arise while the world is loading, offhand items will turn into a single block of stone if this didn't exist. Issue still exists in multiplayer, though. Trying to figure out how to fix that on servers too.
         scoreboard players set StartDelay OldCombatTemp 60
+        scoreboard players set DisableEXP OldCombatSettings 0
         scoreboard players set MobFarSight OldCombatSettings 0
         scoreboard players set EnableCompatibilityTools OldCombatSettings 0
         scoreboard players set RegenExhaustion OldCombatSettings 300
@@ -2279,6 +2296,7 @@ dir noconfirm {
         scoreboard players set OldHungerSystem OldCombatSettings 0
         scoreboard players set OldFood OldCombatSettings 0
         scoreboard players set OldMobAI OldCombatSettings 0
+        scoreboard players set DisableEXP OldCombatSettings 0
         
 
     }
@@ -2342,6 +2360,7 @@ dir noconfirm {
         scoreboard players set FishingBobberGravity OldCombatSettings 50
         scoreboard players set BedrockFishingBobberPhysics OldCombatSettings 0
         scoreboard players set OldFishingBobberVel OldCombatSettings 1
+        scoreboard players set DisableEXP OldCombatSettings 0
 
 
     }
@@ -2597,7 +2616,10 @@ function heal {
 
 function disable_swimming {
     @Using OldCombatTemp
-
+    execute as @a run {
+        execute unless score @s Hunger matches ..0 unless score @s Hunger matches 1.. run scoreboard players set @s Hunger -1
+        execute unless score @s HungerSat matches ..0 unless score @s HungerSat matches 1.. run scoreboard players set @s HungerSat -1
+    }
     execute if score DisableSwimming OldCombatSettings matches 1 as @a at @s if block ~ ~ ~ water run {
         scoreboard players set 20 OldCombatTemp 20
 
