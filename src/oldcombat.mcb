@@ -11,9 +11,10 @@ import ./utils.mcbt
     $1_21_4compile = false
     build_time = Date()
     data_version = 15
+    lite_compile = true
     global.version = {
         string: "Old Combat Datapack Version 1.5.0",
-        number: "1.5.0-beta1",
+        number: "1.5.0-beta2",
         channel: "beta"
     };
     
@@ -41,6 +42,7 @@ function version {
     tellraw @s "Build Timestamp <%build_time%>"
     tellraw @s "Is 1.21.4: <%$1_21_4compile%>"
     tellraw @s "DV <%data_version%>"
+    tellraw @s "Lite: <%lite_compile%>"
 }
 
 function print_mcb_context {
@@ -129,23 +131,37 @@ function print_mcb_context {
 
 
 function on_load minecraft:load{
-    say Loading Old Combat Datapack by AndrewGaming587
+    say Loading Old Combat Datapack Version <%global.version.string%><%lite_compile ? " Lite" : ""%> by AndrewGaming587
     # you can use MC-Build without its internal scoreboard but this will limit the available features
     scoreboard objectives add mcb.internal dummy
     scoreboard objectives add OldCombatTemp dummy
-    say Old Combat Version: <%global.version.string%>
+    scoreboard objectives add Initialized dummy
+    # say Old Combat Version: <%global.version.string%>
+
     IF ($1_21_4compile) {
         scoreboard players set IsLegacy OldCombatTemp 1
-        logger warn "1.21.4 and older isn't fully supported and this datapack is likely to have a few bugs and has some missing features."
+        
     } ELSE {
         scoreboard players set IsLegacy OldCombatTemp 0
     }
 
-    
 
     object_to_nbt_key <%damages.new%> storage oldcombat:data damages.new
     object_to_nbt_key <%damages.old%> storage oldcombat:data damages.old
     function leak_detector
+}
+
+function info {
+    IF (lite_compile) {
+        IF ($1_21_4compile) {
+            tellraw @a ["You're using the lite version of Old Combat. ",{"text":"[Learn More]","hoverEvent":{"action":"show_text","value":["The Lite version of Old Combat is a version of the datapack that is downsized, dropping features for performance and more stability. It is recommended for servers or computers with weaker hardware and/or RAM/CPU limits, and for people who don't really care about customizing the pack.\n\nClick to see more on the Wiki page for Old Combat Lite.\n\n",{"color":"gray","text":"https://github.com/AndrewScripter587/OldCombat/wiki/Lite-Version"}]},"color":"blue","clickEvent":{"action":"open_url","value":"https://github.com/AndrewScripter587/OldCombat/wiki/Lite-Version"}}]
+        } ELSE {
+            tellraw @a ["You're using the lite version of Old Combat. ",{"text":"[Learn More]","hover_event":{"action":"show_text","value":["The Lite version of Old Combat is a version of the datapack that is downsized, dropping features for performance and more stability. It is recommended for servers or computers with weaker hardware and/or RAM/CPU limits, and for people who don't really care about customizing the pack.\n\nClick to see more on the Wiki page for Old Combat Lite.\n\n",{"color":"gray","text":"https://github.com/AndrewScripter587/OldCombat/wiki/Lite-Version"}]},"color":"blue","click_event":{"action":"open_url","url":"https://github.com/AndrewScripter587/OldCombat/wiki/Lite-Version"}}]
+        }
+    }
+    IF ($1_21_4compile) {
+        logger warn "1.21.4 and older isn't fully supported and this datapack is likely to have a few bugs and has some missing features."
+    } 
 }
 
 tag items consumable {
@@ -313,12 +329,15 @@ tag items sharpness_compatible {
 }
 
 function on_tick minecraft:tick {
+    
     execute if score Disable OldCombatSettings matches 1 run return fail
     execute as @e run block check_ground {
         # execute if entity @s[type=!player] store result score @s WasOnGround run data get entity @s OnGround
         execute store result score @s WasOnGround run scoreboard players get @s OnGround
         execute store result score @s OnGround run data get entity @s OnGround
     }
+    # execute as @a run title @s actionbar ["ActualFoodLevel: ",{score:{name:"@s",objective:"ActualFoodLevel"}},", Initialized: ",{score:{name:"@s",objective:"Initialized"}}]
+    scoreboard players set IsLite OldCombatSettings <%lite_compile ? 1 : 0%>
     forceload add -16 -16 16 16
     execute if score StartDelay OldCombatTemp matches 1.. run {
         scoreboard players remove StartDelay OldCombatTemp 1
@@ -331,7 +350,7 @@ function on_tick minecraft:tick {
                 function air_knockback
                 
             }
-            
+            function initialize_players
             function disable_sprinting
             function old_tool_damages
             function disable_cooldown
@@ -368,17 +387,7 @@ function on_tick minecraft:tick {
     }
 }
 
-function disable_crits {
-    execute if score DisableCrits OldCombatSettings matches 1 as @a run {
-        execute store result score yv OldCombatTemp run data get entity @s Motion[1] 100
-        attribute @s attack_damage modifier remove oldcombat:nocrit
-        stopsound @a * minecraft:entity.player.attack.crit
-        execute if score yv OldCombatTemp matches ..-9 unless score @s Sprinting matches 1.. run attribute @s attack_damage modifier add oldcombat:nocrit -0.333333333 add_multiplied_total
-        
-    } else execute as @a run {
-        attribute @s attack_damage modifier remove oldcombat:nocrit
-    }
-}
+
 
 function requiretest {
     @Using OldCombatTemp
@@ -393,219 +402,6 @@ function fix_illegal_offhand_stack {
     fix_illegal_stack offhand
 }
 
-function old_mob_ai {
-    # This is so fucking jank
-    # This feature is the reason for 90% of the performance impact caused by this pack
-    # This feature is also known to have "marker leaks", where markers used for calculations aren't removed
-    # properly when they aren't needed.
-    # With the amount of kill commands in this function it should be impossible,
-    # yet it still fucking manages to somehow leak markers that should be getting killed.
-    load {
-        addobj WanderTargetX
-        addobj WanderTargetY
-        addobj WanderTargetZ
-        addobj TicksUntilWander
-        addobj WanderTime
-        addobj JumpTimer
-        addobj CanAirMove
-    }
-    tag @e remove old_ai_valid_entity
-    # execute if score OldMobAI OldCombatSettings matches 1 run tag @e[type=#undead] add old_ai_valid_entity
-    execute if score OldMobAI OldCombatSettings matches 1 run tag @e[type=#oldcombat:old_ai_supported] add old_ai_valid_entity
-    execute if score OldMobAI OldCombatSettings matches 1 as @e[tag=old_ai_valid_entity] at @s run {
-        kill @e[type=marker,tag=wander]
-        attribute @s movement_speed modifier remove oldcombat:nonormalmove
-        
-        # Prevent unintended behavior under certain conditions
-        execute on vehicle run return fail
-        execute on passengers run return fail
-        execute on leasher run return fail
-        execute on controller run return fail
-        execute if data entity @s {Sitting:true} run return fail
-        
-        execute on target run tag @s add target
-
-        
-        # execute unless entity @n[tag=target] run say No Target!
-        # execute if entity @n[tag=target] run say Target!
-        # execute on target at @s run particle electric_spark ~ ~2 ~
-        # execute unless entity @n[tag=target] run return fail
-        execute unless entity @n[tag=target] unless score EnableWander OldCombatSettings matches 1 run return fail
-        execute unless entity @n[tag=target] run {
-            execute unless score @s TicksUntilWander matches 0.. run scoreboard players set @s TicksUntilWander 100
-            execute unless score @s WanderTime matches 0.. run scoreboard players set @s WanderTime 0
-            @Using OldCombatTemp
-            set HasTarget 0
-            @Using TicksUntilWander
-            
-            execute if score @s TicksUntilWander matches ..0 run {
-                
-                set @s 100
-                @Using OldCombatTemp
-                randomize wx -10..10
-                randomize wz -10..10
-                execute store result score @s WanderTargetX run data get entity @s Pos[0]
-                execute store result score @s WanderTargetZ run data get entity @s Pos[2]
-                scoreboard players operation @s WanderTargetX += wx OldCombatTemp
-                scoreboard players operation @s WanderTargetZ += wz OldCombatTemp
-                @Using WanderTime
-                set @s 200
-            } else execute if score @s WanderTime matches 0 run {
-                @Using TicksUntilWander
-                execute unless score @s WanderTime matches 1.. unless score @s TicksUntilWander matches 1.. run randomize @s 20..200
-                change @s rem 1
-            }
-            
-            execute store result storage oldcombat:temp wx int 1 run scoreboard players get @s WanderTargetX
-            execute store result storage oldcombat:temp wz int 1 run scoreboard players get @s WanderTargetZ
-            execute if score @s WanderTime matches 1.. run {
-            attribute @s movement_speed modifier remove oldcombat:nonormalmove
-            attribute @s jump_strength modifier remove oldcombat:nonormalmove
-            block { with storage oldcombat:temp
-                
-                $summon marker $(wx) ~ $(wz) {Tags:["target","wander"]}
-                # $execute if entity @p[distance=..10] run say $(wx) $(wz)
-            }
-            } else execute run {
-                attribute @s movement_speed modifier add oldcombat:nonormalmove -1 add_multiplied_total
-                attribute @s jump_strength modifier add oldcombat:nonormalmove -1 add_multiplied_total
-            }
-            @Using WanderTime
-            execute if score @s WanderTime matches 1.. run change @s rem 1
-            execute if entity @n[type=marker,tag=target,distance=..0.25,tag=wander] run scoreboard players set @s WanderTime 0
-        } else execute run {
-            @Using OldCombatTemp
-            set HasTarget 1
-            @Using WanderTime
-            set @s 0
-            execute unless score @s WanderTime matches 0.. run set @s 0
-        }
-        execute unless entity @n[tag=target] run return fail
-        tag @s add this
-        execute if entity @n[tag=target,distance=..8] unless entity @s[type=!skeleton,type=!stray,type=!bogged,type=!pillager,type=!witch] if entity @n[tag=target] run attribute @s movement_speed modifier add oldcombat:nonormalmove -1 add_multiplied_total
-        execute if entity @n[tag=target,distance=..8] unless entity @s[type=!skeleton,type=!stray,type=!bogged] if items entity @s weapon.mainhand bow run return -1
-        execute if entity @n[tag=target,distance=..8] unless entity @s[type=!piglin] if items entity @s weapon.mainhand crossbow run attribute @s movement_speed modifier add oldcombat:nonormalmove -1 add_multiplied_total
-        execute if entity @n[tag=target,distance=..8] unless entity @s[type=!piglin,type=!pillager] if items entity @s weapon.mainhand crossbow run return -1
-        execute if entity @n[tag=target,distance=..8] unless entity @s[type=!witch] run return -1
-        execute facing entity @n[tag=target] eyes run function utils/get_walk_forward_vectors
-        execute if entity @s[type=creeper] if entity @n[tag=target,distance=..3,tag=!wander] run tag @s add circle
-        attribute @s[type=creeper,tag=circle] movement_speed modifier add oldcombat:fast_circle 0 add_multiplied_base
-        attribute @s[type=creeper,tag=!circle] movement_speed modifier remove oldcombat:fast_circle
-        # execute if entity @s[type=creeper] if entity @n[tag=target,distance=6..] run tag @s remove circle
-        execute if entity @s[type=creeper] if entity @n[tag=target,tag=wander] run tag @s remove circle
-        execute if entity @s[type=creeper,tag=circle] facing entity @n[tag=target,distance=..1.5] eyes rotated ~115 ~ run function utils/get_walk_forward_vectors
-        execute if entity @s[type=creeper,tag=circle] facing entity @n[tag=target,distance=1.5..2] eyes rotated ~85 ~ run function utils/get_walk_forward_vectors
-        execute if entity @s[type=creeper,tag=circle] facing entity @n[tag=target,distance=2..4] eyes rotated ~80 ~ run function utils/get_walk_forward_vectors
-        execute if entity @s[type=creeper,tag=circle] facing entity @n[tag=target,distance=4..5] eyes rotated ~60 ~ run function utils/get_walk_forward_vectors
-        execute if entity @s[type=creeper,tag=circle] facing entity @n[tag=target,distance=5..6] eyes rotated ~20 ~ run function utils/get_walk_forward_vectors
-        execute if entity @s[type=creeper,tag=circle] facing entity @n[tag=target,distance=6..7] eyes rotated ~5 ~ run function utils/get_walk_forward_vectors
-        execute if entity @s[type=creeper,tag=circle] facing entity @n[tag=target,distance=8..] eyes rotated ~ ~ run function utils/get_walk_forward_vectors
-        execute unless data entity @s {HurtTime:0s} run scoreboard players set @s CanAirMove 0
-        execute if data entity @s {OnGround:true} run scoreboard players set @s CanAirMove 1
-        scoreboard players set ground OldCombatTemp 0
-        execute if data entity @s {OnGround:true} run scoreboard players set ground OldCombatTemp 1
-        execute unless score HasTarget OldCombatTemp matches 1 unless score @s WanderTime matches 1.. run return 0
-        execute if score ground OldCombatTemp matches 1 run {
-            # execute unless entity @s[type=!spider,type=!cave_spider] if block ~ ~-0.1 ~ air run return 0
-            # execute anchored eyes run particle minecraft:electric_spark ^ ^ ^1
-            execute store result score xv OldCombatTemp run data get entity @s Motion[0] 1000
-            execute store result score yv OldCombatTemp run data get entity @s Motion[1] 1000
-            execute store result score zv OldCombatTemp run data get entity @s Motion[2] 1000
-            
-            execute at @s facing entity @n[tag=target] feet run tp @s ~ ~ ~ ~ ~
-            scoreboard players operation xv2 OldCombatTemp = VecX OldCombatTemp
-            scoreboard players set yv2 OldCombatTemp 0
-            scoreboard players operation zv2 OldCombatTemp = VecZ OldCombatTemp
-            execute run {
-            execute store result score speed OldCombatTemp run attribute @s movement_speed get 100
-            execute if block ~ ~-0.2 ~ ice store result score speed OldCombatTemp run attribute @s movement_speed get 65
-            execute if block ~ ~-0.2 ~ packed_ice store result score speed OldCombatTemp run attribute @s movement_speed get 60
-            execute if block ~ ~-0.2 ~ blue_ice store result score speed OldCombatTemp run attribute @s movement_speed get 55
-            execute if block ~ ~-0.2 ~ frosted_ice store result score speed OldCombatTemp run attribute @s movement_speed get 65
-            scoreboard players operation sm1 OldCombatTemp = speed OldCombatTemp
-            execute if block ~ ~ ~ water unless entity @s[type=drowned] run scoreboard players set yv2 OldCombatTemp 100
-            scoreboard players set sm2 OldCombatTemp 350
-            scoreboard players operation xv2 OldCombatTemp *= sm1 OldCombatTemp
-            scoreboard players operation xv2 OldCombatTemp /= sm2 OldCombatTemp
-            execute if entity @s[type=drowned] if block ~ ~ ~ water run scoreboard players operation yv2 OldCombatTemp *= sm1 OldCombatTemp
-            execute if entity @s[type=drowned] if block ~ ~ ~ water run scoreboard players operation yv2 OldCombatTemp /= sm2 OldCombatTemp
-            scoreboard players operation zv2 OldCombatTemp *= sm1 OldCombatTemp
-            scoreboard players operation zv2 OldCombatTemp /= sm2 OldCombatTemp
-            }
-            execute store result entity @s Motion[0] double 0.001 run scoreboard players operation xv OldCombatTemp += xv2 OldCombatTemp
-            execute store result entity @s Motion[1] double 0.001 run scoreboard players operation yv OldCombatTemp += yv2 OldCombatTemp
-            execute store result entity @s Motion[2] double 0.001 run scoreboard players operation zv OldCombatTemp += zv2 OldCombatTemp
-            execute at @s if data entity @s {OnGround:true} rotated ~ 0 unless block ^ ^ ^1 air unless block ^ ^ ^1 #flowers unless block ^ ^ ^1 short_grass unless block ^ ^ ^1 #coral_plants unless block ^ ^ ^1 bush unless block ^ ^ ^1 tall_grass unless block ^ ^ ^1 leaf_litter unless block ^ ^ ^1 cave_air unless block ^ ^ ^1 void_air unless block ^ ^ ^1 snow run {
-                data modify entity @s Motion[1] set value 0.5d
-                execute store result entity @s Motion[0] double 0.001 run data get entity @s Motion[0] 1500
-                execute store result entity @s Motion[2] double 0.001 run data get entity @s Motion[2] 1500
-                data modify entity @s fall_distance set value 0
-                data modify entity @s OnGround set value false
-                scoreboard players set @s JumpTimer 4
-            }
-            execute if entity @n[tag=target] run attribute @s movement_speed modifier add oldcombat:nonormalmove -1 add_multiplied_total
-            execute if entity @n[tag=target] run attribute @s jump_strength modifier add oldcombat:nonormalmove -1 add_multiplied_total
-
-        } else execute if entity @s[type=!spider,type=!cave_spider,type=!wolf,type=!fox] unless score @s CanAirMove matches 0 run {
-            # Mobs that jump to attack like spiders aren't included because if they were they
-            # would be able to SOMEHOW FLY. I don't know why this fucking happens but I just can't fix it
-            # execute anchored eyes run particle minecraft:electric_spark ^ ^ ^1
-            execute store result score xv OldCombatTemp run data get entity @s Motion[0] 1000
-            execute store result score yv OldCombatTemp run data get entity @s Motion[1] 1000
-            execute store result score zv OldCombatTemp run data get entity @s Motion[2] 1000
-            # execute if data entity @s {HurtTime:10s} store result score xv OldCombatTemp run data get entity @s Motion[0] 1200
-            # execute if data entity @s {HurtTime:10s} store result score yv OldCombatTemp run data get entity @s Motion[1] 1200
-            # execute if data entity @s {HurtTime:10s} store result score zv OldCombatTemp run data get entity @s Motion[2] 1200
-            execute unless entity @s[type=!spider,type=!cave_spider,type=!wolf,type=!fox] run scoreboard players set @s JumpTimer 0
-            execute at @s facing entity @n[tag=target] feet run tp @s ~ ~ ~ ~ ~
-            scoreboard players set xv2 OldCombatTemp 0
-            scoreboard players set yv2 OldCombatTemp 0
-            scoreboard players set zv2 OldCombatTemp 0
-            execute run {
-            scoreboard players operation xv2 OldCombatTemp = VecX OldCombatTemp
-            scoreboard players set yv2 OldCombatTemp 0
-            scoreboard players operation zv2 OldCombatTemp = VecZ OldCombatTemp
-            scoreboard players set sm1 OldCombatTemp 0
-            execute if score @s JumpTimer matches 1.. run scoreboard players set sm1 OldCombatTemp 64
-            execute unless data entity @s {HurtTime:0s} run scoreboard players set sm1 OldCombatTemp -256
-            execute if score @s JumpTimer matches 1.. run scoreboard players set yv2 OldCombatTemp -40
-            execute if score @s JumpTimer matches 1.. run scoreboard players remove @s JumpTimer 1
-            execute if block ~ ~ ~ water run scoreboard players set sm1 OldCombatTemp 16
-            execute if block ~ ~ ~ water unless entity @s[type=drowned] run scoreboard players set yv2 OldCombatTemp 100
-            scoreboard players set sm2 OldCombatTemp 2048
-            scoreboard players operation xv2 OldCombatTemp *= sm1 OldCombatTemp
-            scoreboard players operation xv2 OldCombatTemp /= sm2 OldCombatTemp
-            # execute if entity @s[type=drowned] if block ~ ~ ~ water run scoreboard players operation yv2 OldCombatTemp *= sm1 OldCombatTemp
-            # execute if entity @s[type=drowned] if block ~ ~ ~ water run scoreboard players operation yv2 OldCombatTemp /= sm2 OldCombatTemp
-            scoreboard players operation zv2 OldCombatTemp *= sm1 OldCombatTemp
-            scoreboard players operation zv2 OldCombatTemp /= sm2 OldCombatTemp
-            }
-            execute store result entity @s Motion[0] double 0.001 run scoreboard players operation xv OldCombatTemp += xv2 OldCombatTemp
-            execute store result entity @s Motion[1] double 0.001 run scoreboard players operation yv OldCombatTemp += yv2 OldCombatTemp
-            execute store result entity @s Motion[2] double 0.001 run scoreboard players operation zv OldCombatTemp += zv2 OldCombatTemp
-            # execute if block ~ ~0.1 ~ water if entity @s[type=#undead] run data modify entity @s Motion[1] set value 0.25d
-            execute if entity @n[tag=target] run attribute @s movement_speed modifier add oldcombat:nonormalmove -1 add_multiplied_total
-        } else execute if entity @s[type=!spider,type=!cave_spider,type=!wolf,type=!fox] run {
-            data modify storage oldcombat:temp Motion set from entity @s Motion
-            execute at @s facing entity @n[tag=target] feet run tp @s ~ ~ ~ ~ ~
-            data modify entity @s Motion set from storage oldcombat:temp Motion
-        }
-        kill @e[type=marker,tag=wander]
-        execute if entity @n[tag=target] run attribute @s movement_speed modifier add oldcombat:nonormalmove -1 add_multiplied_total
-        execute if entity @n[tag=target] run attribute @s jump_strength modifier add oldcombat:nonormalmove -1 add_multiplied_total
-        tag @n[tag=target] remove target
-        tag @s remove this
-        
-        
-    } else execute as @e[tag=old_ai_valid_entity] run {
-        attribute @s movement_speed modifier remove oldcombat:nonormalmove
-        attribute @s jump_strength modifier remove oldcombat:nonormalmove
-        
-    }
-    kill @e[type=marker,tag=wander]
-}
-
-
 
 
 function farsight {
@@ -614,66 +410,301 @@ function farsight {
     execute if score MobFarSight OldCombatSettings matches 0 as @e run attribute @s follow_range modifier remove oldcombat:farsight
 }
 
-function old_hunger_system {
-    @Using OldCombatTemp
-    execute as @a run {
-        execute unless score @s OldHungerApplied matches 0.. run scoreboard players set @a ActualFoodLevel -1
-        execute unless score @s OldHungerApplied matches 0.. run scoreboard players set @a OldHungerApplied 0
+function initialize_players {
+    execute as @a at @s run {
+        execute unless score @s Initialized matches 1 run scoreboard players set @s ActualFoodLevel -1
+        execute unless score @s Initialized matches 1 run scoreboard players set @s OldHungerApplied 0
+        execute unless score @s Initialized matches 1 run scoreboard players set @s Initialized 1
     }
-    execute if score OldHungerSystem OldCombatSettings matches 1 as @a run {
-        execute unless score @s ActualFoodLevel matches -1 unless data entity @s {foodLevel:0} run {
-            execute store result score Health OldCombatTemp run data get entity @s Health 100
-            execute store result score foodLevel OldCombatTemp run data get entity @s foodLevel 100
-            execute store result entity @s Health float 0.01 run scoreboard players operation Health OldCombatTemp += foodLevel OldCombatTemp
-        }
-        execute if score @s ActualFoodLevel matches -1 store result score @s ActualFoodLevel run data get entity @s foodLevel
-        data modify entity @s foodLevel set value 0
-        data modify entity @s foodSaturationLevel set value 0.0f
-        data modify entity @s foodTickTimer set value 0
-        data modify entity @s foodExhaustionLevel set value 0.0f
-        effect clear @s hunger
-        attribute @s[gamemode=!creative,gamemode=!spectator] movement_speed modifier remove sprinting
-    } else execute as @a run {
-        execute unless score @s ActualFoodLevel matches -1 store result entity @s foodLevel int 1 run scoreboard players get @s ActualFoodLevel
-        scoreboard players set @s ActualFoodLevel -1
-        scoreboard players set @s OldHungerApplied 0
-    }
+
 }
 
-function bedrock_fishing_bobber_physics2 {
-    execute if score BedrockFishingBobberPhysics OldCombatSettings matches 1 as @e[type=fishing_bobber] at @s run {
-        execute unless entity @s[tag=bfbp.processed] run {
-            data modify storage oldcombat:temp Motion set from entity @s Motion
+
+IF (!lite_compile) {
+    function old_mob_ai {
+        # This is so fucking jank
+        # This feature is the reason for 90% of the performance impact caused by this pack
+        # This feature is also known to have "marker leaks", where markers used for calculations aren't removed
+        # properly when they aren't needed.
+        # With the amount of kill commands in this function it should be impossible,
+        # yet it still fucking manages to somehow leak markers that should be getting killed.
+        load {
+            addobj WanderTargetX
+            addobj WanderTargetY
+            addobj WanderTargetZ
+            addobj TicksUntilWander
+            addobj WanderTime
+            addobj JumpTimer
+            addobj CanAirMove
+        }
+        tag @e remove old_ai_valid_entity
+        # execute if score OldMobAI OldCombatSettings matches 1 run tag @e[type=#undead] add old_ai_valid_entity
+        execute if score OldMobAI OldCombatSettings matches 1 run tag @e[type=#oldcombat:old_ai_supported] add old_ai_valid_entity
+        execute if score OldMobAI OldCombatSettings matches 1 as @e[tag=old_ai_valid_entity] at @s run {
+            kill @e[type=marker,tag=wander]
+            attribute @s movement_speed modifier remove oldcombat:nonormalmove
+
+            # Prevent unintended behavior under certain conditions
+            execute on vehicle run return fail
+            execute on passengers run return fail
+            execute on leasher run return fail
+            execute on controller run return fail
+            execute if data entity @s {Sitting:true} run return fail
+
+            execute on target run tag @s add target
+
+
+            # execute unless entity @n[tag=target] run say No Target!
+            # execute if entity @n[tag=target] run say Target!
+            # execute on target at @s run particle electric_spark ~ ~2 ~
+            # execute unless entity @n[tag=target] run return fail
+            execute unless entity @n[tag=target] unless score EnableWander OldCombatSettings matches 1 run return fail
+            execute unless entity @n[tag=target] run {
+                execute unless score @s TicksUntilWander matches 0.. run scoreboard players set @s TicksUntilWander 100
+                execute unless score @s WanderTime matches 0.. run scoreboard players set @s WanderTime 0
+                @Using OldCombatTemp
+                set HasTarget 0
+                @Using TicksUntilWander
+
+                execute if score @s TicksUntilWander matches ..0 run {
+
+                    set @s 100
+                    @Using OldCombatTemp
+                    randomize wx -10..10
+                    randomize wz -10..10
+                    execute store result score @s WanderTargetX run data get entity @s Pos[0]
+                    execute store result score @s WanderTargetZ run data get entity @s Pos[2]
+                    scoreboard players operation @s WanderTargetX += wx OldCombatTemp
+                    scoreboard players operation @s WanderTargetZ += wz OldCombatTemp
+                    @Using WanderTime
+                    set @s 200
+                } else execute if score @s WanderTime matches 0 run {
+                    @Using TicksUntilWander
+                    execute unless score @s WanderTime matches 1.. unless score @s TicksUntilWander matches 1.. run randomize @s 20..200
+                    change @s rem 1
+                }
+
+                execute store result storage oldcombat:temp wx int 1 run scoreboard players get @s WanderTargetX
+                execute store result storage oldcombat:temp wz int 1 run scoreboard players get @s WanderTargetZ
+                execute if score @s WanderTime matches 1.. run {
+                attribute @s movement_speed modifier remove oldcombat:nonormalmove
+                attribute @s jump_strength modifier remove oldcombat:nonormalmove
+                block { with storage oldcombat:temp
+
+                    $summon marker $(wx) ~ $(wz) {Tags:["target","wander"]}
+                    # $execute if entity @p[distance=..10] run say $(wx) $(wz)
+                }
+                } else execute run {
+                    attribute @s movement_speed modifier add oldcombat:nonormalmove -1 add_multiplied_total
+                    attribute @s jump_strength modifier add oldcombat:nonormalmove -1 add_multiplied_total
+                }
+                @Using WanderTime
+                execute if score @s WanderTime matches 1.. run change @s rem 1
+                execute if entity @n[type=marker,tag=target,distance=..0.25,tag=wander] run scoreboard players set @s WanderTime 0
+            } else execute run {
+                @Using OldCombatTemp
+                set HasTarget 1
+                @Using WanderTime
+                set @s 0
+                execute unless score @s WanderTime matches 0.. run set @s 0
+            }
+            execute unless entity @n[tag=target] run return fail
             tag @s add this
-            execute on origin rotated as @s rotated ~ 0 as @e[tag=this] run tp ^ ^ ^0.2
-            tag @s remove this
-            data modify entity @s Motion set from storage oldcombat:temp Motion
+            execute if entity @n[tag=target,distance=..8] unless entity @s[type=!skeleton,type=!stray,type=!bogged,type=!pillager,type=!witch] if entity @n[tag=target] run attribute @s movement_speed modifier add oldcombat:nonormalmove -1 add_multiplied_total
+            execute if entity @n[tag=target,distance=..8] unless entity @s[type=!skeleton,type=!stray,type=!bogged] if items entity @s weapon.mainhand bow run return -1
+            execute if entity @n[tag=target,distance=..8] unless entity @s[type=!piglin] if items entity @s weapon.mainhand crossbow run attribute @s movement_speed modifier add oldcombat:nonormalmove -1 add_multiplied_total
+            execute if entity @n[tag=target,distance=..8] unless entity @s[type=!piglin,type=!pillager] if items entity @s weapon.mainhand crossbow run return -1
+            execute if entity @n[tag=target,distance=..8] unless entity @s[type=!witch] run return -1
+            execute facing entity @n[tag=target] eyes run function utils/get_walk_forward_vectors
+            execute if entity @s[type=creeper] if entity @n[tag=target,distance=..3,tag=!wander] run tag @s add circle
+            attribute @s[type=creeper,tag=circle] movement_speed modifier add oldcombat:fast_circle 0 add_multiplied_base
+            attribute @s[type=creeper,tag=!circle] movement_speed modifier remove oldcombat:fast_circle
+            # execute if entity @s[type=creeper] if entity @n[tag=target,distance=6..] run tag @s remove circle
+            execute if entity @s[type=creeper] if entity @n[tag=target,tag=wander] run tag @s remove circle
+            execute if entity @s[type=creeper,tag=circle] facing entity @n[tag=target,distance=..1.5] eyes rotated ~115 ~ run function utils/get_walk_forward_vectors
+            execute if entity @s[type=creeper,tag=circle] facing entity @n[tag=target,distance=1.5..2] eyes rotated ~85 ~ run function utils/get_walk_forward_vectors
+            execute if entity @s[type=creeper,tag=circle] facing entity @n[tag=target,distance=2..4] eyes rotated ~80 ~ run function utils/get_walk_forward_vectors
+            execute if entity @s[type=creeper,tag=circle] facing entity @n[tag=target,distance=4..5] eyes rotated ~60 ~ run function utils/get_walk_forward_vectors
+            execute if entity @s[type=creeper,tag=circle] facing entity @n[tag=target,distance=5..6] eyes rotated ~20 ~ run function utils/get_walk_forward_vectors
+            execute if entity @s[type=creeper,tag=circle] facing entity @n[tag=target,distance=6..7] eyes rotated ~5 ~ run function utils/get_walk_forward_vectors
+            execute if entity @s[type=creeper,tag=circle] facing entity @n[tag=target,distance=8..] eyes rotated ~ ~ run function utils/get_walk_forward_vectors
+            execute unless data entity @s {HurtTime:0s} run scoreboard players set @s CanAirMove 0
+            execute if data entity @s {OnGround:true} run scoreboard players set @s CanAirMove 1
+            scoreboard players set ground OldCombatTemp 0
+            execute if data entity @s {OnGround:true} run scoreboard players set ground OldCombatTemp 1
+            execute unless score HasTarget OldCombatTemp matches 1 unless score @s WanderTime matches 1.. run return 0
+            execute if score ground OldCombatTemp matches 1 run {
+                # execute unless entity @s[type=!spider,type=!cave_spider] if block ~ ~-0.1 ~ air run return 0
+                # execute anchored eyes run particle minecraft:electric_spark ^ ^ ^1
+                execute store result score xv OldCombatTemp run data get entity @s Motion[0] 1000
+                execute store result score yv OldCombatTemp run data get entity @s Motion[1] 1000
+                execute store result score zv OldCombatTemp run data get entity @s Motion[2] 1000
 
-            execute store result score yv OldCombatTemp run data get entity @s Motion[1] 1000
-            execute store result entity @s Motion[1] double 0.001 run scoreboard players add yv OldCombatTemp 100
-            execute store result score y OldCombatTemp run data get entity @s Pos[1] 1000
-            execute store result entity @s Pos[1] double 0.001 run scoreboard players remove y OldCombatTemp 500
+                execute at @s facing entity @n[tag=target] feet run tp @s ~ ~ ~ ~ ~
+                scoreboard players operation xv2 OldCombatTemp = VecX OldCombatTemp
+                scoreboard players set yv2 OldCombatTemp 0
+                scoreboard players operation zv2 OldCombatTemp = VecZ OldCombatTemp
+                execute run {
+                execute store result score speed OldCombatTemp run attribute @s movement_speed get 100
+                execute if block ~ ~-0.2 ~ ice store result score speed OldCombatTemp run attribute @s movement_speed get 65
+                execute if block ~ ~-0.2 ~ packed_ice store result score speed OldCombatTemp run attribute @s movement_speed get 60
+                execute if block ~ ~-0.2 ~ blue_ice store result score speed OldCombatTemp run attribute @s movement_speed get 55
+                execute if block ~ ~-0.2 ~ frosted_ice store result score speed OldCombatTemp run attribute @s movement_speed get 65
+                scoreboard players operation sm1 OldCombatTemp = speed OldCombatTemp
+                execute if block ~ ~ ~ water unless entity @s[type=drowned] run scoreboard players set yv2 OldCombatTemp 100
+                scoreboard players set sm2 OldCombatTemp 350
+                scoreboard players operation xv2 OldCombatTemp *= sm1 OldCombatTemp
+                scoreboard players operation xv2 OldCombatTemp /= sm2 OldCombatTemp
+                execute if entity @s[type=drowned] if block ~ ~ ~ water run scoreboard players operation yv2 OldCombatTemp *= sm1 OldCombatTemp
+                execute if entity @s[type=drowned] if block ~ ~ ~ water run scoreboard players operation yv2 OldCombatTemp /= sm2 OldCombatTemp
+                scoreboard players operation zv2 OldCombatTemp *= sm1 OldCombatTemp
+                scoreboard players operation zv2 OldCombatTemp /= sm2 OldCombatTemp
+                }
+                execute store result entity @s Motion[0] double 0.001 run scoreboard players operation xv OldCombatTemp += xv2 OldCombatTemp
+                execute store result entity @s Motion[1] double 0.001 run scoreboard players operation yv OldCombatTemp += yv2 OldCombatTemp
+                execute store result entity @s Motion[2] double 0.001 run scoreboard players operation zv OldCombatTemp += zv2 OldCombatTemp
+                execute at @s if data entity @s {OnGround:true} rotated ~ 0 unless block ^ ^ ^1 air unless block ^ ^ ^1 #flowers unless block ^ ^ ^1 short_grass unless block ^ ^ ^1 #coral_plants unless block ^ ^ ^1 bush unless block ^ ^ ^1 tall_grass unless block ^ ^ ^1 leaf_litter unless block ^ ^ ^1 cave_air unless block ^ ^ ^1 void_air unless block ^ ^ ^1 snow run {
+                    data modify entity @s Motion[1] set value 0.5d
+                    execute store result entity @s Motion[0] double 0.001 run data get entity @s Motion[0] 1500
+                    execute store result entity @s Motion[2] double 0.001 run data get entity @s Motion[2] 1500
+                    data modify entity @s fall_distance set value 0
+                    data modify entity @s OnGround set value false
+                    scoreboard players set @s JumpTimer 4
+                }
+                execute if entity @n[tag=target] run attribute @s movement_speed modifier add oldcombat:nonormalmove -1 add_multiplied_total
+                execute if entity @n[tag=target] run attribute @s jump_strength modifier add oldcombat:nonormalmove -1 add_multiplied_total
+
+            } else execute if entity @s[type=!spider,type=!cave_spider,type=!wolf,type=!fox] unless score @s CanAirMove matches 0 run {
+                # Mobs that jump to attack like spiders aren't included because if they were they
+                # would be able to SOMEHOW FLY. I don't know why this fucking happens but I just can't fix it
+                # execute anchored eyes run particle minecraft:electric_spark ^ ^ ^1
+                execute store result score xv OldCombatTemp run data get entity @s Motion[0] 1000
+                execute store result score yv OldCombatTemp run data get entity @s Motion[1] 1000
+                execute store result score zv OldCombatTemp run data get entity @s Motion[2] 1000
+                # execute if data entity @s {HurtTime:10s} store result score xv OldCombatTemp run data get entity @s Motion[0] 1200
+                # execute if data entity @s {HurtTime:10s} store result score yv OldCombatTemp run data get entity @s Motion[1] 1200
+                # execute if data entity @s {HurtTime:10s} store result score zv OldCombatTemp run data get entity @s Motion[2] 1200
+                execute unless entity @s[type=!spider,type=!cave_spider,type=!wolf,type=!fox] run scoreboard players set @s JumpTimer 0
+                execute at @s facing entity @n[tag=target] feet run tp @s ~ ~ ~ ~ ~
+                scoreboard players set xv2 OldCombatTemp 0
+                scoreboard players set yv2 OldCombatTemp 0
+                scoreboard players set zv2 OldCombatTemp 0
+                execute run {
+                scoreboard players operation xv2 OldCombatTemp = VecX OldCombatTemp
+                scoreboard players set yv2 OldCombatTemp 0
+                scoreboard players operation zv2 OldCombatTemp = VecZ OldCombatTemp
+                scoreboard players set sm1 OldCombatTemp 0
+                execute if score @s JumpTimer matches 1.. run scoreboard players set sm1 OldCombatTemp 64
+                execute unless data entity @s {HurtTime:0s} run scoreboard players set sm1 OldCombatTemp -256
+                execute if score @s JumpTimer matches 1.. run scoreboard players set yv2 OldCombatTemp -40
+                execute if score @s JumpTimer matches 1.. run scoreboard players remove @s JumpTimer 1
+                execute if block ~ ~ ~ water run scoreboard players set sm1 OldCombatTemp 16
+                execute if block ~ ~ ~ water unless entity @s[type=drowned] run scoreboard players set yv2 OldCombatTemp 100
+                scoreboard players set sm2 OldCombatTemp 2048
+                scoreboard players operation xv2 OldCombatTemp *= sm1 OldCombatTemp
+                scoreboard players operation xv2 OldCombatTemp /= sm2 OldCombatTemp
+                # execute if entity @s[type=drowned] if block ~ ~ ~ water run scoreboard players operation yv2 OldCombatTemp *= sm1 OldCombatTemp
+                # execute if entity @s[type=drowned] if block ~ ~ ~ water run scoreboard players operation yv2 OldCombatTemp /= sm2 OldCombatTemp
+                scoreboard players operation zv2 OldCombatTemp *= sm1 OldCombatTemp
+                scoreboard players operation zv2 OldCombatTemp /= sm2 OldCombatTemp
+                }
+                execute store result entity @s Motion[0] double 0.001 run scoreboard players operation xv OldCombatTemp += xv2 OldCombatTemp
+                execute store result entity @s Motion[1] double 0.001 run scoreboard players operation yv OldCombatTemp += yv2 OldCombatTemp
+                execute store result entity @s Motion[2] double 0.001 run scoreboard players operation zv OldCombatTemp += zv2 OldCombatTemp
+                # execute if block ~ ~0.1 ~ water if entity @s[type=#undead] run data modify entity @s Motion[1] set value 0.25d
+                execute if entity @n[tag=target] run attribute @s movement_speed modifier add oldcombat:nonormalmove -1 add_multiplied_total
+            } else execute if entity @s[type=!spider,type=!cave_spider,type=!wolf,type=!fox] run {
+                data modify storage oldcombat:temp Motion set from entity @s Motion
+                execute at @s facing entity @n[tag=target] feet run tp @s ~ ~ ~ ~ ~
+                data modify entity @s Motion set from storage oldcombat:temp Motion
+            }
+            kill @e[type=marker,tag=wander]
+            execute if entity @n[tag=target] run attribute @s movement_speed modifier add oldcombat:nonormalmove -1 add_multiplied_total
+            execute if entity @n[tag=target] run attribute @s jump_strength modifier add oldcombat:nonormalmove -1 add_multiplied_total
+            tag @n[tag=target] remove target
+            tag @s remove this
+
+
+        } else execute as @e[tag=old_ai_valid_entity] run {
+            attribute @s movement_speed modifier remove oldcombat:nonormalmove
+            attribute @s jump_strength modifier remove oldcombat:nonormalmove
+
+        }
+        kill @e[type=marker,tag=wander]
+    }
+
+    function old_hunger_system {
+        @Using OldCombatTemp
+        execute if score OldHungerSystem OldCombatSettings matches 1 as @a run {
+            execute unless score @s ActualFoodLevel matches -1 unless data entity @s {foodLevel:0} run {
+                execute store result score Health OldCombatTemp run data get entity @s Health 100
+                execute store result score foodLevel OldCombatTemp run data get entity @s foodLevel 100
+                execute store result entity @s Health float 0.01 run scoreboard players operation Health OldCombatTemp += foodLevel OldCombatTemp
+            }
+            execute if score @s ActualFoodLevel matches -1 store result score @s ActualFoodLevel run data get entity @s foodLevel
+            data modify entity @s foodLevel set value 0
+            data modify entity @s foodSaturationLevel set value 0.0f
+            data modify entity @s foodTickTimer set value 0
+            data modify entity @s foodExhaustionLevel set value 0.0f
+            effect clear @s hunger
+            attribute @s[gamemode=!creative,gamemode=!spectator] movement_speed modifier remove sprinting
+        } else execute as @a run {
+            # execute unless score @s ActualFoodLevel matches -1 run say Resetting old hunger
+            
+            execute unless score @s ActualFoodLevel matches -1 store result entity @s foodLevel int 1 run scoreboard players get @s ActualFoodLevel
+            scoreboard players set @s ActualFoodLevel -1
+            scoreboard players set @s OldHungerApplied 0
         }
     }
-    execute as @e[type=fishing_bobber] run tag @s add bfbp.processed
-}
 
-function bedrock_fishing_bobber_physics {
-    # Don't know why I added this but it taught me just how weird bedrock's fishing rod is.
-    execute if score BedrockFishingBobberPhysics OldCombatSettings matches 1 as @e[type=fishing_bobber] at @s run {
-        execute if block ~ ~-0.25 ~ water run return 0
-        execute if block ~ ~ ~ water run return 0
-        execute if block ~ ~-0.25 ~ kelp run return 0
-        execute if block ~ ~-0.25 ~ seagrass run return 0
-        execute if block ~ ~-0.25 ~ #corals run return 0
-        execute if block ~ ~ ~ kelp run return 0
-        execute if block ~ ~ ~ seagrass run return 0
-        execute if block ~ ~ ~ #corals run return 0
-        execute store result score y OldCombatTemp run data get entity @s Pos[1] 1000
-        execute store result score yv OldCombatTemp run data get entity @s Motion[1] 1000
-        execute store result entity @s Motion[1] double 0.001 run scoreboard players operation yv OldCombatTemp -= FishingBobberGravity OldCombatSettings
+    function disable_crits {
+        execute if score DisableCrits OldCombatSettings matches 1 as @a run {
+            execute store result score yv OldCombatTemp run data get entity @s Motion[1] 100
+            attribute @s attack_damage modifier remove oldcombat:nocrit
+            stopsound @a * minecraft:entity.player.attack.crit
+            execute if score yv OldCombatTemp matches ..-9 unless score @s Sprinting matches 1.. run attribute @s attack_damage modifier add oldcombat:nocrit -0.333333333 add_multiplied_total
+
+        } else execute as @a run {
+            attribute @s attack_damage modifier remove oldcombat:nocrit
+        }
     }
-    
+
+    function bedrock_fishing_bobber_physics2 {
+        execute if score BedrockFishingBobberPhysics OldCombatSettings matches 1 as @e[type=fishing_bobber] at @s run {
+            execute unless entity @s[tag=bfbp.processed] run {
+                data modify storage oldcombat:temp Motion set from entity @s Motion
+                tag @s add this
+                execute on origin rotated as @s rotated ~ 0 as @e[tag=this] run tp ^ ^ ^0.2
+                tag @s remove this
+                data modify entity @s Motion set from storage oldcombat:temp Motion
+
+                execute store result score yv OldCombatTemp run data get entity @s Motion[1] 1000
+                execute store result entity @s Motion[1] double 0.001 run scoreboard players add yv OldCombatTemp 100
+                execute store result score y OldCombatTemp run data get entity @s Pos[1] 1000
+                execute store result entity @s Pos[1] double 0.001 run scoreboard players remove y OldCombatTemp 500
+            }
+        }
+        execute as @e[type=fishing_bobber] run tag @s add bfbp.processed
+    }
+
+
+    function bedrock_fishing_bobber_physics {
+        # Don't know why I added this but it taught me just how weird bedrock's fishing rod is.
+        execute if score BedrockFishingBobberPhysics OldCombatSettings matches 1 as @e[type=fishing_bobber] at @s run {
+            execute if block ~ ~-0.25 ~ water run return 0
+            execute if block ~ ~ ~ water run return 0
+            execute if block ~ ~-0.25 ~ kelp run return 0
+            execute if block ~ ~-0.25 ~ seagrass run return 0
+            execute if block ~ ~-0.25 ~ #corals run return 0
+            execute if block ~ ~ ~ kelp run return 0
+            execute if block ~ ~ ~ seagrass run return 0
+            execute if block ~ ~ ~ #corals run return 0
+            execute store result score y OldCombatTemp run data get entity @s Pos[1] 1000
+            execute store result score yv OldCombatTemp run data get entity @s Motion[1] 1000
+            execute store result entity @s Motion[1] double 0.001 run scoreboard players operation yv OldCombatTemp -= FishingBobberGravity OldCombatSettings
+        }
+
+    }
 }
 
 function old_fishing_bobber_velocity {
@@ -869,110 +900,116 @@ function iterate_player_slots {
     <%%
         slot = id
     %%>
-    # Old Food Iterator
-    execute if score OldFood OldCombatSettings matches 1 as @a run {
+    IF (!lite_compile) {
         
-        execute store result score count OldCombatTemp run data get entity @s <%path%>.count
-        execute if items entity @s <%id%> #oldcombat:consumable run {
-            modify_slot_components <%id%> {"minecraft:consumable":{consume_seconds:0.05,animation:none,sound:"minecraft:intentionally_empty",has_consume_particles:false},"minecraft:custom_data":{oldcombat_oldfood:1b},"minecraft:max_stack_size":1}
-        }
-        execute if items entity @s <%id%> golden_apple run {
-            modify_slot_components <%id%> {"minecraft:consumable":{consume_seconds:0.05,animation:none,sound:"minecraft:intentionally_empty",has_consume_particles:false,on_consume_effects:[{type:apply_effects,effects:[{id:"minecraft:absorption",duration:2400,amplifier:0},{id:"minecraft:regeneration",duration:200,amplifier:1}]}]},"minecraft:custom_data":{oldcombat_oldfood:1b},"minecraft:max_stack_size":1}
-        }
-        execute if items entity @s <%id%> enchanted_golden_apple run {
-            modify_slot_components <%id%> {"minecraft:consumable":{consume_seconds:0.05,animation:none,sound:"minecraft:intentionally_empty",has_consume_particles:false,on_consume_effects:[{type:apply_effects,effects:[{id:"minecraft:absorption",duration:2400,amplifier:3},{id:"minecraft:regeneration",duration:400,amplifier:1},{id:"minecraft:resistance",duration:6000,amplifier:0},{id:"minecraft:fire_resistance",duration:6000,amplifier:0}]}]},"minecraft:custom_data":{oldcombat_oldfood:1b},"minecraft:max_stack_size":1}
-        }
-        execute unless score count OldCombatTemp matches ..1 if items entity @s <%slot%> #oldcombat:consumable at @s run {
-            fix_illegal_stack slot <%id%> <%path%>
-        }
-    } else execute as @a run {
-        execute if items entity @s <%id%> #oldcombat:consumable run {
-        remove_slot_component <%id%> "minecraft:custom_data".oldcombat_oldfood
-        remove_slot_component <%id%> "minecraft:max_stack_size"
-        remove_slot_component <%id%> "minecraft:consumable"
-        }
-    }
+        # Old Food Iterator
+        execute if score OldFood OldCombatSettings matches 1 as @a run {
 
+            execute store result score count OldCombatTemp run data get entity @s <%path%>.count
+            execute if items entity @s <%id%> #oldcombat:consumable run {
+                modify_slot_components <%id%> {"minecraft:consumable":{consume_seconds:0.05,animation:none,sound:"minecraft:intentionally_empty",has_consume_particles:false},"minecraft:custom_data":{oldcombat_oldfood:1b},"minecraft:max_stack_size":1}
+            }
+            execute if items entity @s <%id%> golden_apple run {
+                modify_slot_components <%id%> {"minecraft:consumable":{consume_seconds:0.05,animation:none,sound:"minecraft:intentionally_empty",has_consume_particles:false,on_consume_effects:[{type:apply_effects,effects:[{id:"minecraft:absorption",duration:2400,amplifier:0},{id:"minecraft:regeneration",duration:200,amplifier:1}]}]},"minecraft:custom_data":{oldcombat_oldfood:1b},"minecraft:max_stack_size":1}
+            }
+            execute if items entity @s <%id%> enchanted_golden_apple run {
+                modify_slot_components <%id%> {"minecraft:consumable":{consume_seconds:0.05,animation:none,sound:"minecraft:intentionally_empty",has_consume_particles:false,on_consume_effects:[{type:apply_effects,effects:[{id:"minecraft:absorption",duration:2400,amplifier:3},{id:"minecraft:regeneration",duration:400,amplifier:1},{id:"minecraft:resistance",duration:6000,amplifier:0},{id:"minecraft:fire_resistance",duration:6000,amplifier:0}]}]},"minecraft:custom_data":{oldcombat_oldfood:1b},"minecraft:max_stack_size":1}
+            }
+            execute unless score count OldCombatTemp matches ..1 if items entity @s <%slot%> #oldcombat:consumable at @s run {
+                fix_illegal_stack slot <%id%> <%path%>
+            }
+        } else execute as @a run {
+            execute if items entity @s <%id%> #oldcombat:consumable run {
+            remove_slot_component <%id%> "minecraft:custom_data".oldcombat_oldfood
+            remove_slot_component <%id%> "minecraft:max_stack_size"
+            remove_slot_component <%id%> "minecraft:consumable"
+            }
+        }
+
+    }
 
     
-
-    # Old Sharpness Enchant Replacer
-    execute if score OldSharpness OldCombatSettings matches 1 if score UseOldSharpEnchant OldCombatSettings matches 1 as @a at @s run {
-        execute run {
-        execute unless items entity @s <%id%> enchanted_book run {
-        execute store result score Sharpness OldCombatTemp run data get entity @s <%path%>.components."minecraft:enchantments"."minecraft:sharpness"
-        execute store result score OldSharpness OldCombatTemp run data get entity @s <%path%>.components."minecraft:enchantments"."oldcombat:old_sharpness"
-        execute store result score FakeSharpness OldCombatTemp run data get entity @s <%path%>.components."minecraft:enchantments"."oldcombat:fake_sharpness"
-        scoreboard players operation Sharpness OldCombatTemp > OldSharpness OldCombatTemp
-        execute store result storage oldcombat:temp sharpness int 1 run scoreboard players operation Sharpness OldCombatTemp > FakeSharpness OldCombatTemp
-
-        execute if score Sharpness OldCombatTemp matches 1.. run block { with storage oldcombat:temp
-            remove_slot_component <%id%> minecraft:enchantments.minecraft:sharpness
-            remove_slot_component <%id%> minecraft:enchantments.oldcombat:old_sharpness
-            remove_slot_component <%id%> minecraft:enchantments.oldcombat:fake_sharpness
-            summon armor_stand ~ ~ ~ {ShowArms:1b,Tags:["modify_slot"],Marker:true,Invisible:true,Invulnerable:true}
-            item replace entity @n[type=armor_stand,tag=modify_slot] weapon.mainhand from entity @s <%id%>
-            $execute if score CustomSharpness OldCombatSettings matches 1 run data modify entity @n[type=armor_stand,tag=modify_slot] equipment.mainhand.components.minecraft:enchantments.oldcombat:fake_sharpness set value $(sharpness)
-            $execute unless score CustomSharpness OldCombatSettings matches 1 run data modify entity @n[type=armor_stand,tag=modify_slot] equipment.mainhand.components.minecraft:enchantments.oldcombat:old_sharpness set value $(sharpness)
-            item replace entity @s <%id%> from entity @n[type=armor_stand,tag=modify_slot] weapon.mainhand
-            kill @e[type=armor_stand,tag=modify_slot]
-        }
-        } else execute run {
-            execute store result score Sharpness OldCombatTemp run data get entity @s <%path%>.components."minecraft:stored_enchantments"."minecraft:sharpness"
-            execute store result score OldSharpness OldCombatTemp run data get entity @s <%path%>.components."minecraft:stored_enchantments"."oldcombat:old_sharpness"
-            execute store result score FakeSharpness OldCombatTemp run data get entity @s <%path%>.components."minecraft:stored_enchantments"."oldcombat:fake_sharpness"
+    IF (!lite_compile || id == "weapon.mainhand") {
+        
+        # Old Sharpness Enchant Replacer
+        execute if score OldSharpness OldCombatSettings matches 1 if score UseOldSharpEnchant OldCombatSettings matches 1 as @a at @s run {
+            execute run {
+            execute unless items entity @s <%id%> enchanted_book run {
+            execute store result score Sharpness OldCombatTemp run data get entity @s <%path%>.components."minecraft:enchantments"."minecraft:sharpness"
+            execute store result score OldSharpness OldCombatTemp run data get entity @s <%path%>.components."minecraft:enchantments"."oldcombat:old_sharpness"
+            execute store result score FakeSharpness OldCombatTemp run data get entity @s <%path%>.components."minecraft:enchantments"."oldcombat:fake_sharpness"
             scoreboard players operation Sharpness OldCombatTemp > OldSharpness OldCombatTemp
             execute store result storage oldcombat:temp sharpness int 1 run scoreboard players operation Sharpness OldCombatTemp > FakeSharpness OldCombatTemp
 
             execute if score Sharpness OldCombatTemp matches 1.. run block { with storage oldcombat:temp
-                remove_slot_component <%id%> minecraft:stored_enchantments.minecraft:sharpness
-                remove_slot_component <%id%> minecraft:stored_enchantments.oldcombat:old_sharpness
-                remove_slot_component <%id%> minecraft:stored_enchantments.oldcombat:fake_sharpness
+                remove_slot_component <%id%> minecraft:enchantments.minecraft:sharpness
+                remove_slot_component <%id%> minecraft:enchantments.oldcombat:old_sharpness
+                remove_slot_component <%id%> minecraft:enchantments.oldcombat:fake_sharpness
                 summon armor_stand ~ ~ ~ {ShowArms:1b,Tags:["modify_slot"],Marker:true,Invisible:true,Invulnerable:true}
                 item replace entity @n[type=armor_stand,tag=modify_slot] weapon.mainhand from entity @s <%id%>
-                $execute if score CustomSharpness OldCombatSettings matches 1 run data modify entity @n[type=armor_stand,tag=modify_slot] equipment.mainhand.components.minecraft:stored_enchantments.oldcombat:fake_sharpness set value $(sharpness)
-                $execute unless score CustomSharpness OldCombatSettings matches 1 run data modify entity @n[type=armor_stand,tag=modify_slot] equipment.mainhand.components.minecraft:stored_enchantments.oldcombat:old_sharpness set value $(sharpness)
+                $execute if score CustomSharpness OldCombatSettings matches 1 run data modify entity @n[type=armor_stand,tag=modify_slot] equipment.mainhand.components.minecraft:enchantments.oldcombat:fake_sharpness set value $(sharpness)
+                $execute unless score CustomSharpness OldCombatSettings matches 1 run data modify entity @n[type=armor_stand,tag=modify_slot] equipment.mainhand.components.minecraft:enchantments.oldcombat:old_sharpness set value $(sharpness)
                 item replace entity @s <%id%> from entity @n[type=armor_stand,tag=modify_slot] weapon.mainhand
                 kill @e[type=armor_stand,tag=modify_slot]
             }
-        }
-        }
-    } else execute as @a at @s run {
-        execute unless items entity @s <%id%> enchanted_book run {
-        execute store result score Sharpness OldCombatTemp run data get entity @s <%path%>.components."minecraft:enchantments"."minecraft:sharpness"
-        execute store result score OldSharpness OldCombatTemp run data get entity @s <%path%>.components."minecraft:enchantments"."oldcombat:old_sharpness"
-        execute store result score FakeSharpness OldCombatTemp run data get entity @s <%path%>.components."minecraft:enchantments"."oldcombat:fake_sharpness"
-        scoreboard players operation Sharpness OldCombatTemp > OldSharpness OldCombatTemp
-        execute store result storage oldcombat:temp sharpness int 1 run scoreboard players operation Sharpness OldCombatTemp > FakeSharpness OldCombatTemp
+            } else execute run {
+                execute store result score Sharpness OldCombatTemp run data get entity @s <%path%>.components."minecraft:stored_enchantments"."minecraft:sharpness"
+                execute store result score OldSharpness OldCombatTemp run data get entity @s <%path%>.components."minecraft:stored_enchantments"."oldcombat:old_sharpness"
+                execute store result score FakeSharpness OldCombatTemp run data get entity @s <%path%>.components."minecraft:stored_enchantments"."oldcombat:fake_sharpness"
+                scoreboard players operation Sharpness OldCombatTemp > OldSharpness OldCombatTemp
+                execute store result storage oldcombat:temp sharpness int 1 run scoreboard players operation Sharpness OldCombatTemp > FakeSharpness OldCombatTemp
 
-        execute if score Sharpness OldCombatTemp matches 1.. run block { with storage oldcombat:temp
-            remove_slot_component <%id%> minecraft:enchantments.minecraft:sharpness
-            remove_slot_component <%id%> minecraft:enchantments.oldcombat:old_sharpness
-            remove_slot_component <%id%> minecraft:enchantments.oldcombat:fake_sharpness
-            summon armor_stand ~ ~ ~ {ShowArms:1b,Tags:["modify_slot"],Marker:true,Invisible:true,Invulnerable:true}
-            item replace entity @n[type=armor_stand,tag=modify_slot] weapon.mainhand from entity @s <%id%>
-            $data modify entity @n[type=armor_stand,tag=modify_slot] equipment.mainhand.components.minecraft:enchantments.minecraft:sharpness set value $(sharpness)
-            item replace entity @s <%id%> from entity @n[type=armor_stand,tag=modify_slot] weapon.mainhand
-            kill @e[type=armor_stand,tag=modify_slot]
-        }
-        } else execute run {
-            execute store result score Sharpness OldCombatTemp run data get entity @s <%path%>.components."minecraft:stored_enchantments"."minecraft:sharpness"
-            execute store result score OldSharpness OldCombatTemp run data get entity @s <%path%>.components."minecraft:stored_enchantments"."oldcombat:old_sharpness"
-            execute store result score FakeSharpness OldCombatTemp run data get entity @s <%path%>.components."minecraft:stored_enchantments"."oldcombat:fake_sharpness"
-            scoreboard players operation Sharpness OldCombatTemp > OldSharpness OldCombatTemp
-            execute store result storage oldcombat:temp sharpness int 1 run scoreboard players operation Sharpness OldCombatTemp > FakeSharpness OldCombatTemp
-            execute if score Sharpness OldCombatTemp matches 1.. run block { with storage oldcombat:temp
-                remove_slot_component <%id%> minecraft:stored_enchantments.minecraft:sharpness
-                remove_slot_component <%id%> minecraft:stored_enchantments.oldcombat:old_sharpness
-                remove_slot_component <%id%> minecraft:stored_enchantments.oldcombat:fake_sharpness
-                summon armor_stand ~ ~ ~ {ShowArms:1b,Tags:["modify_slot"],Marker:true,Invisible:true,Invulnerable:true}
-                item replace entity @n[type=armor_stand,tag=modify_slot] weapon.mainhand from entity @s <%id%>
-                $data modify entity @n[type=armor_stand,tag=modify_slot] equipment.mainhand.components.minecraft:stored_enchantments.minecraft:sharpness set value $(sharpness)
-                item replace entity @s <%id%> from entity @n[type=armor_stand,tag=modify_slot] weapon.mainhand
-                kill @e[type=armor_stand,tag=modify_slot]
+                execute if score Sharpness OldCombatTemp matches 1.. run block { with storage oldcombat:temp
+                    remove_slot_component <%id%> minecraft:stored_enchantments.minecraft:sharpness
+                    remove_slot_component <%id%> minecraft:stored_enchantments.oldcombat:old_sharpness
+                    remove_slot_component <%id%> minecraft:stored_enchantments.oldcombat:fake_sharpness
+                    summon armor_stand ~ ~ ~ {ShowArms:1b,Tags:["modify_slot"],Marker:true,Invisible:true,Invulnerable:true}
+                    item replace entity @n[type=armor_stand,tag=modify_slot] weapon.mainhand from entity @s <%id%>
+                    $execute if score CustomSharpness OldCombatSettings matches 1 run data modify entity @n[type=armor_stand,tag=modify_slot] equipment.mainhand.components.minecraft:stored_enchantments.oldcombat:fake_sharpness set value $(sharpness)
+                    $execute unless score CustomSharpness OldCombatSettings matches 1 run data modify entity @n[type=armor_stand,tag=modify_slot] equipment.mainhand.components.minecraft:stored_enchantments.oldcombat:old_sharpness set value $(sharpness)
+                    item replace entity @s <%id%> from entity @n[type=armor_stand,tag=modify_slot] weapon.mainhand
+                    kill @e[type=armor_stand,tag=modify_slot]
+                }
+            }
+            }
+        } else execute as @a at @s run {
+            execute unless items entity @s <%id%> enchanted_book run {
+                execute store result score Sharpness OldCombatTemp run data get entity @s <%path%>.components."minecraft:enchantments"."minecraft:sharpness"
+                execute store result score OldSharpness OldCombatTemp run data get entity @s <%path%>.components."minecraft:enchantments"."oldcombat:old_sharpness"
+                execute store result score FakeSharpness OldCombatTemp run data get entity @s <%path%>.components."minecraft:enchantments"."oldcombat:fake_sharpness"
+                scoreboard players operation Sharpness OldCombatTemp > OldSharpness OldCombatTemp
+                execute store result storage oldcombat:temp sharpness int 1 run scoreboard players operation Sharpness OldCombatTemp > FakeSharpness OldCombatTemp
+
+                execute if score Sharpness OldCombatTemp matches 1.. run block { with storage oldcombat:temp
+                    remove_slot_component <%id%> minecraft:enchantments.minecraft:sharpness
+                    remove_slot_component <%id%> minecraft:enchantments.oldcombat:old_sharpness
+                    remove_slot_component <%id%> minecraft:enchantments.oldcombat:fake_sharpness
+                    summon armor_stand ~ ~ ~ {ShowArms:1b,Tags:["modify_slot"],Marker:true,Invisible:true,Invulnerable:true}
+                    item replace entity @n[type=armor_stand,tag=modify_slot] weapon.mainhand from entity @s <%id%>
+                    $data modify entity @n[type=armor_stand,tag=modify_slot] equipment.mainhand.components.minecraft:enchantments.minecraft:sharpness set value $(sharpness)
+                    item replace entity @s <%id%> from entity @n[type=armor_stand,tag=modify_slot] weapon.mainhand
+                    kill @e[type=armor_stand,tag=modify_slot]
+                }
+            } else execute run {
+                execute store result score Sharpness OldCombatTemp run data get entity @s <%path%>.components."minecraft:stored_enchantments"."minecraft:sharpness"
+                execute store result score OldSharpness OldCombatTemp run data get entity @s <%path%>.components."minecraft:stored_enchantments"."oldcombat:old_sharpness"
+                execute store result score FakeSharpness OldCombatTemp run data get entity @s <%path%>.components."minecraft:stored_enchantments"."oldcombat:fake_sharpness"
+                scoreboard players operation Sharpness OldCombatTemp > OldSharpness OldCombatTemp
+                execute store result storage oldcombat:temp sharpness int 1 run scoreboard players operation Sharpness OldCombatTemp > FakeSharpness OldCombatTemp
+                execute if score Sharpness OldCombatTemp matches 1.. run block { with storage oldcombat:temp
+                    remove_slot_component <%id%> minecraft:stored_enchantments.minecraft:sharpness
+                    remove_slot_component <%id%> minecraft:stored_enchantments.oldcombat:old_sharpness
+                    remove_slot_component <%id%> minecraft:stored_enchantments.oldcombat:fake_sharpness
+                    summon armor_stand ~ ~ ~ {ShowArms:1b,Tags:["modify_slot"],Marker:true,Invisible:true,Invulnerable:true}
+                    item replace entity @n[type=armor_stand,tag=modify_slot] weapon.mainhand from entity @s <%id%>
+                    $data modify entity @n[type=armor_stand,tag=modify_slot] equipment.mainhand.components.minecraft:stored_enchantments.minecraft:sharpness set value $(sharpness)
+                    item replace entity @s <%id%> from entity @n[type=armor_stand,tag=modify_slot] weapon.mainhand
+                    kill @e[type=armor_stand,tag=modify_slot]
+                }
             }
         }
     }
+
     }
 }
 
@@ -1016,31 +1053,111 @@ function enforce_locked_settings {
     @Deprecated
     # ^ Logic for conflicts is now handled in the features themselves.
 }
+IF (!lite_compile) {
 
-function further_fishing_bobber {
-    $execute as @e[type=fishing_bobber,tag=!processed,tag=!oldcombatignore] run { {distx:$(distx), disty:$(disty)}
-        execute on origin if entity @s[tag=oldcombatignore] run return fail
-        tag @s add processed
-        tag @s add this
-        REPEAT (0,2,1) as i {
-            $execute if score FurtherFishingBobber OldCombatSettings matches 1 store result entity @s Motion[<%i%>] double 0.01 run data get entity @s Motion[<%i%>] $(dist<%i != 1 ? "x" : "y"%>)
+    function further_fishing_bobber {
+        $execute as @e[type=fishing_bobber,tag=!processed,tag=!oldcombatignore] run { {distx:$(distx), disty:$(disty)}
+            execute on origin if entity @s[tag=oldcombatignore] run return fail
+            tag @s add processed
+            tag @s add this
+            REPEAT (0,2,1) as i {
+                $execute if score FurtherFishingBobber OldCombatSettings matches 1 store result entity @s Motion[<%i%>] double 0.01 run data get entity @s Motion[<%i%>] $(dist<%i != 1 ? "x" : "y"%>)
+            }
+            tag @s remove this
         }
-        tag @s remove this
     }
-}
 
-function disable_experience {
-    execute if score DisableEXP OldCombatSettings matches 1 run {
-        kill @e[type=experience_orb]
-        xp set @a 0 levels
-        xp set @a 0 points
+    function disable_experience {
+        execute if score DisableEXP OldCombatSettings matches 1 run {
+            kill @e[type=experience_orb]
+            xp set @a 0 levels
+            xp set @a 0 points
+        }
     }
 }
 
 function config {
-    function ./config/page1
+    IF (!lite_compile) {
+        function ./config/page1
+    } ELSE {
+        function ./config/lite/page1
+    }
 }
 dir config {
+    dir lite {
+        function page1 {
+            IF $1_21_4compile==true {
+                tellraw @s {"text":"Combat Config - Some stuff is missing","hoverEvent":{"action":"show_text","value":"NOTICE: You are using the lite version of the datapack. Some features are intentionally removed to save performance. This screen allows you to configure Minecraft's Combat System (and some other mechanics) however you'd like. NOTICE: 1.21.4 is buggy and is missing features, as you could probably tell by the grayed out options below. It is recommended you update to 1.21.5 or later for the best experience"}}
+                boolean_input legacy <%"Sword Blocking"%> <%"If true, allows blocking using a sword. Sword blocking halves the damage taken for most damage types. Disabled because you're using 1.21.4."%> OldCombatSettings SwordBlocking disabled true 
+                boolean_input legacy <%"Disable Offhand Slot"%> <%"If true, completely disables the offhand slot. Any items in the offhand slot when this is true will be dropped on the ground."%> OldCombatSettings DisableOffhand oldcombat:config oldcombat:config/subconfig/offhand
+                boolean_input legacy <%"Disable Attack Cooldown"%> <%"If true, completely disables the attack cooldown mechanic."%> OldCombatSettings DisableAttackCooldown oldcombat:config
+                boolean_input legacy <%"Old Tool Damages"%> <%"If true, tools (mainly axes) will do their pre-1.9 attack damage. Note: the attack damage tooltip on the tool will still show the normal amount, but the tool will deal the old amount of damage."%> OldCombatSettings OldToolDamage oldcombat:config
+                boolean_input legacy <%"Allow Critical Hits While Sprinting"%> <%"Enables getting critical hits while sprinting. After the combat update, you can no longer get a critical hit for your first hit during a sprint, you would just do a knockback attack instead. This setting, if true, allows players to crit for that first hit. This doesn't stop the knockback attack from happening, though, so you can get a crit and knockback attack at the same time. Due to technical restrictions, the critical hit will happen one tick after the player attacks a mob. Technical restrictions prevent the hitting a mob detection from happening on the same tick the attack happens. See https://modrinth.com/datapack/sprinting-crits for more about this mechanic."%> OldCombatSettings SprintingCrits disabled condition <%"if score DisableSprint OldCombatSettings matches 1"%> oldcombat:config
+                textline {"color":"dark_gray","text":"Unavailable in lite","hoverEvent":{"action":"show_text","value":[{"text":"(Originally: Disable Sprinting) You're using the lite version of Old Combat Datapack, where this feature doesn't exist."}]}}
+                boolean_input legacy <%"Disable Knockback Resistance"%> <%"Removes all forms of knockback resistance such as the partial knockback resistance provided by netherite armor, the full knockback resistance iron golems and wardens have, etc."%> OldCombatSettings DisableKBResist oldcombat:config
+                boolean_input legacy <%"Knockback Effective In Air"%> <%"NOTICE: This will NOT apply to players, UNLESS you have Andrew's Datapack Utils Fabric mod installed. Makes knockback from attacks as effective in the air as it is on the ground."%> OldCombatSettings AirKB oldcombat:config oldcombat:config/subconfig/airkb
+                boolean_input legacy <%"Fishing Rod Knockback"%> <%"Makes fishing rod bobbers do knockback by applying 0.01 damage to entities hit by the bobber. Note: The damage and knockback will apply 1 tick after the fishing rod attaches to the entity. This is a technical restriction that is hard to work around."%> OldCombatSettings FishingRodKnockback oldcombat:config
+                textline {"color":"dark_gray","text":"Unavailable in lite","hoverEvent":{"action":"show_text","value":[{"text":"(Originally: Fishing Rods Go Further) You're using the lite version of Old Combat Datapack, where this feature doesn't exist."}]}}
+                boolean_input legacy <%"Old Regeneration"%> <%"NOTICE: Doesn't work without Andrew's DataPack Lib (a Fabric mod that you can find on Modrinth) in order to modify player data. Makes health regeneration work like it did before the combat update, where you regain half a heart every 4 seconds, and having saturation left doesn't speed it up."%> OldCombatSettings OldRegen disabled condition <%"unless score aputils OldCombatTemp matches 1"%> oldcombat:config oldcombat:config/subconfig/oldregen
+                boolean_input legacy <%"Increase Damage Knockback"%> <%"Increases the knockback applied to mobs that take damage. Requires Andrew's Pack Utilities to affect players."%> OldCombatSettings BuffKB oldcombat:config oldcombat:config/subconfig/knockback
+                submenu legacy <%"Disabling items"%> <%"Some tweaks for disabling various items."%> oldcombat:config/subconfig/itemdisable
+                boolean_input legacy <%"Nerf Shields"%> <%"Makes Shields block 66% of incoming melee damage like they did before 1.11. Damage from projectiles such as arrows are still completely blocked, because they were completely blocked before 1.11. You still take knockback from projectiles for unknown reasons. Disabled because you're using 1.21.4."%> OldCombatSettings ShieldNerf disabled true 
+                textline {"color":"dark_gray","text":"Unavailable in lite","hoverEvent":{"action":"show_text","value":[{"text":"(Originally: Disable Attack Sounds) You're using the lite version of Old Combat Datapack, where this feature doesn't exist."}]}}
+                boolean_input legacy <%"Disable Swimming"%> <%"Sets the player's hunger to 1/2 a bar while they're in water to effectively disable 1.13's swimming. Disables natural health regeneration when in water if Old Health Regeneration is off. Note: Saturation gain from eating and the Saturation effect is limited to 6 hunger points a tick for technical restrictions, so food like golden carrots are less effective."%> OldCombatSettings DisableSwimming disabled condition <%"unless score aputils OldCombatTemp matches 1"%> <%"oldcombat:config/page1"%>
+                boolean_input legacy <%"Old Sharpness Damage"%> <%"Boosts sharpness to its old power, 1.25 damage per level. Currently broken on your game version, but an option in the subconfig of this setting fixes it at the loss of customizability."%> OldCombatSettings OldSharpness oldcombat:config/page1 oldcombat:config/subconfig/sharpness
+                boolean_input legacy <%"Old Tooltips"%> <%"Reverts the held item tooltip to the tooltip from 1.8. Changes with the states of Old Tool Damages and Old Sharpness to reflect their changes."%> OldCombatSettings OldTooltips oldcombat:config/page1 oldcombat:config/subconfig/tooltips
+                pagebar legacy 2 <%"oldcombat:config/lite"%>
+            } ELSE {
+                tellraw @s {"text":"Combat Config - some stuff is missing","hover_event":{"action":"show_text","value":"NOTICE: You are using the lite version of the datapack. Some features are intentionally removed to save performance. This screen allows you to configure Minecraft's Combat System (and some other mechanics) however you'd like. NOTE: This datapack has features that require Andrew's Datapack Utilities (a fabric/neoforge helper mod) to work properly. If it isn't installed, please install it for the best experience. The datapack still mostly works without it, though."}}
+                boolean_input <%"Sword Blocking"%> <%"If true, allows blocking using a sword. Sword blocking halves the damage taken for most damage types."%> OldCombatSettings SwordBlocking oldcombat:config
+                boolean_input <%"Disable Offhand Slot"%> <%"If true, completely disables the offhand slot. Any items in the offhand slot when this is true will be dropped on the ground."%> OldCombatSettings DisableOffhand oldcombat:config oldcombat:config/subconfig/offhand
+                boolean_input <%"Disable Attack Cooldown"%> <%"If true, completely disables the attack cooldown mechanic."%> OldCombatSettings DisableAttackCooldown oldcombat:config
+                boolean_input <%"Old Tool Damages"%> <%"If true, tools (mainly axes) will do their pre-1.9 attack damage. Note: the attack damage tooltip on the tool will still show the normal amount, but the tool will deal the old amount of damage."%> OldCombatSettings OldToolDamage oldcombat:config
+                boolean_input <%"Allow Critical Hits While Sprinting"%> <%"Enables getting critical hits while sprinting. After the combat update, you can no longer get a critical hit for your first hit during a sprint, you would just do a knockback attack instead. This setting, if true, allows players to crit for that first hit. This doesn't stop the knockback attack from happening, though, so you can get a crit and knockback attack at the same time. Due to technical restrictions, the critical hit will happen one tick after the player attacks a mob. Technical restrictions prevent the hitting a mob detection from happening on the same tick the attack happens.  Direct port of my Sprinting Crits datapack, with better detection if Andrew's Datapack Utilities is installed. See https://modrinth.com/datapack/sprinting-crits for more about this mechanic."%> OldCombatSettings SprintingCrits disabled condition <%"if score DisableSprint OldCombatSettings matches 1"%> oldcombat:config
+                textline {"color":"dark_gray","text":"Unavailable in lite","hover_event":{"action":"show_text","value":[{"text":"(Originally: Disable Sprinting) You're using the lite version of Old Combat Datapack, where this feature doesn't exist."}]}}
+                boolean_input <%"Disable Knockback Resistance"%> <%"Removes all forms of knockback resistance such as the partial knockback resistance provided by netherite armor, the full knockback resistance iron golems and wardens have, etc."%> OldCombatSettings DisableKBResist oldcombat:config
+                boolean_input <%"Knockback Effective In Air"%> <%"NOTICE: This will NOT apply to players, UNLESS you have Andrew's Datapack Utilities, which is my Fabric mod, installed. Makes knockback from attacks as effective in the air as it is on the ground."%> OldCombatSettings AirKB oldcombat:config oldcombat:config/subconfig/airkb
+                boolean_input <%"Fishing Rod Knockback"%> <%"Makes fishing rod bobbers do knockback by applying 0.01 damage to entities hit by the bobber. Note: The damage and knockback will apply 1 tick after the fishing rod attaches to the entity. This is a technical restriction that is hard to work around."%> OldCombatSettings FishingRodKnockback oldcombat:config
+                textline {"color":"dark_gray","text":"Unavailable in lite","hover_event":{"action":"show_text","value":[{"text":"(Originally: Fishing Bobbers Go Further) You're using the lite version of Old Combat Datapack, where this feature doesn't exist."}]}}
+                boolean_input <%"Old Regeneration"%> <%"NOTICE: Doesn't work without Andrew's DataPack Lib (a Fabric, soon to be NeoForge as well, mod that you can find on Modrinth) in order to modify player data. Makes health regeneration work like it did before the combat update, where you regain half a heart every 4 seconds, and having saturation left doesn't speed it up."%> OldCombatSettings OldRegen disabled condition <%"unless score aputils OldCombatTemp matches 1"%> oldcombat:config oldcombat:config/subconfig/oldregen
+                boolean_input <%"Increase Damage Knockback"%> <%"Increases the knockback applied to mobs that take damage. Requires Andrew's Pack Utilities to affect players."%> OldCombatSettings BuffKB oldcombat:config oldcombat:config/subconfig/knockback
+                submenu <%"Disabling items"%> <%"Some tweaks for disabling various items."%> oldcombat:config/subconfig/itemdisable
+                boolean_input <%"Nerf Shields"%> <%"Makes Shields block 66% of incoming melee damage like they did before 1.11. Damage from projectiles such as arrows are still completely blocked, because they were completely blocked before 1.11. You still take knockback from projectiles for unknown reasons."%> OldCombatSettings ShieldNerf <%"oldcombat:config/page1"%>
+                textline {"color":"dark_gray","text":"Unavailable in lite","hover_event":{"action":"show_text","value":[{"text":"(Originally: Disable Attack Sounds) You're using the lite version of Old Combat Datapack, where this feature doesn't exist."}]}}
+                boolean_input <%"Disable Swimming"%> <%"Requires Andrew's Datapack Utilities. Sets the player's food level to 1/2 a bar while they're in water to effectively disable 1.13's swimming. Don't worry, the food level gets restored upon leaving the water, and all changes that would have been made to the food level will be reflected once you leave the water. Disables natural health regeneration when in water if Old Health Regeneration is off."%> OldCombatSettings DisableSwimming disabled condition <%"unless score aputils OldCombatTemp matches 1"%> <%"oldcombat:config/page1"%>
+                boolean_input <%"Old Sharpness Damage"%> <%"Boosts sharpness to its old power, 1.25 damage per level."%> OldCombatSettings OldSharpness oldcombat:config/page1 oldcombat:config/subconfig/sharpness
+                boolean_input <%"Old Tooltips"%> <%"Reverts the held item tooltip to the tooltip from 1.8. Changes with the states of Old Tool Damages and Old Sharpness to reflect their changes."%> OldCombatSettings OldTooltips oldcombat:config/page1 oldcombat:config/subconfig/tooltips
+                pagebar 2 <%"oldcombat:config/lite"%>
+            }
+        }
+        function page2 {
+            IF $1_21_4compile==true {
+                tellraw @s {"text":"Combat Config - some stuff is missing","hoverEvent":{"action":"show_text","value":"NOTICE: You are using the lite version of the datapack. Some features are intentionally removed to save performance. This screen allows you to configure Minecraft's Combat System (and some other mechanics) however you'd like. NOTE: This datapack has features that require Andrew's Datapack Utilities (a fabric/neoforge helper mod) to work properly. If it isn't installed, please install it for the best experience. The datapack still mostly works without it, though."}}
+                textline {"color":"dark_gray","text":"Unavailable in lite","hoverEvent":{"action":"show_text","value":[{"text":"(Originally: Bedrock Fishing Bobber Physics) You're using the lite version of Old Combat Datapack, where this feature doesn't exist."}]}}
+                boolean_input legacy <%"Old Fishing Bobber Velocity"%> <%"WARNING: This setting is known to bug out for unknown reasons at random times in different ways. It is unknown why this happens but it is most likely a Minecraft bug because my code is completely fine. Makes fishing rod bobbers have their old velocity calculations when thrown, where the bobber will go in your looking direction correctly instead of acting weird when you look more towards up or down. Note: this setting makes fishing bobbers not move for 1 tick when they spawn as to get the correct positioning."%> OldCombatSettings OldFishingBobberVel oldcombat:config/page2
+                textline {"color":"dark_gray","text":"Unavailable in lite","hoverEvent":{"action":"show_text","value":[{"text":"(Originally: Beta 1.7.3 and older Hunger System) You're using the lite version of Old Combat Datapack, where this feature doesn't exist."}]}}
+                textline {"color":"dark_gray","text":"Unavailable in lite","hoverEvent":{"action":"show_text","value":[{"text":"(Originally: Disable Food Stacking & Instant Eating) You're using the lite version of Old Combat Datapack, where this feature doesn't exist."}]}}
+                textline {"color":"dark_gray","text":"Unavailable in lite","hoverEvent":{"action":"show_text","value":[{"text":"(Originally: Old Mob AI) You're using the lite version of Old Combat Datapack, where this feature doesn't exist."}]}}
+                boolean_input legacy <%"Mobs see further"%> <%"Makes mobs see 400% as far as they normally would. Not related to any old game version, just a utility. Useful for minigames."%> OldCombatSettings MobFarSight oldcombat:config/page2
+                textline {"color":"dark_gray","text":"Unavailable in lite","hoverEvent":{"action":"show_text","value":[{"text":"(Originally: Disable Critical Hit) You're using the lite version of Old Combat Datapack, where this feature doesn't exist."}]}}
+                textline {"color":"dark_gray","text":"Unavailable in lite","hoverEvent":{"action":"show_text","value":[{"text":"(Originally: Enable Compatibility Patches) You're using the lite version of Old Combat Datapack, where this feature doesn't exist."}]}}
+                emptyline 10
+                pagebar legacy 2 <%"oldcombat:config/lite"%>
+            } ELSE {
+                tellraw @s {"text":"Combat Config - some stuff is missing","hover_event":{"action":"show_text","value":"NOTICE: You are using the lite version of the datapack. Some features are intentionally removed to save performance. This screen allows you to configure Minecraft's Combat System (and some other mechanics) however you'd like. NOTE: This datapack has features that require Andrew's Datapack Utilities (a fabric/neoforge helper mod) to work properly. If it isn't installed, please install it for the best experience. The datapack still mostly works without it, though."}}
+                textline {"color":"dark_gray","text":"Unavailable in lite","hover_event":{"action":"show_text","value":[{"text":"(Originally: Bedrock Fishing Bobber Physics) You're using the lite version of Old Combat Datapack, where this feature doesn't exist."}]}}
+                boolean_input <%"Old Fishing Bobber Velocity"%> <%"WARNING: This setting is known to bug out for unknown reasons at random times in different ways. It is unknown why this happens but it is most likely a Minecraft bug because my code is completely fine. Makes fishing rod bobbers have their old velocity calculations when thrown, where the bobber will go in your looking direction correctly instead of acting weird when you look more towards up or down. Note: this setting makes fishing bobbers not move for 1 tick when they spawn as to get the correct positioning. "%> OldCombatSettings OldFishingBobberVel oldcombat:config/page2
+                textline {"color":"dark_gray","text":"Unavailable in lite","hover_event":{"action":"show_text","value":[{"text":"(Originally: Beta 1.7.3 and older Hunger System) You're using the lite version of Old Combat Datapack, where this feature doesn't exist."}]}}
+                textline {"color":"dark_gray","text":"Unavailable in lite","hover_event":{"action":"show_text","value":[{"text":"(Originally: Disable Food Stacking & Instant Eating) You're using the lite version of Old Combat Datapack, where this feature doesn't exist."}]}}
+                textline {"color":"dark_gray","text":"Unavailable in lite","hover_event":{"action":"show_text","value":[{"text":"(Originally: Old Mob AI) You're using the lite version of Old Combat Datapack, where this feature doesn't exist."}]}}
+                boolean_input <%"Mobs see further"%> <%"Makes mobs see 400% as far as they normally would. Not related to any old game version, just a utility. Useful for minigames."%> OldCombatSettings MobFarSight oldcombat:config/page2
+                textline {"color":"dark_gray","text":"Unavailable in lite","hover_event":{"action":"show_text","value":[{"text":"(Originally: Disable Critical Hit) You're using the lite version of Old Combat Datapack, where this feature doesn't exist."}]}}
+                textline {"color":"dark_gray","text":"Unavailable in lite","hover_event":{"action":"show_text","value":[{"text":"(Originally: Enable Compatibility Patches) You're using the lite version of Old Combat Datapack, where this feature doesn't exist."}]}}
+                emptyline 10
+                pagebar 2 <%"oldcombat:config/lite"%>
+            }
+        }
+    }
     function page1 {
         IF $1_21_4compile==true {
             tellraw @s {"text":"Combat Config - Hover for info","hoverEvent":{"action":"show_text","value":"This screen allows you to configure Minecraft's Combat System (and some other mechanics) however you'd like. NOTICE: 1.21.4 is buggy and is missing features, as you could probably tell by the grayed out options below. It is recommended you update to 1.21.5 or later for the best experience"}}
@@ -1338,45 +1455,46 @@ function old_bows {
     }
 }
 
-
-function compatibility {
-    execute if score EnableCompatibilityTools OldCombatSettings matches 1 run {
-        block sword_blocking_helper {
-            load {
-                scoreboard objectives add ExistTicks dummy
-                scoreboard objectives add SwordBlockAssist trigger
-            }
-            scoreboard players enable @a SwordBlockAssist
-            scoreboard players add @a ExistTicks 1
-            execute as @a if score @s ExistTicks matches 100 run {
-                tellraw @s "Hello! This world has some compatibility features enabled for Old Combat. \nIf you are currently playing using a game version where sword blocking doesn't display properly (e.g. Bedrock edition connected through Geyser), please run the command '/trigger SwordBlockAssist' so you can use features like Sword Blocking that otherwise looks weird without this. After running the command, you can undo it by running it again."
-            }
-            scoreboard players set @a[scores={BEClient=2..}] BEClient 0
-            execute as @a if score @s BEClient matches 1 run tag @s add bedrock
-            execute as @a unless score @s BEClient matches 1 run tag @s remove bedrock
-            # Better compatibility with Bedrock Edition clients connected using Geyser
-            execute as @a[tag=bedrock] if items entity @s weapon.mainhand *[blocks_attacks] unless items entity @s weapon.mainhand shield run {
-            execute if items entity @s weapon.offhand shield[custom_data~{oldcombat_type:compat}] run return 0
-                data remove storage oldcombat:temp offhand
-                data modify storage oldcombat:temp offhand set from entity @s equipment.offhand
-                execute if items entity @s weapon.offhand * run { with storage oldcombat:temp
-                    $item replace entity @s weapon.offhand with shield[item_name="KEEP IN OFFHAND",lore=["This item is meant to assist Bedrock Edition players connected using Geyser in being \nable to sword-block properly. \nRemoving this shield from the offhand slot could cause problems, namely: \nloss of the item that was previously in the offhand slot, \nall the side effects of having this shield that has weird data in your inventory, \nto name a few. If removed from the offhand, DO NOT UNSNEAK OR ISSUES MAY ARISE. \nInstead, return it to the offhand immediately."],custom_data={oldcombat_type:compat,original_item:$(offhand)},blocks_attacks={disable_cooldown_scale:0,damage_reductions:[{base:0,factor:0.5,horizontal_blocking_angle:180}],block_sound:"entity.player.hurt",item_damage:{threshold:0f,base:0f,factor:0f},bypassed_by:"#oldcombat:bypasses_sword_blocking"}]
-                } else execute run {
-                    item replace entity @s weapon.offhand with shield[item_name="KEEP IN OFFHAND",lore=["This item is meant to assist Bedrock Edition players connected using Geyser in being \nable to sword-block properly. \nRemoving this shield from the offhand slot could cause problems, namely: \nloss of the item that was previously in the offhand slot, \nall the side effects of having this shield that has weird data in your inventory, \nto name a few. If removed from the offhand, DO NOT UNSNEAK OR ISSUES MAY ARISE. \nInstead, return it to the offhand immediately."],custom_data={oldcombat_type:compat,original_item:{id:air}},blocks_attacks={disable_cooldown_scale:0,damage_reductions:[{base:0,factor:0.5,horizontal_blocking_angle:180}],block_sound:"entity.player.hurt",item_damage:{threshold:0f,base:0f,factor:0f},bypassed_by:"#oldcombat:bypasses_sword_blocking"}]
+IF (!lite_compile) {
+    
+    function compatibility {
+        execute if score EnableCompatibilityTools OldCombatSettings matches 1 run {
+            block sword_blocking_helper {
+                load {
+                    scoreboard objectives add ExistTicks dummy
+                    scoreboard objectives add SwordBlockAssist trigger
                 }
-            } else execute as @a if items entity @s weapon.offhand shield[custom_data~{oldcombat_type:compat}] run {
-                data modify storage oldcombat:temp offhand set from entity @s equipment.offhand.components.minecraft:custom_data.original_item
-                execute at @s run {
-                    execute at @s run summon armor_stand ~ ~ ~ {Tags:["compat"],Marker:1b,Invisible:1b,Invulnerable:1b,ShowArms:1b}
-                    data modify entity @n[tag=compat] equipment.offhand set from storage oldcombat:temp offhand
-                    item replace entity @s weapon.offhand from entity @n[tag=compat] weapon.offhand
-                    kill @e[tag=compat]
+                scoreboard players enable @a SwordBlockAssist
+                scoreboard players add @a ExistTicks 1
+                execute as @a if score @s ExistTicks matches 100 run {
+                    tellraw @s "Hello! This world has some compatibility features enabled for Old Combat. \nIf you are currently playing using a game version where sword blocking doesn't display properly (e.g. Bedrock edition connected through Geyser), please run the command '/trigger SwordBlockAssist' so you can use features like Sword Blocking that otherwise looks weird without this. After running the command, you can undo it by running it again."
+                }
+                scoreboard players set @a[scores={BEClient=2..}] BEClient 0
+                execute as @a if score @s BEClient matches 1 run tag @s add bedrock
+                execute as @a unless score @s BEClient matches 1 run tag @s remove bedrock
+                # Better compatibility with Bedrock Edition clients connected using Geyser
+                execute as @a[tag=bedrock] if items entity @s weapon.mainhand *[blocks_attacks] unless items entity @s weapon.mainhand shield run {
+                execute if items entity @s weapon.offhand shield[custom_data~{oldcombat_type:compat}] run return 0
+                    data remove storage oldcombat:temp offhand
+                    data modify storage oldcombat:temp offhand set from entity @s equipment.offhand
+                    execute if items entity @s weapon.offhand * run { with storage oldcombat:temp
+                        $item replace entity @s weapon.offhand with shield[item_name="KEEP IN OFFHAND",lore=["This item is meant to assist Bedrock Edition players connected using Geyser in being \nable to sword-block properly. \nRemoving this shield from the offhand slot could cause problems, namely: \nloss of the item that was previously in the offhand slot, \nall the side effects of having this shield that has weird data in your inventory, \nto name a few. If removed from the offhand, DO NOT UNSNEAK OR ISSUES MAY ARISE. \nInstead, return it to the offhand immediately."],custom_data={oldcombat_type:compat,original_item:$(offhand)},blocks_attacks={disable_cooldown_scale:0,damage_reductions:[{base:0,factor:0.5,horizontal_blocking_angle:180}],block_sound:"entity.player.hurt",item_damage:{threshold:0f,base:0f,factor:0f},bypassed_by:"#oldcombat:bypasses_sword_blocking"}]
+                    } else execute run {
+                        item replace entity @s weapon.offhand with shield[item_name="KEEP IN OFFHAND",lore=["This item is meant to assist Bedrock Edition players connected using Geyser in being \nable to sword-block properly. \nRemoving this shield from the offhand slot could cause problems, namely: \nloss of the item that was previously in the offhand slot, \nall the side effects of having this shield that has weird data in your inventory, \nto name a few. If removed from the offhand, DO NOT UNSNEAK OR ISSUES MAY ARISE. \nInstead, return it to the offhand immediately."],custom_data={oldcombat_type:compat,original_item:{id:air}},blocks_attacks={disable_cooldown_scale:0,damage_reductions:[{base:0,factor:0.5,horizontal_blocking_angle:180}],block_sound:"entity.player.hurt",item_damage:{threshold:0f,base:0f,factor:0f},bypassed_by:"#oldcombat:bypasses_sword_blocking"}]
+                    }
+                } else execute as @a if items entity @s weapon.offhand shield[custom_data~{oldcombat_type:compat}] run {
+                    data modify storage oldcombat:temp offhand set from entity @s equipment.offhand.components.minecraft:custom_data.original_item
+                    execute at @s run {
+                        execute at @s run summon armor_stand ~ ~ ~ {Tags:["compat"],Marker:1b,Invisible:1b,Invulnerable:1b,ShowArms:1b}
+                        data modify entity @n[tag=compat] equipment.offhand set from storage oldcombat:temp offhand
+                        item replace entity @s weapon.offhand from entity @n[tag=compat] weapon.offhand
+                        kill @e[tag=compat]
+                    }
                 }
             }
         }
     }
 }
-
 function on_damage {
     function buff_knockback
     function air_knockback
@@ -2216,6 +2334,7 @@ function startup minecraft:load {
     } else execute run {
         execute if score DataVersion OldCombatSettings > PackVersion OldCombatTemp run tellraw @a "§4The config was saved in a newer version of Old Combat Datapack, this may cause some issues!"
     }
+    schedule function info 3s append
 }
 
 
@@ -2371,6 +2490,20 @@ dir noconfirm {
     function uninstall {
         scoreboard objectives remove OldCombatSettings
         scoreboard objectives remove OldCombatTemp
+        scoreboard objectives remove ActualFoodLevel
+        scoreboard objectives remove OldHungerApplied
+        scoreboard objectives remove Sprinting
+        scoreboard objectives remove HurtByTimestamp
+        scoreboard objectives remove LastHurtByTimestamp
+        scoreboard objectives remove Hunger
+        scoreboard objectives remove HungerSat
+        scoreboard objectives remove TicksInWater
+        scoreboard objectives remove TicksUntilWander
+        scoreboard objectives remove WanderTime
+        scoreboard objectives remove WanderTargetX
+        scoreboard objectives remove WanderTargetY
+        scoreboard objectives remove WanderTargetZ
+        scoreboard objectives remove Initialized
     }
 }
 
@@ -2431,25 +2564,28 @@ function disable_cooldown {
     }
 }
 
-function disable_attack_sounds {
-    execute if score DisableAttackSounds OldCombatSettings matches 1 run {
-        stopsound @a * minecraft:entity.player.attack.knockback
-        stopsound @a * minecraft:entity.player.attack.weak
-        stopsound @a * minecraft:entity.player.attack.strong
-        stopsound @a * minecraft:entity.player.attack.crit
-        stopsound @a * minecraft:entity.player.attack.nodamage
-        stopsound @a * minecraft:entity.player.attack.sweep
+IF (!lite_compile) {
+    
+
+    function disable_attack_sounds {
+        execute if score DisableAttackSounds OldCombatSettings matches 1 run {
+            stopsound @a * minecraft:entity.player.attack.knockback
+            stopsound @a * minecraft:entity.player.attack.weak
+            stopsound @a * minecraft:entity.player.attack.strong
+            stopsound @a * minecraft:entity.player.attack.crit
+            stopsound @a * minecraft:entity.player.attack.nodamage
+            stopsound @a * minecraft:entity.player.attack.sweep
+        }
     }
-}
 
-function disable_sprinting {
-    execute if score DisableSprint OldCombatSettings matches 1 as @a unless entity @s[tag=oldcombatignore] run {
-        @Deprecated
-        attribute @s movement_speed modifier remove minecraft:sprinting
+    function disable_sprinting {
+        execute if score DisableSprint OldCombatSettings matches 1 as @a unless entity @s[tag=oldcombatignore] run {
+            @Deprecated
+            attribute @s movement_speed modifier remove minecraft:sprinting
+        }
     }
+
 }
-
-
 
 function disable_kb_resist {
     execute if score DisableKBResist OldCombatSettings matches 1 unless entity @s[tag=oldcombatignore] run {
