@@ -3,6 +3,7 @@ import ./utils.mcbt
 import ./Logger.mcbt
 # This template contains most of the code that the pack uses.
 
+
 template crash {
     with soft reason:raw {
         logger soft_crash_header
@@ -44,10 +45,12 @@ template crash {
 }
 
 template throw_held_stack {
+
     load {
         scoreboard objectives add Temp dummy
     }
     with speed:float precision_horizontal:float precision_vertical:float randomrot:float {
+
         execute store result storage oldcombat:temp rx double 0.1 run random value <%randomrot*-10%>..<%randomrot*10%>
         execute store result storage oldcombat:temp ry double 0.1 run random value <%randomrot*-10%>..<%randomrot*10%>
         block { with storage oldcombat:temp
@@ -77,7 +80,7 @@ template throw_held_stack {
             data modify entity @n[tag=thrown,type=item] Item set from entity @s SelectedItem
         }
         execute unless entity @s[type=player] run {
-            data modify entity @n[tag=thrown,type=item] Item set from entity @s equipment.mainhand
+            data modify entity @n[tag=thrown,type=item] Item set from entity @s <%version_specific_mainhand%>
         }
         tag @n[tag=thrown,type=item] remove thrown
     }
@@ -148,7 +151,14 @@ template throw_offhand_stack {
         execute store result entity @n[tag=thrown,type=item] Motion[0] double <%1 / precision_horizontal%> run scoreboard players get mx Temp
         execute store result entity @n[tag=thrown,type=item] Motion[1] double <%1 / precision_vertical%> run scoreboard players get my Temp
         execute store result entity @n[tag=thrown,type=item] Motion[2] double <%1 / precision_horizontal%> run scoreboard players get mz Temp
-        data modify entity @n[tag=thrown,type=item] Item set from entity @s equipment.offhand
+        # tellraw @s {"nbt":"<%version_specific_offhand_player%>","entity":"@s"}
+        execute if entity @s[type=player] run {
+            data modify entity @n[tag=thrown,type=item] Item set from entity @s <%version_specific_offhand_player%>
+        }
+        execute unless entity @s[type=player] run {
+            data modify entity @n[tag=thrown,type=item] Item set from entity @s <%version_specific_offhand%>
+        }
+
         tag @n[tag=thrown,type=item] remove thrown
     }
 }
@@ -440,7 +450,7 @@ template fix_illegal_stack {
         item replace entity @s weapon.offhand with air
     }
     with slot slot:word path:raw {
-        summon marker ^ ^ ^1 {Tags:["throw_marker"]}  
+        summon marker ^ ^ ^1 {Tags:["throw_marker"]}
         summon marker ^ ^ ^ {Tags:["pos_marker"]}
         execute as @n[tag=throw_marker] store result score throw_x Temp run data get entity @s Pos[0] 100
         execute as @n[tag=throw_marker] store result score throw_y Temp run data get entity @s Pos[1] 100
