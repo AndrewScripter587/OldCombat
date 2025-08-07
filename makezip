@@ -1,13 +1,13 @@
-#!/bin/bash
-
 # Script to create a zip archive of a Minecraft datapack
 
 # Define the source folder and the metadata file
 source_folder="data"
 metadata_file="pack.mcmeta"
 
-# Define the name of the zip file (you can change this)
-zip_file_name="OldCombat.zip"
+# Define the name of the zip file
+# Use the first argument ($1) if it's provided and not empty,
+# otherwise, default to "Pack.zip".
+zip_file_name="${1:-Pack.zip}"
 
 # Check if the source folder exists
 if [ ! -d "$source_folder" ]; then
@@ -32,6 +32,5 @@ else
   echo "Error creating zip archive."
   exit 1
 fi
-
 
 exit 0

@@ -1,0 +1,38 @@
+modules = ["bash", "nodejs-20"]
+
+[nix]
+channel = "stable-24_05"
+packages = ["zip", "nvidia-docker", "docker-compose_1", "vim", "zulu"]
+
+[workflows]
+
+[[workflows.workflow]]
+name = "Build using MC-Build"
+mode = "sequential"
+author = 39646367
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "mcb build"
+
+[[workflows.workflow]]
+name = "Zip Datapack into archive"
+mode = "sequential"
+author = 39646367
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "sh ~/workspace/makezip OldCombat"
+
+[[workflows.workflow]]
+name = "Build and zip"
+mode = "sequential"
+author = 39646367
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Build using MC-Build"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Zip Datapack into archive"
