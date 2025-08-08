@@ -402,7 +402,7 @@ function on_tick minecraft:tick {
             # function old_food
             function old_mob_ai
             function farsight
-            function disable_crits
+            # function disable_crits
             execute store result storage oldcombat:temp distx float 1 run scoreboard players get FishingBobberBoost.X OldCombatSettings
             execute store result storage oldcombat:temp disty float 1 run scoreboard players get FishingBobberBoost.Y OldCombatSettings
             function further_fishing_bobber with storage oldcombat:temp
