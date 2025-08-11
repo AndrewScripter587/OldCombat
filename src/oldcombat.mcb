@@ -14,13 +14,13 @@ import ./utils.mcbt
     lite_compile = true
     beta_compile = false
     ultralite = false
+    allow_disable_crits = false
     global.version = {
         string: "Old Combat Datapack Version 1.5.0",
         number: "1.5.0-beta2",
         channel: "beta"
         
     };
-    global.version.legacycompile = false
     version_specific_mainhand = $1_21_4compile ? "HandItems[0]" : "equipment.mainhand"
     version_specific_offhand = $1_21_4compile ? "HandItems[1]" : "equipment.offhand"
     version_specific_offhand_player = $1_21_4compile ? "Inventory[{Slot:-106b}]" : "equipment.offhand"
@@ -47,7 +47,7 @@ scoreboard players enable @a OCVer
 }
 
 function version {
-    tellraw @s "Version Info"
+    tellraw @s "Old Combat Version Info"
     tellraw @s "<%global.version.string%>"
     tellraw @s "Version <%global.version.number%>"
     tellraw @s "Channel <%global.version.channel%>"
@@ -355,6 +355,7 @@ tag items sharpness_compatible {
 function on_tick minecraft:tick {
     
     execute if score Disable OldCombatSettings matches 1 run return fail
+    
     execute as @e run block check_ground {
         # execute if entity @s[type=!player] store result score @s WasOnGround run data get entity @s OnGround
         execute store result score @s WasOnGround run scoreboard players get @s OnGround
@@ -367,6 +368,7 @@ function on_tick minecraft:tick {
         scoreboard players remove StartDelay OldCombatTemp 1
     } else execute run {
             execute as @a if score @s Hunger matches 0.. store result entity @s foodLevel int 1 run scoreboard players get @s Hunger
+            execute if score Disable OldCombatSettings matches 2 run return 0
             execute as @e[type=!player] run {
                 scoreboard players operation @s LastHurtByTimestamp = @s HurtByTimestamp
                 execute store result score @s HurtByTimestamp run data get entity @s HurtByTimestamp
@@ -374,39 +376,73 @@ function on_tick minecraft:tick {
                 function air_knockback
                 
             }
+            execute if score Disable OldCombatSettings matches 3 run return 0
             function initialize_players
+            execute if score Disable OldCombatSettings matches 4 run return 0
             function disable_sprinting
+            execute if score Disable OldCombatSettings matches 5 run return 0
             function old_tool_damages
+            execute if score Disable OldCombatSettings matches 6 run return 0
             function disable_cooldown
+            execute if score Disable OldCombatSettings matches 7 run return 0
             function block_offhand
+            execute if score Disable OldCombatSettings matches 8 run return 0
             function disable_modern_items
+            execute if score Disable OldCombatSettings matches 9 run return 0
             function disable_netherite_items
+            execute if score Disable OldCombatSettings matches 10 run return 0
             function disable_experience
+            execute if score Disable OldCombatSettings matches 11 run return 0
             function disable_vanilla_sharpness
+            execute if score Disable OldCombatSettings matches 12 run return 0
             function iterate_player_slots
+            execute if score Disable OldCombatSettings matches 13 run return 0
             function old_sharpness
+            execute if score Disable OldCombatSettings matches 14 run return 0
             function old_regen
+            execute if score Disable OldCombatSettings matches 15 run return 0
             function disable_swimming
+            execute if score Disable OldCombatSettings matches 16 run return 0
             function old_bows_setup
+            execute if score Disable OldCombatSettings matches 17 run return 0
             function old_bows
+            execute if score Disable OldCombatSettings matches 18 run return 0
             function sword_blocking
+            execute if score Disable OldCombatSettings matches 19 run return 0
             function nerf_shields
+            execute if score Disable OldCombatSettings matches 20 run return 0
             function disable_kb_resist
+            execute if score Disable OldCombatSettings matches 21 run return 0
             function enforce_locked_settings
+            execute if score Disable OldCombatSettings matches 22 run return 0
             function fishing_rod_kb
+            execute if score Disable OldCombatSettings matches 23 run return 0
             function disable_attack_sounds
+            execute if score Disable OldCombatSettings matches 24 run return 0
             function bedrock_fishing_bobber_physics
+            execute if score Disable OldCombatSettings matches 25 run return 0
             function old_fishing_bobber_velocity
+            execute if score Disable OldCombatSettings matches 26 run return 0
             function bedrock_fishing_bobber_physics2
+            execute if score Disable OldCombatSettings matches 27 run return 0
             function old_hunger_system
-            # function old_food
+            execute if score Disable OldCombatSettings matches 28 run return 0
+            function old_food
+            execute if score Disable OldCombatSettings matches 29 run return 0
             function old_mob_ai
+            execute if score Disable OldCombatSettings matches 30 run return 0
             function farsight
-            # function disable_crits
+            execute if score Disable OldCombatSettings matches 31 run return 0
+            IF (allow_disable_crits) {
+                function disable_crits
+            }
+            execute if score Disable OldCombatSettings matches 32 run return 0
             execute store result storage oldcombat:temp distx float 1 run scoreboard players get FishingBobberBoost.X OldCombatSettings
             execute store result storage oldcombat:temp disty float 1 run scoreboard players get FishingBobberBoost.Y OldCombatSettings
             function further_fishing_bobber with storage oldcombat:temp
+            execute if score Disable OldCombatSettings matches 33 run return 0
             function compatibility
+            execute if score Disable OldCombatSettings matches 34 run return 0
             scoreboard players reset @a BedrockSneakTime
     }
 }
