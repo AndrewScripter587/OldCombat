@@ -11,7 +11,7 @@ import ./utils.mcbt
     $1_21_4compile = false
     build_time = Date()
     data_version = 15
-    lite_compile = true
+    lite_compile = false
     beta_compile = false
     ultralite = false
     allow_disable_crits = false
@@ -1485,7 +1485,7 @@ dir config {
             } ELSE {
                 textline "Configuration for Disable Offhand"
                 single_button <%"Go back"%> white <%"/function oldcombat:config/page1"%>
-                boolean_input <%"Allow Using Offhand For Certain Items"%> <%"Allows items that are in the #oldcombat:acceptable_offhand item tag to be placed in the offhand regardless of the state of Disable Offhand. By default the acceptable items are all the items that Bedrock Edition allows to be placed in the offhand."%> OldCombatSettings AllowOffhandForSomeItems oldcombat:config/subconfig/offhand
+                boolean_input <%"Allow Using Offhand For Certain Items"%> <%"Allows items that are in the oldcombat:acceptable_offhand item tag to be placed in the offhand regardless of the state of Disable Offhand. By default the acceptable items are all the items that Bedrock Edition allows to be placed in the offhand."%> OldCombatSettings AllowOffhandForSomeItems oldcombat:config/subconfig/offhand
                 
                 emptyline 17
             }
