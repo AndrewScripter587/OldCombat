@@ -478,3 +478,34 @@ template fix_illegal_stack {
 }
 
 
+template debug_load_checker {
+    load {
+        scoreboard objectives add OldCombatLoadChecks
+    }
+    with iterator name:word {
+        <%%
+            global.loadchecks_iterators[name] = 0
+        %%>
+        scoreboard players set <%name%> OldCombatLoadChecks 0
+    }
+    with iteration name:word {
+        <%%
+            global.loadchecks_iterators[name] += 1
+        %%>
+        scoreboard players add <%name%> OldCombatLoadChecks 1
+    }
+    with name:word {
+        <%%
+            global.loadchecks.push(name)
+        %%>
+        scoreboard players set <%name%> OldCombatLoadChecks 1
+    }
+    with {
+        <%%
+            name = context.functions.join("$").replaceAll(":",".")
+            global.loadchecks.push(name)
+        %%>
+        scoreboard players set <%name%> OldCombatLoadChecks 1
+    }
+
+}

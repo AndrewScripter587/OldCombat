@@ -102,9 +102,9 @@ function player {
 
 
 function tick minecraft:tick {
-    execute as @a store result score @s EntityInteractionRange run attribute @s entity_interaction_range get
+    execute as @a store result score @s EntityInteractionRange run attribute @s player.entity_interaction_range get
     execute as @a run scoreboard players operation @s WereSprinting = @s Sprinting
-    execute as @a store result score @s Sprinting run attribute @s movement_speed modifier value get sprinting 100
+    execute as @a store result score @s Sprinting run attribute @s generic.movement_speed modifier value get sprinting 100
 
     execute if score SprintingCrits OldCombatSettings matches 1 run {
         execute as @a at @s run function sprintcrit:player
