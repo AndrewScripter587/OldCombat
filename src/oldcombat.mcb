@@ -4,16 +4,16 @@ import ./Logger.mcbt
 import ./data.mcbt
 import ./utils.mcbt
 
+
 # NOTICE: Some of the code comments here will contain profanity because I am so fed up with some of this stuff.
 
 
 <%%
-    $1_21_4compile = false
     build_time = Date()
     data_version = 15
-    lite_compile = false
-    beta_compile = false
-    ultralite = false
+    // lite_compile = false
+    // beta_compile = false
+    // ultralite = false
     allow_disable_crits = false
     global.version = {
         string: "Old Combat Datapack Version 1.5.0",
