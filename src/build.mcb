@@ -1,6 +1,6 @@
 <%%
-    $1_21_4compile = true
-    lite_compile = true
+    $1_21_4compile = false
+    lite_compile = false
     beta_compile = false
     ultralite = false
 %%>
