@@ -19,14 +19,76 @@ jobs:
           run: npm ci
         - name: Clear cache
           run: rm -rf ./.mcb
+
+          # Full 1.21.5+
+        - name: Configure Build
+          run: sh ./build-config.sh full latest
         - name: Build using MCB
           run: node ./node_modules/mc-build/dist/mcb.js build
-        # - name: Package the datapack
-        #   run: sh ./makezip OldCombat.zip
         - name: Upload artifact
           uses: actions/upload-artifact@v4
           with:
             name: OldCombatFull
             path: |
               pack.mcmeta
-              data/      
+              data/
+          # Lite 1.21.5+
+        - name: Configure Build
+          run: sh ./build-config.sh lite latest
+        - name: Build using MCB
+          run: node ./node_modules/mc-build/dist/mcb.js build
+        - name: Upload artifact
+          uses: actions/upload-artifact@v4
+          with:
+            name: OldCombatLite
+            path: |
+              pack.mcmeta
+              data/
+          # Ultralite 1.21.5+
+        - name: Configure Build
+          run: sh ./build-config.sh ultralite latest
+        - name: Build using MCB
+          run: node ./node_modules/mc-build/dist/mcb.js build
+        - name: Upload artifact
+          uses: actions/upload-artifact@v4
+          with:
+            name: OldCombatFull
+            path: |
+              pack.mcmeta
+              data/
+          # Full 1.21.4-
+        - name: Configure Build
+          run: sh ./build-config.sh full legacy
+        - name: Build using MCB
+          run: node ./node_modules/mc-build/dist/mcb.js build
+        - name: Upload artifact
+          uses: actions/upload-artifact@v4
+          with:
+            name: OldCombatFull
+            path: |
+              pack.mcmeta
+              data/
+          # Lite 1.21.4-
+        - name: Configure Build
+          run: sh ./build-config.sh lite legacy
+        - name: Build using MCB
+          run: node ./node_modules/mc-build/dist/mcb.js build
+        - name: Upload artifact
+          uses: actions/upload-artifact@v4
+          with:
+            name: OldCombatLite
+            path: |
+              pack.mcmeta
+              data/
+          # Ultralite 1.21.4-
+        - name: Configure Build
+          run: sh ./build-config.sh ultralite legacy
+        - name: Build using MCB
+          run: node ./node_modules/mc-build/dist/mcb.js build
+        - name: Upload artifact
+          uses: actions/upload-artifact@v4
+          with:
+            name: OldCombatFull
+            path: |
+              pack.mcmeta
+              data/
