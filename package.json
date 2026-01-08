@@ -1,5 +1,23 @@
 {
   "dependencies": {
     "mc-build": "^3.5.1"
-  }
+  },
+  "name": "oldcombat",
+  "description": "Restore Minecraft's old combat system!",
+  "version": "1.0.0",
+  "main": "mcb.config.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AndrewScripter587/OldCombat.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/AndrewScripter587/OldCombat/issues"
+  },
+  "homepage": "https://github.com/AndrewScripter587/OldCombat#readme"
 }
