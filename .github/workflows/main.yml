@@ -21,11 +21,12 @@ jobs:
           run: rm -rf ./.mcb
         - name: Build using MCB
           run: node ./node_modules/mc-build/dist/mcb.js build
-        - name: Package the datapack
-          run: sh ./makezip Artifact.zip
+        # - name: Package the datapack
+        #   run: sh ./makezip OldCombat.zip
         - name: Upload artifact
           uses: actions/upload-artifact@v4
           with:
             name: Build Artifact
-            path: Artifact.zip
-      
+            path: |
+              pack.mcmeta
+              data/      
