@@ -20,7 +20,7 @@ jobs:
         - name: Clear cache
           run: rm -rf ./.mcb
         - name: Build using MCB
-          run: mcb build
+          run: node ./node_modules/mc-build/dist/mcb.js build
         - name: Package the datapack
           run: sh ./makezip Artifact.zip
         - name: Upload artifact
