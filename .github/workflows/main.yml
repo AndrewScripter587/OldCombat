@@ -52,7 +52,7 @@ jobs:
         - name: Upload artifact
           uses: actions/upload-artifact@v4
           with:
-            name: OldCombatFull
+            name: OldCombatUltraLite
             path: |
               pack.mcmeta
               data/
@@ -64,7 +64,7 @@ jobs:
         - name: Upload artifact
           uses: actions/upload-artifact@v4
           with:
-            name: OldCombatFull
+            name: OldCombatFullLegacy
             path: |
               pack.mcmeta
               data/
@@ -76,7 +76,7 @@ jobs:
         - name: Upload artifact
           uses: actions/upload-artifact@v4
           with:
-            name: OldCombatLite
+            name: OldCombatLiteLegacy
             path: |
               pack.mcmeta
               data/
@@ -88,7 +88,7 @@ jobs:
         - name: Upload artifact
           uses: actions/upload-artifact@v4
           with:
-            name: OldCombatFull
+            name: OldCombatUltraLiteLegacy
             path: |
               pack.mcmeta
               data/
