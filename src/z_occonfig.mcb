@@ -51,7 +51,7 @@ function show {
         @BooleanInput dism score DisableModernPVPItems "Disable modern PVP-related items"
         @BooleanInput disn score DisableNetheriteItems "Disable netherite"
         @BooleanInput disc score DisableCopper "Disable 1.21.9 Copper Tools & Armor"
-        @BooleanInput diss score DisableCopper "Disable 1.21.11 Spear Weapons"
+        @BooleanInput diss score DisableSpears "Disable 1.21.11 Spear Weapons"
         @BooleanInput brdis score BreakDisabledTools "Visually \"break\" disabled tools"
         @BooleanInput rmat score ReturnMaterialsOfDisabledItems "Return materials of some disabled items"
         @BooleanInput sn score ShieldNerf "Nerf shields to pre-1.11 protection"
@@ -74,7 +74,7 @@ function show {
 
         
         @RawAction <%"yes"%> {label:"Ok",action:{type:"dynamic/run_command"}}
-        data modify storage dialog:dialogs oldcombatconfig.yes.action.template set value "function occonfig:apply {settings:[<%idlist%>]}"
+        data modify storage dialog:dialogs oldcombatconfig.yes.action.template set value "function z_occonfig:apply {settings:[<%idlist%>]}"
         @RawAction <%"no"%> {label:"Cancel",action:{type:"run_command",command:"trigger cancelmsg"}}
     }
     
@@ -83,7 +83,7 @@ function show {
 }
 
 function apply {
-    $data modify storage occonfig:temp settings set value $(settings)
+    $data modify storage z_occonfig:temp settings set value $(settings)
     @InitApply
     @ApplyTo OldCombatSettings
 

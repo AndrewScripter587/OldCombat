@@ -16,8 +16,8 @@ import ./utils.mcbt
     // ultralite = false
     allow_disable_crits = true
     global.version = {
-        string: "Old Combat Datapack Version 1.5.0 Pre Release",
-        number: "1.5.0-pre1",
+        string: "Old Combat Datapack Version 1.5.0 Pre Release 2",
+        number: "1.5.0-pre2",
         channel: "prerelease"
     };
     version_specific_mainhand = $1_21_4compile ? "HandItems[0]" : "equipment.mainhand"
@@ -86,7 +86,7 @@ function configtrigger {
             function config/subconfig/oldai
         }
         case 12 {
-            function occonfig:show
+            function z_occonfig:show
         }
         case 100 {
             function config
@@ -226,6 +226,17 @@ function print_mcb_context {
     }
 %%>
 
+function fully_loaded_detector_main {
+    enchant @s oldcombat:fake_sharpness 5
+    return 1
+}
+
+function fully_loaded_detector {
+    execute if function oldcombat:fully_loaded_detector_main run return 0
+    logger warn "To Server Admins or World Owner: Please read the following message:"
+    logger warn "Hello! It seems you have just installed the datapack for the first time while the world is loaded. The datapack is currently in a state where the majority of the datapack is loaded, but not everything. Minecraft will not load things like enchantments when /reload is run, instead requiring a world restart to load those things. To finish the installation, please re-open your world / restart the server. The datapack will not work properly until then."
+}
+
 
 function on_load minecraft:load{
     say Loading <%global.version.string%><%ultralite ? " Ultra-Lite" : (lite_compile ? " Lite" : "")%> by AndrewGaming587
@@ -246,6 +257,7 @@ function on_load minecraft:load{
     object_to_nbt_key <%damages.new%> storage oldcombat:data damages.new
     object_to_nbt_key <%damages.old%> storage oldcombat:data damages.old
     function leak_detector
+    schedule function oldcombat:fully_loaded_detector 3s append
 }
 
 function info {
@@ -516,6 +528,10 @@ function on_tick minecraft:tick {
             execute if score Disable OldCombatSettings matches 33 run return 0
             function compatibility
             execute if score Disable OldCombatSettings matches 34 run return 0
+            function disable_copper_tools
+            execute if score Disable OldCombatSettings matches 35 run return 0
+            function disable_spears
+            execute if score Disable OldCombatSettings matches 36 run return 0
             scoreboard players reset @a BedrockSneakTime
     }
 }
@@ -1268,7 +1284,7 @@ IF (!lite_compile) {
 }
 
 function config {
-    execute if function occonfig:show run return 0
+    execute if function z_occonfig:show run return 0
     function config/page1
 }
 dir config {
@@ -1484,7 +1500,7 @@ dir config {
                 boolean_input legacy <%"Disable Modern PVP Items"%> <%"Disables modern PVP items like crossbows, tipped arrows, maces, tridents, etc, by removing them when the player has them."%> OldCombatSettings DisableModernPVPItems oldcombat:config/subconfig/itemdisable
                 boolean_input legacy <%"Disable Netherite Items"%> <%"Disables netherite items. Fun fact: this will downgrade the netherite ingot from your netherite item all the way down to ancient debris in multiple steps"%> OldCombatSettings DisableNetheriteItems oldcombat:config/subconfig/itemdisable
                 boolean_input legacy <%"Disable Copper Tools & Armor"%> <%"Disables the copper tools and armor added in 1.21.9."%> OldCombatSettings DisableCopper oldcombat:config/subconfig/itemdisable
-                boolean_input legacy <%"Disable Spears"%> <%"Disables the spear weapons added in 1.21.11"%> OldCombatSettings DisableSpears oldcombat:config/subconfig/itemdisable
+                boolean_input legacy <%"Disable Spears"%> <%"Disables the spear weapons added in 1.21.11."%> OldCombatSettings DisableSpears oldcombat:config/subconfig/itemdisable
                 boolean_input legacy <%"Break Disabled Items"%> <%"Causes some disabled items to \\\"break\\\" (as if their durability was 0). Purely visual."%> OldCombatSettings BreakDisabledTools oldcombat:config/subconfig/itemdisable
                 boolean_input legacy <%"Drop Crafting Materials For Disabled Items"%> <%"Most disabled items will drop the materials from their crafting recipe. Doesn't apply to any items that either don't have a crafting recipe or would create a dupe glitch because multiple of the item are created from the recipe."%> OldCombatSettings ReturnMaterialsOfDisabledItems oldcombat:config/subconfig/itemdisable
                 emptyline 12
@@ -1494,7 +1510,7 @@ dir config {
                 boolean_input <%"Disable Modern PVP Items"%> <%"Disables modern PVP items like crossbows, tipped arrows, maces, tridents, etc, by removing them when the player has them."%> OldCombatSettings DisableModernPVPItems oldcombat:config/subconfig/itemdisable
                 boolean_input <%"Disable Netherite Items"%> <%"Disables netherite items. Fun fact: this will downgrade the netherite ingot from your netherite item all the way down to ancient debris in multiple steps"%> OldCombatSettings DisableNetheriteItems oldcombat:config/subconfig/itemdisable
                 boolean_input <%"Disable Copper Tools & Armor"%> <%"Disables the copper tools and armor added in 1.21.9."%> OldCombatSettings DisableCopper oldcombat:config/subconfig/itemdisable
-                boolean_input <%"Disable Spears"%> <%"Disables the spear weapons added in 1.21.11"%> OldCombatSettings DisableSpears oldcombat:config/subconfig/itemdisable
+                boolean_input <%"Disable Spears"%> <%"Disables the spear weapons added in 1.21.11."%> OldCombatSettings DisableSpears oldcombat:config/subconfig/itemdisable
                 boolean_input <%"Break Disabled Items"%> <%"Causes some disabled items to \\\"break\\\" (as if their durability was 0). Purely visual."%> OldCombatSettings BreakDisabledTools oldcombat:config/subconfig/itemdisable
                 boolean_input <%"Drop Crafting Materials For Disabled Items"%> <%"Most disabled items will drop the materials from their crafting recipe. Doesn't apply to any items that either don't have a crafting recipe or would create a dupe glitch because multiple of the item are created from the recipe."%> OldCombatSettings ReturnMaterialsOfDisabledItems oldcombat:config/subconfig/itemdisable
                 emptyline 12
@@ -1746,6 +1762,9 @@ dir presets {
         scoreboard players set regenRate OldCombatSettings 80
         scoreboard players set DisableModernPVPItems OldCombatSettings 0
         scoreboard players set DisableNetheriteItems OldCombatSettings 0
+        scoreboard players set DisableCopper OldCombatSettings 0
+        scoreboard players set DisableSpears OldCombatSettings 0
+
         scoreboard players set BreakDisabledTools OldCombatSettings 1
         scoreboard players set ReturnMaterialsOfDisabledItems OldCombatSettings 1
         scoreboard players set ShieldNerf OldCombatSettings 1
@@ -1791,6 +1810,9 @@ dir presets {
         scoreboard players set regenRate OldCombatSettings 80
         scoreboard players set DisableModernPVPItems OldCombatSettings 0
         scoreboard players set DisableNetheriteItems OldCombatSettings 0
+        scoreboard players set DisableCopper OldCombatSettings 0
+        scoreboard players set DisableSpears OldCombatSettings 0
+
         scoreboard players set BreakDisabledTools OldCombatSettings 1
         scoreboard players set ReturnMaterialsOfDisabledItems OldCombatSettings 1
         scoreboard players set ShieldNerf OldCombatSettings 1
@@ -1837,6 +1859,8 @@ dir presets {
         scoreboard players set regenRate OldCombatSettings 80
         scoreboard players set DisableModernPVPItems OldCombatSettings 0
         scoreboard players set DisableNetheriteItems OldCombatSettings 0
+        scoreboard players set DisableCopper OldCombatSettings 0
+        scoreboard players set DisableSpears OldCombatSettings 0
         scoreboard players set BreakDisabledTools OldCombatSettings 1
         scoreboard players set ReturnMaterialsOfDisabledItems OldCombatSettings 1
         scoreboard players set ShieldNerf OldCombatSettings 1
@@ -1881,6 +1905,8 @@ dir presets {
         scoreboard players set regenRate OldCombatSettings 80
         scoreboard players set DisableModernPVPItems OldCombatSettings 0
         scoreboard players set DisableNetheriteItems OldCombatSettings 0
+        scoreboard players set DisableCopper OldCombatSettings 0
+        scoreboard players set DisableSpears OldCombatSettings 0
         scoreboard players set BreakDisabledTools OldCombatSettings 1
         scoreboard players set ReturnMaterialsOfDisabledItems OldCombatSettings 1
         scoreboard players set ShieldNerf OldCombatSettings 1
@@ -1924,6 +1950,8 @@ dir presets {
         scoreboard players set regenRate OldCombatSettings 80
         scoreboard players set DisableModernPVPItems OldCombatSettings 0
         scoreboard players set DisableNetheriteItems OldCombatSettings 0
+        scoreboard players set DisableCopper OldCombatSettings 0
+        scoreboard players set DisableSpears OldCombatSettings 0
         scoreboard players set BreakDisabledTools OldCombatSettings 1
         scoreboard players set ReturnMaterialsOfDisabledItems OldCombatSettings 1
         scoreboard players set ShieldNerf OldCombatSettings 0
@@ -1967,6 +1995,8 @@ dir presets {
         scoreboard players set regenRate OldCombatSettings 80
         scoreboard players set DisableModernPVPItems OldCombatSettings 0
         scoreboard players set DisableNetheriteItems OldCombatSettings 0
+        scoreboard players set DisableCopper OldCombatSettings 0
+        scoreboard players set DisableSpears OldCombatSettings 0
         scoreboard players set BreakDisabledTools OldCombatSettings 1
         scoreboard players set ReturnMaterialsOfDisabledItems OldCombatSettings 1
         scoreboard players set ShieldNerf OldCombatSettings 0
@@ -2011,6 +2041,8 @@ dir presets {
         scoreboard players set regenRate OldCombatSettings 80
         scoreboard players set DisableModernPVPItems OldCombatSettings 0
         scoreboard players set DisableNetheriteItems OldCombatSettings 0
+        scoreboard players set DisableCopper OldCombatSettings 0
+        scoreboard players set DisableSpears OldCombatSettings 0
         scoreboard players set BreakDisabledTools OldCombatSettings 1
         scoreboard players set ReturnMaterialsOfDisabledItems OldCombatSettings 1
         scoreboard players set ShieldNerf OldCombatSettings 0
@@ -2105,13 +2137,13 @@ function disable_modern_items {
     execute if score DisableModernPVPItems OldCombatSettings matches 1 as @a unless entity @s[tag=oldcombatignore] at @s run {
         block { {item:crossbow}
             $execute unless items entity @s armor.* $(item) unless items entity @s weapon.* $(item) unless items entity @s inventory.* $(item) unless items entity @s hotbar.* $(item) run return fail
-            tellraw @s "§4[Old Combat]: Crossbows are disabled."
+            title @s actionbar "§4[Old Combat]: Crossbows are disabled."
             execute if score ReturnMaterialsOfDisabledItems OldCombatSettings matches 1 anchored eyes positioned ^ ^ ^ positioned ~ ~-0.1 ~ run {
-                tellraw @s "The crossbow's crafting materials were dropped on the ground."
-                throw_custom_stack 0.4 80 250 15 {id:"minecraft:iron_ingot",count:1b}
-                throw_custom_stack 0.4 80 250 15 {id:"minecraft:tripwire_hook",count:1b}
-                throw_custom_stack 0.4 80 250 15 {id:"minecraft:string",count:2b}
-                throw_custom_stack 0.4 80 250 15 {id:"minecraft:stick",count:3b}
+                tellraw @s "The crossbow's crafting materials were placed in your inventory (or dropped on the ground if space wasn't found)."
+                throw_custom_stack 0.4 80 250 15 0 {id:"minecraft:iron_ingot",count:1b}
+                throw_custom_stack 0.4 80 250 15 0 {id:"minecraft:tripwire_hook",count:1b}
+                throw_custom_stack 0.4 80 250 15 0 {id:"minecraft:string",count:2b}
+                throw_custom_stack 0.4 80 250 15 0 {id:"minecraft:stick",count:3b}
             }
                 $block { {item:"$(item)"}
                     execute unless score BreakDisabledTools OldCombatSettings matches 1 run return fail
@@ -2123,11 +2155,11 @@ function disable_modern_items {
         }
         block { {item:mace}
             $execute unless items entity @s armor.* $(item) unless items entity @s weapon.* $(item) unless items entity @s inventory.* $(item) unless items entity @s hotbar.* $(item) run return fail
-            tellraw @s "§4[Old Combat]: Maces are disabled."
+            title @s actionbar "§4[Old Combat]: Maces are disabled."
             execute if score ReturnMaterialsOfDisabledItems OldCombatSettings matches 1 anchored eyes positioned ^ ^ ^ positioned ~ ~-0.1 ~ run {
-                tellraw @s "The mace's crafting materials were dropped on the ground."
-                throw_custom_stack 0.4 80 250 15 {id:"minecraft:heavy_core",count:1b}
-                throw_custom_stack 0.4 80 250 15 {id:"minecraft:breeze_rod",count:1b}
+                tellraw @s "The mace's crafting materials were placed in your inventory (or dropped on the ground if space wasn't found)."
+                throw_custom_stack 0.4 80 250 15 0 {id:"minecraft:heavy_core",count:1b}
+                throw_custom_stack 0.4 80 250 15 0 {id:"minecraft:breeze_rod",count:1b}
             }
             
                 $block { {item:"$(item)"}   
@@ -2140,8 +2172,11 @@ function disable_modern_items {
         }
         block { {item:trident}
             $execute unless items entity @s armor.* $(item) unless items entity @s weapon.* $(item) unless items entity @s inventory.* $(item) unless items entity @s hotbar.* $(item) run return fail
-                tellraw @s "§4[Old Combat]: Tridents are disabled."
-            
+            title @s actionbar "§4[Old Combat]: Tridents are disabled."
+            execute if score ReturnMaterialsOfDisabledItems OldCombatSettings matches 1 run {
+                tellraw @s "Tridents don't have a crafting recipe, so nothing was given back to you."
+            }
+
             $block { {item:"$(item)"}
                 execute unless score BreakDisabledTools OldCombatSettings matches 1 run return fail
                 $execute anchored eyes positioned ^ ^ ^ run particle minecraft:item{item:"$(item)"} ^ ^-0.1 ^0.5 0 0 0 0.03 5
@@ -2153,11 +2188,11 @@ function disable_modern_items {
         block { {item:shield}
         execute if entity @s[tag=bedrock] if score EnableCompatibilityTools OldCombatSettings matches 1 run return fail
             $execute unless items entity @s armor.* $(item) unless items entity @s weapon.* $(item) unless items entity @s inventory.* $(item) unless items entity @s hotbar.* $(item) run return fail
-            tellraw @s "§4[Old Combat]: Shields are disabled."
+            title @s actionbar "§4[Old Combat]: Shields are disabled."
             execute if score ReturnMaterialsOfDisabledItems OldCombatSettings matches 1 anchored eyes positioned ^ ^ ^ positioned ~ ~-0.1 ~ run {
-                tellraw @s "The shield's crafting materials were dropped on the ground."
-                throw_custom_stack 0.4 80 250 15 {id:"minecraft:oak_planks",count:6b}
-                throw_custom_stack 0.4 80 250 15 {id:"minecraft:iron_ingot",count:1b}
+                tellraw @s "The shield's crafting materials were placed in your inventory (or dropped on the ground if space wasn't found)."
+                throw_custom_stack 0.4 80 250 15 0 {id:"minecraft:oak_planks",count:6b}
+                throw_custom_stack 0.4 80 250 15 0 {id:"minecraft:iron_ingot",count:1b}
             }
             
                 $block { {item:"$(item)"}   
@@ -2170,17 +2205,29 @@ function disable_modern_items {
         }
         block { {item:spectral_arrow}
             $execute unless items entity @s armor.* $(item) unless items entity @s weapon.* $(item) unless items entity @s inventory.* $(item) unless items entity @s hotbar.* $(item) run return fail
-            tellraw @s "§4[Old Combat]: Spectral arrows are disabled."
+            title @s actionbar "§4[Old Combat]: Spectral arrows are disabled."
+            execute if score ReturnMaterialsOfDisabledItems OldCombatSettings matches 1 run {
+                tellraw @s "Spectral Arrows would cause a duping exploit if the crafting materials were to be returned, so nothing was given back to you."
+            }
+
             $clear @s $(item)
         }
         block { {item:tipped_arrow}
             $execute unless items entity @s armor.* $(item) unless items entity @s weapon.* $(item) unless items entity @s inventory.* $(item) unless items entity @s hotbar.* $(item) run return fail
-            tellraw @s "§4[Old Combat]: Tipped arrows are disabled."
+            title @s actionbar "§4[Old Combat]: Tipped arrows are disabled."
+            execute if score ReturnMaterialsOfDisabledItems OldCombatSettings matches 1 run {
+                tellraw @s "Tipped Arrows would cause a potion-duping exploit if the crafting materials were to be returned, so nothing was given back to you."
+            }
+
             $clear @s $(item)
         }
         block { {item:lingering_potion}
             $execute unless items entity @s armor.* $(item) unless items entity @s weapon.* $(item) unless items entity @s inventory.* $(item) unless items entity @s hotbar.* $(item) run return fail
-            tellraw @s "§4[Old Combat]: Lingering Potions are disabled."            
+            title @s actionbar "§4[Old Combat]: Lingering Potions are disabled."
+            execute if score ReturnMaterialsOfDisabledItems OldCombatSettings matches 1 run {
+                tellraw @s "Lingering Potions do not have a crafting recipe, so nothing was given back to you. Returning the brewing recipe would cause a duping exploit (and is too hard to code)."
+            }
+     
                 $block { {item:"$(item)"}   
                     execute unless score BreakDisabledTools OldCombatSettings matches 1 run return fail
                     $execute anchored eyes positioned ^ ^ ^ run particle minecraft:item{item:"$(item)"} ^ ^-0.1 ^0.5 0 0 0 0.03 5
@@ -2198,11 +2245,11 @@ function disable_spears {
     execute if score DisableSpears OldCombatSettings matches 1 as @a unless entity @s[tag=oldcombatignore] at @s run {
         block { {item:wooden_spear}
             $execute unless items entity @s armor.* $(item) unless items entity @s weapon.* $(item) unless items entity @s inventory.* $(item) unless items entity @s hotbar.* $(item) run return fail
-            tellraw @s "§4[Old Combat]: Spears are disabled."
+            title @s actionbar "§4[Old Combat]: Spears are disabled."
             execute if score ReturnMaterialsOfDisabledItems OldCombatSettings matches 1 anchored eyes positioned ^ ^ ^ positioned ~ ~-0.1 ~ run {
-                tellraw @s "The wooden spear's crafting materials were dropped on the ground."
-                throw_custom_stack 0.4 80 250 15 {id:"minecraft:stick",count:2b}
-                throw_custom_stack 0.4 80 250 15 {id:"minecraft:oak_planks",count:1b}
+                tellraw @s "The wooden spear's crafting materials were placed in your inventory (or dropped on the ground if space wasn't found)."
+                throw_custom_stack 0.4 80 250 15 0 {id:"minecraft:stick",count:2b}
+                throw_custom_stack 0.4 80 250 15 0 {id:"minecraft:oak_planks",count:1b}
             }
             
                 $block { {item:"$(item)"}   
@@ -2215,11 +2262,11 @@ function disable_spears {
         }
         block { {item:stone_spear}
             $execute unless items entity @s armor.* $(item) unless items entity @s weapon.* $(item) unless items entity @s inventory.* $(item) unless items entity @s hotbar.* $(item) run return fail
-            tellraw @s "§4[Old Combat]: Spears are disabled."
+            title @s actionbar "§4[Old Combat]: Spears are disabled."
             execute if score ReturnMaterialsOfDisabledItems OldCombatSettings matches 1 anchored eyes positioned ^ ^ ^ positioned ~ ~-0.1 ~ run {
-                tellraw @s "The stone spear's crafting materials were dropped on the ground."
-                throw_custom_stack 0.4 80 250 15 {id:"minecraft:stick",count:2b}
-                throw_custom_stack 0.4 80 250 15 {id:"minecraft:cobblestone",count:1b}
+                tellraw @s "The stone spear's crafting materials were placed in your inventory (or dropped on the ground if space wasn't found)."
+                throw_custom_stack 0.4 80 250 15 0 {id:"minecraft:stick",count:2b}
+                throw_custom_stack 0.4 80 250 15 0 {id:"minecraft:cobblestone",count:1b}
             }
             
                 $block { {item:"$(item)"}   
@@ -2232,11 +2279,11 @@ function disable_spears {
         }
         block { {item:copper_spear}
             $execute unless items entity @s armor.* $(item) unless items entity @s weapon.* $(item) unless items entity @s inventory.* $(item) unless items entity @s hotbar.* $(item) run return fail
-            tellraw @s "§4[Old Combat]: Spears are disabled."
+            title @s actionbar "§4[Old Combat]: Spears are disabled."
             execute if score ReturnMaterialsOfDisabledItems OldCombatSettings matches 1 anchored eyes positioned ^ ^ ^ positioned ~ ~-0.1 ~ run {
-                tellraw @s "The copper spear's crafting materials were dropped on the ground."
-                throw_custom_stack 0.4 80 250 15 {id:"minecraft:stick",count:2b}
-                throw_custom_stack 0.4 80 250 15 {id:"minecraft:copper_ingot",count:1b}
+                tellraw @s "The copper spear's crafting materials were placed in your inventory (or dropped on the ground if space wasn't found)."
+                throw_custom_stack 0.4 80 250 15 0 {id:"minecraft:stick",count:2b}
+                throw_custom_stack 0.4 80 250 15 0 {id:"minecraft:copper_ingot",count:1b}
             }
             
                 $block { {item:"$(item)"}   
@@ -2249,11 +2296,11 @@ function disable_spears {
         }
         block { {item:iron_spear}
             $execute unless items entity @s armor.* $(item) unless items entity @s weapon.* $(item) unless items entity @s inventory.* $(item) unless items entity @s hotbar.* $(item) run return fail
-            tellraw @s "§4[Old Combat]: Spears are disabled."
+            title @s actionbar "§4[Old Combat]: Spears are disabled."
             execute if score ReturnMaterialsOfDisabledItems OldCombatSettings matches 1 anchored eyes positioned ^ ^ ^ positioned ~ ~-0.1 ~ run {
-                tellraw @s "The iron spear's crafting materials were dropped on the ground."
-                throw_custom_stack 0.4 80 250 15 {id:"minecraft:stick",count:2b}
-                throw_custom_stack 0.4 80 250 15 {id:"minecraft:iron_ingot",count:1b}
+                tellraw @s "The iron spear's crafting materials were placed in your inventory (or dropped on the ground if space wasn't found)."
+                throw_custom_stack 0.4 80 250 15 0 {id:"minecraft:stick",count:2b}
+                throw_custom_stack 0.4 80 250 15 0 {id:"minecraft:iron_ingot",count:1b}
             }
             
                 $block { {item:"$(item)"}   
@@ -2266,11 +2313,11 @@ function disable_spears {
         }
         block { {item:golden_spear}
             $execute unless items entity @s armor.* $(item) unless items entity @s weapon.* $(item) unless items entity @s inventory.* $(item) unless items entity @s hotbar.* $(item) run return fail
-            tellraw @s "§4[Old Combat]: Spears are disabled."
+            title @s actionbar "§4[Old Combat]: Spears are disabled."
             execute if score ReturnMaterialsOfDisabledItems OldCombatSettings matches 1 anchored eyes positioned ^ ^ ^ positioned ~ ~-0.1 ~ run {
-                tellraw @s "The golden spear's crafting materials were dropped on the ground."
-                throw_custom_stack 0.4 80 250 15 {id:"minecraft:stick",count:2b}
-                throw_custom_stack 0.4 80 250 15 {id:"minecraft:gold_ingot",count:1b}
+                tellraw @s "The golden spear's crafting materials were placed in your inventory (or dropped on the ground if space wasn't found)."
+                throw_custom_stack 0.4 80 250 15 0 {id:"minecraft:stick",count:2b}
+                throw_custom_stack 0.4 80 250 15 0 {id:"minecraft:gold_ingot",count:1b}
             }
             
                 $block { {item:"$(item)"}   
@@ -2283,11 +2330,11 @@ function disable_spears {
         }
         block { {item:diamond_spear}
             $execute unless items entity @s armor.* $(item) unless items entity @s weapon.* $(item) unless items entity @s inventory.* $(item) unless items entity @s hotbar.* $(item) run return fail
-            tellraw @s "§4[Old Combat]: Spears are disabled."
+            title @s actionbar "§4[Old Combat]: Spears are disabled."
             execute if score ReturnMaterialsOfDisabledItems OldCombatSettings matches 1 anchored eyes positioned ^ ^ ^ positioned ~ ~-0.1 ~ run {
-                tellraw @s "The diamond spear's crafting materials were dropped on the ground."
-                throw_custom_stack 0.4 80 250 15 {id:"minecraft:stick",count:2b}
-                throw_custom_stack 0.4 80 250 15 {id:"minecraft:diamond",count:1b}
+                tellraw @s "The diamond spear's crafting materials were placed in your inventory (or dropped on the ground if space wasn't found)."
+                throw_custom_stack 0.4 80 250 15 0 {id:"minecraft:stick",count:2b}
+                throw_custom_stack 0.4 80 250 15 0 {id:"minecraft:diamond",count:1b}
             }
             
                 $block { {item:"$(item)"}   
@@ -2300,12 +2347,12 @@ function disable_spears {
         }
         block { {item:netherite_spear}
             $execute unless items entity @s armor.* $(item) unless items entity @s weapon.* $(item) unless items entity @s inventory.* $(item) unless items entity @s hotbar.* $(item) run return fail
-            tellraw @s "§4[Old Combat]: Spears are disabled."
+            title @s actionbar "§4[Old Combat]: Spears are disabled."
             execute if score ReturnMaterialsOfDisabledItems OldCombatSettings matches 1 anchored eyes positioned ^ ^ ^ positioned ~ ~-0.1 ~ run {
-                tellraw @s "The netherite spear's smithing materials were dropped on the ground."
-                throw_custom_stack 0.4 80 250 15 {id:"minecraft:diamond_spear",count:1b}
-                throw_custom_stack 0.4 80 250 15 {id:"minecraft:netherite_upgrade_smithing_template",count:1b}
-                throw_custom_stack 0.4 80 250 15 {id:"minecraft:netherite_ingot",count:1b}
+                tellraw @s "The netherite spear's smithing materials were placed in your inventory (or dropped on the ground if space wasn't found)."
+                throw_custom_stack 0.4 80 250 15 0 {id:"minecraft:diamond_spear",count:1b}
+                throw_custom_stack 0.4 80 250 15 0 {id:"minecraft:netherite_upgrade_smithing_template",count:1b}
+                throw_custom_stack 0.4 80 250 15 0 {id:"minecraft:netherite_ingot",count:1b}
             }
             
                 $block { {item:"$(item)"}   
@@ -2323,11 +2370,11 @@ function disable_copper_tools {
     execute if score DisableCopper OldCombatSettings matches 1 as @a unless entity @s[tag=oldcombatignore] at @s run {
         block { {item:copper_sword}
             $execute unless items entity @s armor.* $(item) unless items entity @s weapon.* $(item) unless items entity @s inventory.* $(item) unless items entity @s hotbar.* $(item) run return fail
-            tellraw @s "§4[Old Combat]: Copper tools, weapons, and armor are disabled."
+            title @s actionbar "§4[Old Combat]: Copper tools, weapons, and armor are disabled."
             execute if score ReturnMaterialsOfDisabledItems OldCombatSettings matches 1 anchored eyes positioned ^ ^ ^ positioned ~ ~-0.1 ~ run {
-                tellraw @s "The copper sword's crafting materials were dropped on the ground."
-                throw_custom_stack 0.4 80 250 15 {id:"minecraft:stick",count:1b}
-                throw_custom_stack 0.4 80 250 15 {id:"minecraft:copper_ingot",count:2b}
+                tellraw @s "The copper sword's crafting materials were placed in your inventory (or dropped on the ground if space wasn't found)."
+                throw_custom_stack 0.4 80 250 15 0 {id:"minecraft:stick",count:1b}
+                throw_custom_stack 0.4 80 250 15 0 {id:"minecraft:copper_ingot",count:2b}
             }
             
                 $block { {item:"$(item)"}   
@@ -2340,11 +2387,11 @@ function disable_copper_tools {
         }
         block { {item:copper_pickaxe}
             $execute unless items entity @s armor.* $(item) unless items entity @s weapon.* $(item) unless items entity @s inventory.* $(item) unless items entity @s hotbar.* $(item) run return fail
-            tellraw @s "§4[Old Combat]: Copper tools, weapons, and armor are disabled."
+            title @s actionbar "§4[Old Combat]: Copper tools, weapons, and armor are disabled."
             execute if score ReturnMaterialsOfDisabledItems OldCombatSettings matches 1 anchored eyes positioned ^ ^ ^ positioned ~ ~-0.1 ~ run {
-                tellraw @s "The copper pickaxe's crafting materials were dropped on the ground."
-                throw_custom_stack 0.4 80 250 15 {id:"minecraft:stick",count:2b}
-                throw_custom_stack 0.4 80 250 15 {id:"minecraft:copper_ingot",count:3b}
+                tellraw @s "The copper pickaxe's crafting materials were placed in your inventory (or dropped on the ground if space wasn't found)."
+                throw_custom_stack 0.4 80 250 15 0 {id:"minecraft:stick",count:2b}
+                throw_custom_stack 0.4 80 250 15 0 {id:"minecraft:copper_ingot",count:3b}
             }
             
                 $block { {item:"$(item)"}   
@@ -2357,11 +2404,11 @@ function disable_copper_tools {
         }
         block { {item:copper_spear}
             $execute unless items entity @s armor.* $(item) unless items entity @s weapon.* $(item) unless items entity @s inventory.* $(item) unless items entity @s hotbar.* $(item) run return fail
-            tellraw @s "§4[Old Combat]: Copper tools, weapons, and armor are disabled."
+            title @s actionbar "§4[Old Combat]: Copper tools, weapons, and armor are disabled."
             execute if score ReturnMaterialsOfDisabledItems OldCombatSettings matches 1 anchored eyes positioned ^ ^ ^ positioned ~ ~-0.1 ~ run {
-                tellraw @s "The copper spear's crafting materials were dropped on the ground."
-                throw_custom_stack 0.4 80 250 15 {id:"minecraft:stick",count:2b}
-                throw_custom_stack 0.4 80 250 15 {id:"minecraft:copper_ingot",count:1b}
+                tellraw @s "The copper spear's crafting materials were placed in your inventory (or dropped on the ground if space wasn't found)."
+                throw_custom_stack 0.4 80 250 15 0 {id:"minecraft:stick",count:2b}
+                throw_custom_stack 0.4 80 250 15 0 {id:"minecraft:copper_ingot",count:1b}
             }
             
                 $block { {item:"$(item)"}   
@@ -2374,11 +2421,11 @@ function disable_copper_tools {
         }
         block { {item:copper_axe}
             $execute unless items entity @s armor.* $(item) unless items entity @s weapon.* $(item) unless items entity @s inventory.* $(item) unless items entity @s hotbar.* $(item) run return fail
-            tellraw @s "§4[Old Combat]: Copper tools, weapons, and armor are disabled."
+            title @s actionbar "§4[Old Combat]: Copper tools, weapons, and armor are disabled."
             execute if score ReturnMaterialsOfDisabledItems OldCombatSettings matches 1 anchored eyes positioned ^ ^ ^ positioned ~ ~-0.1 ~ run {
-                tellraw @s "The copper axe's crafting materials were dropped on the ground."
-                throw_custom_stack 0.4 80 250 15 {id:"minecraft:stick",count:2b}
-                throw_custom_stack 0.4 80 250 15 {id:"minecraft:copper_ingot",count:3b}
+                tellraw @s "The copper axe's crafting materials were placed in your inventory (or dropped on the ground if space wasn't found)."
+                throw_custom_stack 0.4 80 250 15 0 {id:"minecraft:stick",count:2b}
+                throw_custom_stack 0.4 80 250 15 0 {id:"minecraft:copper_ingot",count:3b}
             }
             
                 $block { {item:"$(item)"}   
@@ -2391,11 +2438,11 @@ function disable_copper_tools {
         }
         block { {item:copper_shovel}
             $execute unless items entity @s armor.* $(item) unless items entity @s weapon.* $(item) unless items entity @s inventory.* $(item) unless items entity @s hotbar.* $(item) run return fail
-            tellraw @s "§4[Old Combat]: Copper tools, weapons, and armor are disabled."
+            title @s actionbar "§4[Old Combat]: Copper tools, weapons, and armor are disabled."
             execute if score ReturnMaterialsOfDisabledItems OldCombatSettings matches 1 anchored eyes positioned ^ ^ ^ positioned ~ ~-0.1 ~ run {
-                tellraw @s "The copper shovel's crafting materials were dropped on the ground."
-                throw_custom_stack 0.4 80 250 15 {id:"minecraft:stick",count:2b}
-                throw_custom_stack 0.4 80 250 15 {id:"minecraft:copper_ingot",count:1b}
+                tellraw @s "The copper shovel's crafting materials were placed in your inventory (or dropped on the ground if space wasn't found)."
+                throw_custom_stack 0.4 80 250 15 0 {id:"minecraft:stick",count:2b}
+                throw_custom_stack 0.4 80 250 15 0 {id:"minecraft:copper_ingot",count:1b}
             }
             
                 $block { {item:"$(item)"}   
@@ -2408,11 +2455,11 @@ function disable_copper_tools {
         }
         block { {item:copper_hoe}
             $execute unless items entity @s armor.* $(item) unless items entity @s weapon.* $(item) unless items entity @s inventory.* $(item) unless items entity @s hotbar.* $(item) run return fail
-            tellraw @s "§4[Old Combat]: Copper tools, weapons, and armor are disabled."
+            title @s actionbar "§4[Old Combat]: Copper tools, weapons, and armor are disabled."
             execute if score ReturnMaterialsOfDisabledItems OldCombatSettings matches 1 anchored eyes positioned ^ ^ ^ positioned ~ ~-0.1 ~ run {
-                tellraw @s "The copper hoe's crafting materials were dropped on the ground."
-                throw_custom_stack 0.4 80 250 15 {id:"minecraft:stick",count:2b}
-                throw_custom_stack 0.4 80 250 15 {id:"minecraft:copper_ingot",count:2b}
+                tellraw @s "The copper hoe's crafting materials were placed in your inventory (or dropped on the ground if space wasn't found)."
+                throw_custom_stack 0.4 80 250 15 0 {id:"minecraft:stick",count:2b}
+                throw_custom_stack 0.4 80 250 15 0 {id:"minecraft:copper_ingot",count:2b}
             }
             
                 $block { {item:"$(item)"}   
@@ -2425,10 +2472,10 @@ function disable_copper_tools {
         }
         block { {item:copper_helmet}
             $execute unless items entity @s armor.* $(item) unless items entity @s weapon.* $(item) unless items entity @s inventory.* $(item) unless items entity @s hotbar.* $(item) run return fail
-            tellraw @s "§4[Old Combat]: Copper tools, weapons, and armor are disabled."
+            title @s actionbar "§4[Old Combat]: Copper tools, weapons, and armor are disabled."
             execute if score ReturnMaterialsOfDisabledItems OldCombatSettings matches 1 anchored eyes positioned ^ ^ ^ positioned ~ ~-0.1 ~ run {
-                tellraw @s "The copper helmet's crafting materials were dropped on the ground."
-                throw_custom_stack 0.4 80 250 15 {id:"minecraft:copper_ingot",count:5b}
+                tellraw @s "The copper helmet's crafting materials were placed in your inventory (or dropped on the ground if space wasn't found)."
+                throw_custom_stack 0.4 80 250 15 0 {id:"minecraft:copper_ingot",count:5b}
             }
             
                 $block { {item:"$(item)"}   
@@ -2441,10 +2488,10 @@ function disable_copper_tools {
         }
         block { {item:copper_chestplate}
             $execute unless items entity @s armor.* $(item) unless items entity @s weapon.* $(item) unless items entity @s inventory.* $(item) unless items entity @s hotbar.* $(item) run return fail
-            tellraw @s "§4[Old Combat]: Copper tools, weapons, and armor are disabled."
+            title @s actionbar "§4[Old Combat]: Copper tools, weapons, and armor are disabled."
             execute if score ReturnMaterialsOfDisabledItems OldCombatSettings matches 1 anchored eyes positioned ^ ^ ^ positioned ~ ~-0.1 ~ run {
-                tellraw @s "The copper helmet's crafting materials were dropped on the ground."
-                throw_custom_stack 0.4 80 250 15 {id:"minecraft:copper_ingot",count:5b}
+                tellraw @s "The copper helmet's crafting materials were placed in your inventory (or dropped on the ground if space wasn't found)."
+                throw_custom_stack 0.4 80 250 15 0 {id:"minecraft:copper_ingot",count:5b}
             }
             
                 $block { {item:"$(item)"}   
@@ -2457,10 +2504,10 @@ function disable_copper_tools {
         }
         block { {item:copper_leggings}
             $execute unless items entity @s armor.* $(item) unless items entity @s weapon.* $(item) unless items entity @s inventory.* $(item) unless items entity @s hotbar.* $(item) run return fail
-            tellraw @s "§4[Old Combat]: Copper tools, weapons, and armor are disabled."
+            title @s actionbar "§4[Old Combat]: Copper tools, weapons, and armor are disabled."
             execute if score ReturnMaterialsOfDisabledItems OldCombatSettings matches 1 anchored eyes positioned ^ ^ ^ positioned ~ ~-0.1 ~ run {
-                tellraw @s "The copper helmet's crafting materials were dropped on the ground."
-                throw_custom_stack 0.4 80 250 15 {id:"minecraft:copper_ingot",count:5b}
+                tellraw @s "The copper helmet's crafting materials were placed in your inventory (or dropped on the ground if space wasn't found)."
+                throw_custom_stack 0.4 80 250 15 0 {id:"minecraft:copper_ingot",count:5b}
             }
             
                 $block { {item:"$(item)"}   
@@ -2473,10 +2520,10 @@ function disable_copper_tools {
         }
         block { {item:copper_boots}
             $execute unless items entity @s armor.* $(item) unless items entity @s weapon.* $(item) unless items entity @s inventory.* $(item) unless items entity @s hotbar.* $(item) run return fail
-            tellraw @s "§4[Old Combat]: Copper tools, weapons, and armor are disabled."
+            title @s actionbar "§4[Old Combat]: Copper tools, weapons, and armor are disabled."
             execute if score ReturnMaterialsOfDisabledItems OldCombatSettings matches 1 anchored eyes positioned ^ ^ ^ positioned ~ ~-0.1 ~ run {
-                tellraw @s "The copper helmet's crafting materials were dropped on the ground."
-                throw_custom_stack 0.4 80 250 15 {id:"minecraft:copper_ingot",count:5b}
+                tellraw @s "The copper helmet's crafting materials were placed in your inventory (or dropped on the ground if space wasn't found)."
+                throw_custom_stack 0.4 80 250 15 0 {id:"minecraft:copper_ingot",count:5b}
             }
             
                 $block { {item:"$(item)"}   
@@ -2489,7 +2536,7 @@ function disable_copper_tools {
         }
         block { {item:copper_horse_armor}
             $execute unless items entity @s armor.* $(item) unless items entity @s weapon.* $(item) unless items entity @s inventory.* $(item) unless items entity @s hotbar.* $(item) run return fail
-            tellraw @s "§4[Old Combat]: Copper tools, weapons, and armor are disabled."
+            title @s actionbar "§4[Old Combat]: Copper tools, weapons, and armor are disabled."
             execute if score ReturnMaterialsOfDisabledItems OldCombatSettings matches 1 anchored eyes positioned ^ ^ ^ positioned ~ ~-0.1 ~ run {
                 tellraw @s "Copper horse armor doesn't have a crafting recipe, so no items were dropped."
             }
@@ -2504,7 +2551,7 @@ function disable_copper_tools {
         }
         block { {item:copper_nautilus_armor}
             $execute unless items entity @s armor.* $(item) unless items entity @s weapon.* $(item) unless items entity @s inventory.* $(item) unless items entity @s hotbar.* $(item) run return fail
-            tellraw @s "§4[Old Combat]: Copper tools, weapons, and armor are disabled."
+            title @s actionbar "§4[Old Combat]: Copper tools, weapons, and armor are disabled."
             execute if score ReturnMaterialsOfDisabledItems OldCombatSettings matches 1 anchored eyes positioned ^ ^ ^ positioned ~ ~-0.1 ~ run {
                 tellraw @s "Copper nautilus armor doesn't have a crafting recipe, so no items were dropped."
             }
@@ -2553,12 +2600,12 @@ function disable_netherite_items {
     execute if score DisableNetheriteItems OldCombatSettings matches 1 as @a unless entity @s[tag=oldcombatignore] at @s run {
         block { {item:netherite_helmet}
             $execute unless items entity @s armor.* $(item) unless items entity @s weapon.* $(item) unless items entity @s inventory.* $(item) unless items entity @s hotbar.* $(item) run return fail
-            tellraw @s "§4[Old Combat]: Netherite items are disabled."
+            title @s actionbar "§4[Old Combat]: Netherite items are disabled."
             execute if score ReturnMaterialsOfDisabledItems OldCombatSettings matches 1 anchored eyes positioned ^ ^ ^ positioned ~ ~-0.1 ~ run {
-                tellraw @s "The netherite helmet's smithing materials were dropped on the ground."
-                throw_custom_stack 0.4 80 250 15 {id:"minecraft:netherite_ingot",count:1b}
-                throw_custom_stack 0.4 80 250 15 {id:"minecraft:netherite_upgrade_smithing_template",count:1b}
-                throw_custom_stack 0.4 80 250 15 {id:"minecraft:diamond_helmet",count:1b}
+                tellraw @s "The netherite helmet's smithing materials were placed in your inventory (or dropped on the ground if space wasn't found)."
+                throw_custom_stack 0.4 80 250 15 0 {id:"minecraft:netherite_ingot",count:1b}
+                throw_custom_stack 0.4 80 250 15 0 {id:"minecraft:netherite_upgrade_smithing_template",count:1b}
+                throw_custom_stack 0.4 80 250 15 0 {id:"minecraft:diamond_helmet",count:1b}
             }
                 $block { {item:"$(item)"}
                     execute unless score BreakDisabledTools OldCombatSettings matches 1 run return fail
@@ -2570,12 +2617,12 @@ function disable_netherite_items {
         }
         block { {item:netherite_chestplate}
             $execute unless items entity @s armor.* $(item) unless items entity @s weapon.* $(item) unless items entity @s inventory.* $(item) unless items entity @s hotbar.* $(item) run return fail
-            tellraw @s "§4[Old Combat]: Netherite items are disabled."
+            title @s actionbar "§4[Old Combat]: Netherite items are disabled."
             execute if score ReturnMaterialsOfDisabledItems OldCombatSettings matches 1 anchored eyes positioned ^ ^ ^ positioned ~ ~-0.1 ~ run {
-                tellraw @s "The netherite chestplate's smithing materials were dropped on the ground."
-                throw_custom_stack 0.4 80 250 15 {id:"minecraft:netherite_ingot",count:1b}
-                throw_custom_stack 0.4 80 250 15 {id:"minecraft:netherite_upgrade_smithing_template",count:1b}
-                throw_custom_stack 0.4 80 250 15 {id:"minecraft:diamond_chestplate",count:1b}
+                tellraw @s "The netherite chestplate's smithing materials were placed in your inventory (or dropped on the ground if space wasn't found)."
+                throw_custom_stack 0.4 80 250 15 0 {id:"minecraft:netherite_ingot",count:1b}
+                throw_custom_stack 0.4 80 250 15 0 {id:"minecraft:netherite_upgrade_smithing_template",count:1b}
+                throw_custom_stack 0.4 80 250 15 0 {id:"minecraft:diamond_chestplate",count:1b}
             }
                 $block { {item:"$(item)"}
                     execute unless score BreakDisabledTools OldCombatSettings matches 1 run return fail
@@ -2587,12 +2634,12 @@ function disable_netherite_items {
         }
         block { {item:netherite_leggings}
             $execute unless items entity @s armor.* $(item) unless items entity @s weapon.* $(item) unless items entity @s inventory.* $(item) unless items entity @s hotbar.* $(item) run return fail
-            tellraw @s "§4[Old Combat]: Netherite items are disabled."
+            title @s actionbar "§4[Old Combat]: Netherite items are disabled."
             execute if score ReturnMaterialsOfDisabledItems OldCombatSettings matches 1 anchored eyes positioned ^ ^ ^ positioned ~ ~-0.1 ~ run {
-                tellraw @s "The netherite leggings' smithing materials were dropped on the ground."
-                throw_custom_stack 0.4 80 250 15 {id:"minecraft:netherite_ingot",count:1b}
-                throw_custom_stack 0.4 80 250 15 {id:"minecraft:netherite_upgrade_smithing_template",count:1b}
-                throw_custom_stack 0.4 80 250 15 {id:"minecraft:diamond_leggings",count:1b}
+                tellraw @s "The netherite leggings' smithing materials were placed in your inventory (or dropped on the ground if space wasn't found)."
+                throw_custom_stack 0.4 80 250 15 0 {id:"minecraft:netherite_ingot",count:1b}
+                throw_custom_stack 0.4 80 250 15 0 {id:"minecraft:netherite_upgrade_smithing_template",count:1b}
+                throw_custom_stack 0.4 80 250 15 0 {id:"minecraft:diamond_leggings",count:1b}
             }
                 $block { {item:"$(item)"}
                     execute unless score BreakDisabledTools OldCombatSettings matches 1 run return fail
@@ -2604,12 +2651,12 @@ function disable_netherite_items {
         }
         block { {item:netherite_boots}
             $execute unless items entity @s armor.* $(item) unless items entity @s weapon.* $(item) unless items entity @s inventory.* $(item) unless items entity @s hotbar.* $(item) run return fail
-            tellraw @s "§4[Old Combat]: Netherite items are disabled."
+            title @s actionbar "§4[Old Combat]: Netherite items are disabled."
             execute if score ReturnMaterialsOfDisabledItems OldCombatSettings matches 1 anchored eyes positioned ^ ^ ^ positioned ~ ~-0.1 ~ run {
-                tellraw @s "The netherite boots' smithing materials were dropped on the ground."
-                throw_custom_stack 0.4 80 250 15 {id:"minecraft:netherite_ingot",count:1b}
-                throw_custom_stack 0.4 80 250 15 {id:"minecraft:netherite_upgrade_smithing_template",count:1b}
-                throw_custom_stack 0.4 80 250 15 {id:"minecraft:diamond_boots",count:1b}
+                tellraw @s "The netherite boots' smithing materials were placed in your inventory (or dropped on the ground if space wasn't found)."
+                throw_custom_stack 0.4 80 250 15 0 {id:"minecraft:netherite_ingot",count:1b}
+                throw_custom_stack 0.4 80 250 15 0 {id:"minecraft:netherite_upgrade_smithing_template",count:1b}
+                throw_custom_stack 0.4 80 250 15 0 {id:"minecraft:diamond_boots",count:1b}
             }
                 $block { {item:"$(item)"}
                     execute unless score BreakDisabledTools OldCombatSettings matches 1 run return fail
@@ -2621,12 +2668,12 @@ function disable_netherite_items {
         }
         block { {item:netherite_sword}
             $execute unless items entity @s armor.* $(item) unless items entity @s weapon.* $(item) unless items entity @s inventory.* $(item) unless items entity @s hotbar.* $(item) run return fail
-            tellraw @s "§4[Old Combat]: Netherite items are disabled."
+            title @s actionbar "§4[Old Combat]: Netherite items are disabled."
             execute if score ReturnMaterialsOfDisabledItems OldCombatSettings matches 1 anchored eyes positioned ^ ^ ^ positioned ~ ~-0.1 ~ run {
-                tellraw @s "The netherite sword's smithing materials were dropped on the ground."
-                throw_custom_stack 0.4 80 250 15 {id:"minecraft:netherite_ingot",count:1b}
-                throw_custom_stack 0.4 80 250 15 {id:"minecraft:netherite_upgrade_smithing_template",count:1b}
-                throw_custom_stack 0.4 80 250 15 {id:"minecraft:diamond_sword",count:1b}
+                tellraw @s "The netherite sword's smithing materials were placed in your inventory (or dropped on the ground if space wasn't found)."
+                throw_custom_stack 0.4 80 250 15 0 {id:"minecraft:netherite_ingot",count:1b}
+                throw_custom_stack 0.4 80 250 15 0 {id:"minecraft:netherite_upgrade_smithing_template",count:1b}
+                throw_custom_stack 0.4 80 250 15 0 {id:"minecraft:diamond_sword",count:1b}
             }
                 $block { {item:"$(item)"}
                     execute unless score BreakDisabledTools OldCombatSettings matches 1 run return fail
@@ -2638,12 +2685,12 @@ function disable_netherite_items {
         }
         block { {item:netherite_axe}
             $execute unless items entity @s armor.* $(item) unless items entity @s weapon.* $(item) unless items entity @s inventory.* $(item) unless items entity @s hotbar.* $(item) run return fail
-            tellraw @s "§4[Old Combat]: Netherite items are disabled."
+            title @s actionbar "§4[Old Combat]: Netherite items are disabled."
             execute if score ReturnMaterialsOfDisabledItems OldCombatSettings matches 1 anchored eyes positioned ^ ^ ^ positioned ~ ~-0.1 ~ run {
-                tellraw @s "The netherite axe's smithing materials were dropped on the ground."
-                throw_custom_stack 0.4 80 250 15 {id:"minecraft:netherite_ingot",count:1b}
-                throw_custom_stack 0.4 80 250 15 {id:"minecraft:netherite_upgrade_smithing_template",count:1b}
-                throw_custom_stack 0.4 80 250 15 {id:"minecraft:diamond_axe",count:1b}
+                tellraw @s "The netherite axe's smithing materials were placed in your inventory (or dropped on the ground if space wasn't found)."
+                throw_custom_stack 0.4 80 250 15 0 {id:"minecraft:netherite_ingot",count:1b}
+                throw_custom_stack 0.4 80 250 15 0 {id:"minecraft:netherite_upgrade_smithing_template",count:1b}
+                throw_custom_stack 0.4 80 250 15 0 {id:"minecraft:diamond_axe",count:1b}
             }
                 $block { {item:"$(item)"}
                     execute unless score BreakDisabledTools OldCombatSettings matches 1 run return fail
@@ -2655,12 +2702,12 @@ function disable_netherite_items {
         }
         block { {item:netherite_shovel}
             $execute unless items entity @s armor.* $(item) unless items entity @s weapon.* $(item) unless items entity @s inventory.* $(item) unless items entity @s hotbar.* $(item) run return fail
-            tellraw @s "§4[Old Combat]: Netherite items are disabled."
+            title @s actionbar "§4[Old Combat]: Netherite items are disabled."
             execute if score ReturnMaterialsOfDisabledItems OldCombatSettings matches 1 anchored eyes positioned ^ ^ ^ positioned ~ ~-0.1 ~ run {
-                tellraw @s "The netherite shovel's smithing materials were dropped on the ground."
-                throw_custom_stack 0.4 80 250 15 {id:"minecraft:netherite_ingot",count:1b}
-                throw_custom_stack 0.4 80 250 15 {id:"minecraft:netherite_upgrade_smithing_template",count:1b}
-                throw_custom_stack 0.4 80 250 15 {id:"minecraft:diamond_shovel",count:1b}
+                tellraw @s "The netherite shovel's smithing materials were placed in your inventory (or dropped on the ground if space wasn't found)."
+                throw_custom_stack 0.4 80 250 15 0 {id:"minecraft:netherite_ingot",count:1b}
+                throw_custom_stack 0.4 80 250 15 0 {id:"minecraft:netherite_upgrade_smithing_template",count:1b}
+                throw_custom_stack 0.4 80 250 15 0 {id:"minecraft:diamond_shovel",count:1b}
             }
                 $block { {item:"$(item)"}
                     execute unless score BreakDisabledTools OldCombatSettings matches 1 run return fail
@@ -2672,12 +2719,12 @@ function disable_netherite_items {
         }
         block { {item:netherite_pickaxe}
             $execute unless items entity @s armor.* $(item) unless items entity @s weapon.* $(item) unless items entity @s inventory.* $(item) unless items entity @s hotbar.* $(item) run return fail
-            tellraw @s "§4[Old Combat]: Netherite items are disabled."
+            title @s actionbar "§4[Old Combat]: Netherite items are disabled."
             execute if score ReturnMaterialsOfDisabledItems OldCombatSettings matches 1 anchored eyes positioned ^ ^ ^ positioned ~ ~-0.1 ~ run {
-                tellraw @s "The netherite pickaxe's smithing materials were dropped on the ground."
-                throw_custom_stack 0.4 80 250 15 {id:"minecraft:netherite_ingot",count:1b}
-                throw_custom_stack 0.4 80 250 15 {id:"minecraft:netherite_upgrade_smithing_template",count:1b}
-                throw_custom_stack 0.4 80 250 15 {id:"minecraft:diamond_pickaxe",count:1b}
+                tellraw @s "The netherite pickaxe's smithing materials were placed in your inventory (or dropped on the ground if space wasn't found)."
+                throw_custom_stack 0.4 80 250 15 0 {id:"minecraft:netherite_ingot",count:1b}
+                throw_custom_stack 0.4 80 250 15 0 {id:"minecraft:netherite_upgrade_smithing_template",count:1b}
+                throw_custom_stack 0.4 80 250 15 0 {id:"minecraft:diamond_pickaxe",count:1b}
             } 
                 $block { {item:"$(item)"}
                     execute unless score BreakDisabledTools OldCombatSettings matches 1 run return fail
@@ -2690,16 +2737,16 @@ function disable_netherite_items {
         block { {item:netherite_hoe} 
             $execute unless items entity @s armor.* $(item) unless items entity @s weapon.* $(item) unless items entity @s inventory.* $(item) unless items entity @s hotbar.* $(item) run return fail
             IF ($1_21_4compile == true) {
-                tellraw @s "§4[Old Combat]: Netherite items are disabled."
+                title @s actionbar "§4[Old Combat]: Netherite items are disabled."
             } ELSE {
                 data modify storage oldcombat:temp sdadv set value [{color:dark_purple,text:"",hover_event:{action:show_text,value:[{translate:advancements.husbandry.netherite_hoe.title,color:dark_purple},"\n",{translate:advancements.husbandry.netherite_hoe.description}]}},"[",{translate:"advancements.husbandry.netherite_hoe.title"},"]"]
                 tellraw @s [{text:"That's some ",color:dark_red},{nbt:"sdadv",storage:"oldcombat:temp",interpret:true}, {text:", but netherite items are disabled.",color:dark_red,hover_event:{action:show_text,value:""}}]
             }
             execute if score ReturnMaterialsOfDisabledItems OldCombatSettings matches 1 anchored eyes positioned ^ ^ ^ positioned ~ ~-0.1 ~ run {
-                tellraw @s "The netherite hoe's smithing materials were dropped on the ground."
-                throw_custom_stack 0.4 80 250 15 {id:"minecraft:netherite_ingot",count:1b}
-                throw_custom_stack 0.4 80 250 15 {id:"minecraft:netherite_upgrade_smithing_template",count:1b}
-                throw_custom_stack 0.4 80 250 15 {id:"minecraft:diamond_hoe",count:1b}
+                tellraw @s "The netherite hoe's smithing materials were placed in your inventory (or dropped on the ground if space wasn't found)."
+                throw_custom_stack 0.4 80 250 15 0 {id:"minecraft:netherite_ingot",count:1b}
+                throw_custom_stack 0.4 80 250 15 0 {id:"minecraft:netherite_upgrade_smithing_template",count:1b}
+                throw_custom_stack 0.4 80 250 15 0 {id:"minecraft:diamond_hoe",count:1b}
             }
                 $block { {item:"$(item)"}
                     execute unless score BreakDisabledTools OldCombatSettings matches 1 run return fail
@@ -2711,10 +2758,10 @@ function disable_netherite_items {
         }
         block { {item:netherite_block}
             $execute unless items entity @s armor.* $(item) unless items entity @s weapon.* $(item) unless items entity @s inventory.* $(item) unless items entity @s hotbar.* $(item) run return fail
-            tellraw @s "§4[Old Combat]: Netherite items are disabled."
+            title @s actionbar "§4[Old Combat]: Netherite items are disabled."
             execute if score ReturnMaterialsOfDisabledItems OldCombatSettings matches 1 anchored eyes positioned ^ ^ ^ positioned ~ ~-0.1 ~ run {
-                tellraw @s "The netherite block's crafting materials were dropped on the ground."
-                throw_custom_stack 0.4 80 250 15 {id:"minecraft:netherite_ingot",count:9b}
+                tellraw @s "The netherite block's crafting materials were placed in your inventory (or dropped on the ground if space wasn't found)."
+                throw_custom_stack 0.4 80 250 15 0 {id:"minecraft:netherite_ingot",count:9b}
             } 
                 $block { {item:"$(item)"}
                     execute unless score BreakDisabledTools OldCombatSettings matches 1 run return fail
@@ -2726,11 +2773,11 @@ function disable_netherite_items {
         }
         block { {item:netherite_ingot}
             $execute unless items entity @s armor.* $(item) unless items entity @s weapon.* $(item) unless items entity @s inventory.* $(item) unless items entity @s hotbar.* $(item) run return fail
-            tellraw @s "§4[Old Combat]: Netherite items are disabled."
+            title @s actionbar "§4[Old Combat]: Netherite items are disabled."
             execute if score ReturnMaterialsOfDisabledItems OldCombatSettings matches 1 anchored eyes positioned ^ ^ ^ positioned ~ ~-0.1 ~ run {
-                tellraw @s "The netherite ingot's crafting materials were dropped on the ground."
-                throw_custom_stack 0.4 80 250 15 {id:"minecraft:netherite_scrap",count:4b}
-                throw_custom_stack 0.4 80 250 15 {id:"minecraft:gold_ingot",count:4b}
+                tellraw @s "The netherite ingot's crafting materials were placed in your inventory (or dropped on the ground if space wasn't found)."
+                throw_custom_stack 0.4 80 250 15 0 {id:"minecraft:netherite_scrap",count:4b}
+                throw_custom_stack 0.4 80 250 15 0 {id:"minecraft:gold_ingot",count:4b}
             } 
                 $block { {item:"$(item)"}
                     execute unless score BreakDisabledTools OldCombatSettings matches 1 run return fail
@@ -2742,10 +2789,10 @@ function disable_netherite_items {
         }
         block { {item:netherite_scrap}
             $execute unless items entity @s armor.* $(item) unless items entity @s weapon.* $(item) unless items entity @s inventory.* $(item) unless items entity @s hotbar.* $(item) run return fail
-            tellraw @s "§4[Old Combat]: Netherite items are disabled."
+            title @s actionbar "§4[Old Combat]: Netherite items are disabled."
             execute if score ReturnMaterialsOfDisabledItems OldCombatSettings matches 1 anchored eyes positioned ^ ^ ^ positioned ~ ~-0.1 ~ run {
-                tellraw @s "The netherite scrap's smelting material were dropped on the ground."
-                throw_custom_stack 0.4 80 250 15 {id:"minecraft:ancient_debris",count:1b}
+                tellraw @s "The netherite scrap's smelting material were placed in your inventory (or dropped on the ground if space wasn't found)."
+                throw_custom_stack 0.4 80 250 15 0 {id:"minecraft:ancient_debris",count:1b}
             } 
                 $block { {item:"$(item)"}
                     execute unless score BreakDisabledTools OldCombatSettings matches 1 run return fail
@@ -2757,12 +2804,12 @@ function disable_netherite_items {
         }
         block { {item:netherite_spear}
             $execute unless items entity @s armor.* $(item) unless items entity @s weapon.* $(item) unless items entity @s inventory.* $(item) unless items entity @s hotbar.* $(item) run return fail
-            tellraw @s "§4[Old Combat]: Netherite is disabled."
+            title @s actionbar "§4[Old Combat]: Netherite is disabled."
             execute if score ReturnMaterialsOfDisabledItems OldCombatSettings matches 1 anchored eyes positioned ^ ^ ^ positioned ~ ~-0.1 ~ run {
-                tellraw @s "The netherite spear's smithing materials were dropped on the ground."
-                throw_custom_stack 0.4 80 250 15 {id:"minecraft:diamond_spear",count:1b}
-                throw_custom_stack 0.4 80 250 15 {id:"minecraft:netherite_upgrade_smithing_template",count:1b}
-                throw_custom_stack 0.4 80 250 15 {id:"minecraft:netherite_ingot",count:1b}
+                tellraw @s "The netherite spear's smithing materials were placed in your inventory (or dropped on the ground if space wasn't found)."
+                throw_custom_stack 0.4 80 250 15 0 {id:"minecraft:diamond_spear",count:1b}
+                throw_custom_stack 0.4 80 250 15 0 {id:"minecraft:netherite_upgrade_smithing_template",count:1b}
+                throw_custom_stack 0.4 80 250 15 0 {id:"minecraft:netherite_ingot",count:1b}
             }
             
                 $block { {item:"$(item)"}   
@@ -2775,12 +2822,12 @@ function disable_netherite_items {
         }
         block { {item:netherite_horse_armor}
             $execute unless items entity @s armor.* $(item) unless items entity @s weapon.* $(item) unless items entity @s inventory.* $(item) unless items entity @s hotbar.* $(item) run return fail
-            tellraw @s "§4[Old Combat]: Netherite is disabled."
+            title @s actionbar "§4[Old Combat]: Netherite is disabled."
             execute if score ReturnMaterialsOfDisabledItems OldCombatSettings matches 1 anchored eyes positioned ^ ^ ^ positioned ~ ~-0.1 ~ run {
-                tellraw @s "The netherite horse armor's smithing materials were dropped on the ground."
-                throw_custom_stack 0.4 80 250 15 {id:"minecraft:diamond_horse_armor",count:1b}
-                throw_custom_stack 0.4 80 250 15 {id:"minecraft:netherite_upgrade_smithing_template",count:1b}
-                throw_custom_stack 0.4 80 250 15 {id:"minecraft:netherite_ingot",count:1b}
+                tellraw @s "The netherite horse armor's smithing materials were placed in your inventory (or dropped on the ground if space wasn't found)."
+                throw_custom_stack 0.4 80 250 15 0 {id:"minecraft:diamond_horse_armor",count:1b}
+                throw_custom_stack 0.4 80 250 15 0 {id:"minecraft:netherite_upgrade_smithing_template",count:1b}
+                throw_custom_stack 0.4 80 250 15 0 {id:"minecraft:netherite_ingot",count:1b}
             }
             
                 $block { {item:"$(item)"}   
@@ -2793,12 +2840,12 @@ function disable_netherite_items {
         }
         block { {item:netherite_nautilus_armor}
             $execute unless items entity @s armor.* $(item) unless items entity @s weapon.* $(item) unless items entity @s inventory.* $(item) unless items entity @s hotbar.* $(item) run return fail
-            tellraw @s "§4[Old Combat]: Netherite is disabled."
+            title @s actionbar "§4[Old Combat]: Netherite is disabled."
             execute if score ReturnMaterialsOfDisabledItems OldCombatSettings matches 1 anchored eyes positioned ^ ^ ^ positioned ~ ~-0.1 ~ run {
-                tellraw @s "The netherite nautilus armor's smithing materials were dropped on the ground."
-                throw_custom_stack 0.4 80 250 15 {id:"minecraft:diamond_nautilus_armor",count:1b}
-                throw_custom_stack 0.4 80 250 15 {id:"minecraft:netherite_upgrade_smithing_template",count:1b}
-                throw_custom_stack 0.4 80 250 15 {id:"minecraft:netherite_ingot",count:1b}
+                tellraw @s "The netherite nautilus armor's smithing materials were placed in your inventory (or dropped on the ground if space wasn't found)."
+                throw_custom_stack 0.4 80 250 15 0 {id:"minecraft:diamond_nautilus_armor",count:1b}
+                throw_custom_stack 0.4 80 250 15 0 {id:"minecraft:netherite_upgrade_smithing_template",count:1b}
+                throw_custom_stack 0.4 80 250 15 0 {id:"minecraft:netherite_ingot",count:1b}
             }
             
                 $block { {item:"$(item)"}   
@@ -2921,6 +2968,9 @@ function startup minecraft:load {
         scoreboard players set regenRate OldCombatSettings 80
         scoreboard players set DisableModernPVPItems OldCombatSettings 0
         scoreboard players set DisableNetheriteItems OldCombatSettings 0
+        scoreboard players set DisableCopper OldCombatSettings 0
+        scoreboard players set DisableSpears OldCombatSettings 0
+
         scoreboard players set BreakDisabledTools OldCombatSettings 1
         scoreboard players set ReturnMaterialsOfDisabledItems OldCombatSettings 1
         scoreboard players set ShieldNerf OldCombatSettings 1
@@ -3040,62 +3090,63 @@ dir noconfirm {
         scoreboard objectives add OldCombatSettings dummy
         scoreboard objectives add OldCombatTemp dummy
         logger info "Loading Default Settings"
-        execute if score aputils OldCombatTemp matches 0 run {
-            IF $1_21_4compile==false {
-                logger info ["Some features require Andrew's Datapack Utilities to work properly. Consider adding it! ",{text:"Click here to see it on Modrinth.",underlined:true,click_event:{action:"open_url",url:"https://modrinth.com/mod/andrews-pack-utils"}}]
-            } ELSE {
-                logger info ["Some features require Andrew's Datapack Utilities to work properly. Consider adding it! ",{"text":"Click here to see it on Modrinth.","underlined":true,"clickEvent":{"action":"open_url","value":"https://modrinth.com/mod/andrews-pack-utils"}}]
-            }
-        }
-
-        # Add a start delay to ensure no issues arise while the world is loading, offhand items will turn into a single block of stone if this didn't exist
+        # Add a start delay to ensure no issues arise while the world is loading, offhand items will turn into a single block of stone if this didn't exist. Issue still exists in multiplayer, though. Trying to figure out how to fix that on servers too.
         scoreboard players set StartDelay OldCombatTemp 60
+        scoreboard players set OldAITickDistance OldCombatTemp 60
+        scoreboard players set DisableEXP OldCombatSettings 0
         scoreboard players set MobFarSight OldCombatSettings 0
-        scoreboard players set BuffSprintKB OldCombatSettings 1
-        scoreboard players set BuffKBValueSprint.X OldCombatSettings 115
-        scoreboard players set BuffKBValueSprint.Y OldCombatSettings 105
+        scoreboard players set EnableCompatibilityTools OldCombatSettings 0
+        scoreboard players set RegenExhaustion OldCombatSettings 300
         scoreboard players set DisableOffhand OldCombatSettings 1
         scoreboard players set BuffKB OldCombatSettings 1
         scoreboard players set BuffKBValue.X OldCombatSettings 125
         scoreboard players set BuffKBValue.Y OldCombatSettings 105
+        scoreboard players set BuffSprintKB OldCombatSettings 1
+        scoreboard players set BuffKBValueSprint.X OldCombatSettings 115
+        scoreboard players set BuffKBValueSprint.Y OldCombatSettings 105
         scoreboard players set DisableAttackCooldown OldCombatSettings 1
         scoreboard players set SwordBlocking OldCombatSettings 1
-        scoreboard players set RegenExhaustion OldCombatSettings 300
         scoreboard players set OldToolDamage OldCombatSettings 1
         scoreboard players set SprintingCrits OldCombatSettings 1
         scoreboard players set DisableSprint OldCombatSettings 0
         scoreboard players set DisableKBResist OldCombatSettings 1
         scoreboard players set AirKB OldCombatSettings 1
+        scoreboard players set AirKBMix OldCombatSettings 110
         scoreboard players set FishingRodKnockback OldCombatSettings 1
+        scoreboard players set FurtherFishingBobber OldCombatSettings 1
         scoreboard players set FishingBobberBoost.X OldCombatSettings 150
         scoreboard players set FishingBobberBoost.Y OldCombatSettings 150
         scoreboard players set AirKBForce OldCombatSettings 30
-        scoreboard players set AirKBMix OldCombatSettings 110
         scoreboard players set OldRegen OldCombatSettings 1
         scoreboard players set regenRate OldCombatSettings 80
         scoreboard players set DisableModernPVPItems OldCombatSettings 0
         scoreboard players set DisableNetheriteItems OldCombatSettings 0
+        scoreboard players set DisableCopper OldCombatSettings 0
+        scoreboard players set DisableSpears OldCombatSettings 0
+
         scoreboard players set BreakDisabledTools OldCombatSettings 1
         scoreboard players set ReturnMaterialsOfDisabledItems OldCombatSettings 1
         scoreboard players set ShieldNerf OldCombatSettings 1
-        scoreboard players set DisableAttackSounds OldCombatSettings 1
+        scoreboard players set DisableAttackSounds OldCombatSettings 0
         scoreboard players set DisableSwimming OldCombatSettings 0
-        scoreboard players set SharpnessBoost OldCombatSettings 125
-        scoreboard players set SharpnessBase OldCombatSettings 0
+        scoreboard players set OldTooltips OldCombatSettings 1
         scoreboard players set OldSharpness OldCombatSettings 1
+        scoreboard players set SharpnessBase OldCombatSettings 0
         scoreboard players set OldMobAI OldCombatSettings 0
         scoreboard players set OldHungerSystem OldCombatSettings 0
         scoreboard players set OldFood OldCombatSettings 0
         scoreboard players set EnableWander OldCombatSettings 1
         scoreboard players set DisableCrits OldCombatSettings 0
-        scoreboard players operation PreviousDataVersion OldCombatSettings = DataVersion OldCombatSettings
-        scoreboard players set DataVersion OldCombatSettings <%data_version%>
-        scoreboard players set IterateAllSlots OldCombatSettings 1
-        scoreboard players set OldTooltips OldCombatSettings 1
+        scoreboard players set SharpnessBoost OldCombatSettings 125
         scoreboard players set FishingBobberGravity OldCombatSettings 50
         scoreboard players set BedrockFishingBobberPhysics OldCombatSettings 0
         scoreboard players set OldFishingBobberVel OldCombatSettings 1
-        scoreboard players set DisableEXP OldCombatSettings 0
+        scoreboard players set IterateAllSlots OldCombatSettings 1
+        scoreboard players operation PreviousDataVersion OldCombatSettings = DataVersion OldCombatSettings
+        scoreboard players set DataVersion OldCombatSettings <%data_version%>
+        IF (beta_compile) {   
+            function presets/b1.7.3
+        }
 
 
     }
@@ -3302,13 +3353,13 @@ function block_offhand {
         execute if items entity @s weapon.offhand *[custom_data~{oldcombat_type:compat}] run return 0
         execute if score AllowOffhandForSomeItems OldCombatSettings matches 1 run {
             execute if items entity @s weapon.offhand * unless items entity @s weapon.offhand #oldcombat:acceptable_offhand run {
-                execute at @s anchored eyes positioned ^ ^ ^ positioned ~ ~-0.1 ~ run function throw_offhand
+                execute at @s anchored eyes positioned ^ ^ ^ positioned ~ ~-0.1 ~ run function throw_offhand_instant_pickup
                 tellraw @s [{"color":"red","text":"[Old Combat]: This item can't be placed in this slot. "},{"color":"yellow","text":"[What can?]","hover_event":{"action":"show_text","value":["Your server/world's Old Combat settings are set to disallow items from entering the offhand slot, but the settings also allow certain items to be placed in the offhand anyways. The acceptable items tag can be changed by other datapacks, but by default the allowed items are the same as the allowed offhand items in Bedrock Edition, those being: Shields, any kind of arrow (for overriding the arrow that bows and crossbows should use), any map (except empty maps, you need to use (interact with) the map first), firework rockets (for loading fireworks into crossbows), Totems of Undying, and nautilus shells (don't ask me why, it's a bedrock thing)."]},"hoverEvent":{"action":"show_text","contents":["Your server/world's Old Combat settings are set to disallow items from entering the offhand slot, but the settings also allow certain items to be placed in the offhand anyways. The acceptable items tag can be changed by other datapacks, but by default the allowed items are the same as the allowed offhand items in Bedrock Edition, those being: Shields, any kind of arrow (for overriding the arrow that bows and crossbows should use), any map (except empty maps, you need to use (interact with) the map first), firework rockets (for loading fireworks into crossbows), Totems of Undying, and nautilus shells (don't ask me why, it's a bedrock thing)."]}}]
                 item replace entity @s weapon.offhand with air
             }
         } else execute run {
             execute if items entity @s weapon.offhand * run {
-                execute at @s anchored eyes positioned ^ ^ ^ positioned ~ ~-0.1 ~ run function throw_offhand
+                execute at @s anchored eyes positioned ^ ^ ^ positioned ~ ~-0.1 ~ run function throw_offhand_instant_pickup
                 tellraw @s [{"color":"red","text":"[Old Combat]: Items can't be placed in this slot. "},{"color":"yellow","text":"[Why?]","hover_event":{"action":"show_text","value":["Your server/world's Old Combat settings are set to disallow items from entering the offhand slot. If you're an operator (or on a singleplayer world with cheats enabled), you can change this in /function oldcombat:config. If you don't have cheats enabled in your world but want to change the settings, enable them with the Open to LAN feature."]},"hoverEvent":{"action":"show_text","contents":["Your server/world's Old Combat settings are set to disallow items from entering the offhand slot. If you're an operator (or on a singleplayer world with cheats enabled), you can change this in /function oldcombat:config. If you don't have cheats enabled in your world but want to change the settings, enable them with the Open to LAN feature."]}}]
                 item replace entity @s weapon.offhand with air
             }
@@ -3319,6 +3370,11 @@ function block_offhand {
 function throw_offhand {
     throw_offhand_stack 0.4 80 250 0
 }
+
+function throw_offhand_instant_pickup {
+    throw_offhand_stack 0.4 80 250 0 0
+}
+
 
 function throw_held {
     throw_held_stack 0.4 80 250 0

@@ -16,7 +16,7 @@ template @InitApply {
 
 template @Setting {
   with id:word {
-    execute store result score <%id%> <%applyto%> run data get storage occonfig:temp settings[<%index%>]
+    execute store result score <%id%> <%applyto%> run data get storage z_occonfig:temp settings[<%index%>]
     <%%
       index++
     %%>
