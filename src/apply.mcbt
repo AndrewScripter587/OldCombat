@@ -1,0 +1,24 @@
+template @ApplyTo {
+  with objective:word {
+    <%%
+      applyto = objective
+    %%>
+  }
+}
+
+template @InitApply {
+  with {
+    <%%
+      index = 0
+    %%>
+  }
+}
+
+template @Setting {
+  with id:word {
+    execute store result score <%id%> <%applyto%> run data get storage occonfig:temp settings[<%index%>]
+    <%%
+      index++
+    %%>
+  }
+}

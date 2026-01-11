@@ -1,0 +1,98 @@
+template menu {
+  load {
+    scoreboard objectives add DialogTemp dummy
+  }
+  with generate name:word menu:block {
+    data modify storage dialog:dialogs <%name%> set value {}
+    <%%
+      idlist = ""
+      scores = []
+      dialogname = name
+    %%>
+    <%embed(menu)%>
+  }
+  with open selector:word menu:raw {
+    block { with storage dialog:dialogs
+      $dialog show <%selector%> $(<%menu%>)
+    }
+  }
+}
+
+template @Title {
+  with title:raw {
+    data modify storage dialog:dialogs <%dialogname%>.title set value <%title%>
+  }
+}
+
+template @Body {
+  with body:raw {
+    data modify storage dialog:dialogs <%dialogname%>.body append value <%body%>
+  }
+}
+
+template @RawInput {
+  with id:word score:word input:raw {
+    data modify storage dialog:dialogs <%dialogname%>.inputs append value <%input%>
+    <%%
+      macro = "$(" + id + ")"
+      scores.push(score)
+      idlist = idlist != "" ? idlist + ", " + macro : macro
+    %%>
+  }
+}
+
+template @RawData {
+  with data:raw {
+    data merge storage dialog:dialogs <%dialogname%> <%data%>
+  }
+}
+
+template @Objective {
+  with objective:word {
+    <%%
+      currentobj = objective
+    %%>
+  }
+}
+
+template @BooleanInput {
+  with id:word score score:word label:raw {
+    execute store result storage dialog:temp initial byte 1 run scoreboard players get <%score%> <%currentobj%>
+    block { with storage dialog:temp
+      $data modify storage dialog:dialogs <%dialogname%>.inputs append value {type:boolean,initial:$(initial),key:"<%id%>",label:<%label%>}
+    }
+    
+    <%%
+      macro = "$(" + id + ")"
+      scores.push(score)
+      idlist = idlist != "" ? idlist + ", " + macro : macro
+    %%>
+  }
+
+}
+
+template @TextInput {
+  with id:word score:word max:int label:raw {
+    execute store result storage dialog:temp initial int 1 run scoreboard players get <%score%> <%currentobj%>
+    block { with storage dialog:temp
+      $data modify storage dialog:dialogs <%dialogname%>.inputs append value {type:text,initial:"$(initial)",key:'<%id%>',label:<%label%>,max_length:<%max%>}
+    }
+    <%%
+      macro = "$(" + id + ")"
+      scores.push(score)
+      idlist = idlist != "" ? idlist + ", " + macro : macro
+    %%>
+  }
+}
+
+template @RawAction {
+  with path:js value:raw {
+    data modify storage dialog:dialogs <%dialogname%>.<%path%> set value <%value%>
+  }
+}
+
+template @Type {
+  with type:raw {
+    data modify storage dialog:dialogs <%dialogname%>.type set value <%type%>
+  }
+}

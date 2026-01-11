@@ -484,3 +484,22 @@ template fix_illegal_stack {
 }
 
 
+template switch {
+    with score name:word objective:word cases:block {
+        <%%
+            switchMode = "score"
+            switchName = name
+            switchObjective = objective
+            
+        %%>
+        <%embed(cases)%>
+    }
+}
+
+template case {
+    with value:raw code:block {
+        IF (switchMode == "score") {
+            execute if score <%switchName%> <%switchObjective%> matches <%value%> run <%embed(code)%>
+        }
+    }
+}

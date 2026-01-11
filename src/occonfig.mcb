@@ -1,0 +1,94 @@
+import ./dialog.mcbt
+import ./apply.mcbt
+
+function on_load minecraft:load{
+    # you can use MC-Build without its internal scoreboard but this will limit the available features
+    scoreboard objectives add mcb.internal dummy
+    scoreboard objectives add cancelmsg trigger
+    say Using OldCombat Dialog Configuration Menu by AndrewGaming587
+}
+
+function on_tick minecraft:tick {
+    
+    tellraw @a[scores={cancelmsg=1}] "Canceled changes."
+    scoreboard players reset @a cancelmsg
+    scoreboard players enable @a cancelmsg
+}
+
+function show {
+    
+    menu generate oldcombatconfig {
+        @Title "Old Combat Configuration"
+        @Objective OldCombatSettings
+        @Type confirmation
+        
+        @Body {type:plain_message,contents:"Welcome to the BRAND-NEW configuration screen for Old Combat Datapack."}
+        # @Body {type:plain_message,contents:"Welcome to the BRAND-NEW configuration screen for Old Combat Datapack."}
+        @BooleanInput sb score SwordBlocking "Sword Blocking"
+        @BooleanInput oh score DisableOffhand "Disable Offhand"
+        @BooleanInput ohi score AllowOffhandForSomeItems "^ Allow Certain Offhand Items"
+        @BooleanInput cd score DisableAttackCooldown "Disable Attack Cooldown"
+        @BooleanInput cdsp score NoSpearCooldown "^ Also affect spears"
+        @BooleanInput dmg score OldToolDamage "Old Tool Damages"
+        @BooleanInput scr score SprintingCrits "Criticals while sprinting"
+        @BooleanInput kbr score DisableKBResist "Disable Knockback Resistance"
+        @BooleanInput akb score AirKB "Knockback Effective In Air"
+        @TextInput akbf AirKBForce 3 "^ Air Knockback Force"
+        @TextInput akbm AirKBMix 5 "^ Velocity mixing factor"
+        @BooleanInput rkb score FishingRodKnockback "Fishing Rod Knockback"
+        @BooleanInput ffb score FurtherFishingBobber "Further Fishing Bobbers"
+        @TextInput ffbx FurtherFishingBobber.X 3 "^ Horizontal boost"
+        @TextInput ffby FurtherFishingBobber.Y 3 "^ Vertical boost"
+        @BooleanInput rg score OldRegen "Old Health Regeneration"
+        @TextInput rgrt regenRate 32 "^ Regeneration Rate"
+        @TextInput rgex RegenExhaustion 32 "^ Regeneration Exhaustion Gain"
+        @BooleanInput kb score BuffKB "Boost Damage Knockback"
+        @TextInput kbx BuffKBValue.X 5 "^ Horizontal Multiplier"
+        @TextInput kby BuffKBValue.Y 5 "^ Vertical Multiplier"
+        @BooleanInput skb score BuffSprintKB "^ Boost Sprint-Knockback Attack"
+        @TextInput skbx BuffKBValueSprint.X 5 "^^ Horizontal Multiplier"
+        @TextInput skby BuffKBValueSprint.Y 5 "^^ Vertical Multiplier"
+        @BooleanInput dism score DisableModernPVPItems "Disable modern PVP-related items"
+        @BooleanInput disn score DisableNetheriteItems "Disable netherite"
+        @BooleanInput disc score DisableCopper "Disable 1.21.9 Copper Tools & Armor"
+        @BooleanInput diss score DisableCopper "Disable 1.21.11 Spear Weapons"
+        @BooleanInput brdis score BreakDisabledTools "Visually \"break\" disabled tools"
+        @BooleanInput rmat score ReturnMaterialsOfDisabledItems "Return materials of some disabled items"
+        @BooleanInput sn score ShieldNerf "Nerf shields to pre-1.11 protection"
+        @BooleanInput snd score DisableAttackSounds "Disable sounds of attacks (not recommended)"
+        @BooleanInput swm score DisableSwimming "Disable swimming"
+        @BooleanInput shrp score OldSharpness "Old Sharpness Enchantment Damage"
+        @TextInput shbse SharpnessBase 32 "^ Base Damage"
+        @TextInput shbst SharpnessBoost 32 "^ Level Damage"
+        @BooleanInput shench score UseOldSharpEnchant "^ Replace Vanilla Sharpness with Custom Enchantment"
+        @BooleanInput ttip score OldTooltips "Old Item Tooltips"
+        @BooleanInput bbob score BedrockFishingBobberPhysics "Bedrock Edition Fishing Bobber Physics"
+        @BooleanInput obvel score OldFishingBobberVel "Old Fishing Bobber Velocity"
+        @BooleanInput bhng score OldHungerSystem "Beta 1.7.3 Hunger System"
+        @BooleanInput bfd score OldFood "Beta 1.7.3 Food Mechanics"
+        @BooleanInput bbws score OldBows "Beta 1.7.3 Bows"
+        @BooleanInput ai score OldMobAI "Old Mob AI (unstable)"
+        @BooleanInput wnd score EnableWander "^ Affect mob wandering"
+        @BooleanInput fs score MobFarSight "Mobs see further"
+        @BooleanInput dc score DisableCrits "Disable Critical Hits"
+
+        
+        @RawAction <%"yes"%> {label:"Ok",action:{type:"dynamic/run_command"}}
+        data modify storage dialog:dialogs oldcombatconfig.yes.action.template set value "function occonfig:apply {settings:[<%idlist%>]}"
+        @RawAction <%"no"%> {label:"Cancel",action:{type:"run_command",command:"trigger cancelmsg"}}
+    }
+    
+    menu open @s oldcombatconfig
+    return 1
+}
+
+function apply {
+    $data modify storage occonfig:temp settings set value $(settings)
+    @InitApply
+    @ApplyTo OldCombatSettings
+
+    REPEAT (scores) as score {
+        @Setting <%score%>
+    }
+}
+
