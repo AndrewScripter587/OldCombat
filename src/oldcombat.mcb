@@ -532,6 +532,9 @@ function on_tick minecraft:tick {
             execute if score Disable OldCombatSettings matches 35 run return 0
             function disable_spears
             execute if score Disable OldCombatSettings matches 36 run return 0
+            function disable_mending
+            execute if score Disable OldCombatSettings matches 37 run return 0
+
             scoreboard players reset @a BedrockSneakTime
     }
 }
@@ -1501,9 +1504,10 @@ dir config {
                 boolean_input legacy <%"Disable Netherite Items"%> <%"Disables netherite items. Fun fact: this will downgrade the netherite ingot from your netherite item all the way down to ancient debris in multiple steps"%> OldCombatSettings DisableNetheriteItems oldcombat:config/subconfig/itemdisable
                 boolean_input legacy <%"Disable Copper Tools & Armor"%> <%"Disables the copper tools and armor added in 1.21.9."%> OldCombatSettings DisableCopper oldcombat:config/subconfig/itemdisable
                 boolean_input legacy <%"Disable Spears"%> <%"Disables the spear weapons added in 1.21.11."%> OldCombatSettings DisableSpears oldcombat:config/subconfig/itemdisable
+                boolean_input legacy <%"Disable Mending"%> <%"Pretty self-explanitory. If used with Drop Crafting Materials For Disabled Items, a mending enchanting book will be returned to the player. Unlike the other item-disabling options, this one only looks for mending in either hand, and in the armor slots, instead of the whole inventory for performance (and maybe laziness) reasons"%> OldCombatSettings DisableMending oldcombat:config/subconfig/itemdisable
                 boolean_input legacy <%"Break Disabled Items"%> <%"Causes some disabled items to \\\"break\\\" (as if their durability was 0). Purely visual."%> OldCombatSettings BreakDisabledTools oldcombat:config/subconfig/itemdisable
                 boolean_input legacy <%"Drop Crafting Materials For Disabled Items"%> <%"Most disabled items will drop the materials from their crafting recipe. Doesn't apply to any items that either don't have a crafting recipe or would create a dupe glitch because multiple of the item are created from the recipe."%> OldCombatSettings ReturnMaterialsOfDisabledItems oldcombat:config/subconfig/itemdisable
-                emptyline 12
+                emptyline 11
             } ELSE {
                 textline "Configuration for disabling items"
                 single_button <%"Go back"%> white <%"/function oldcombat:config/page1"%>
@@ -1511,9 +1515,10 @@ dir config {
                 boolean_input <%"Disable Netherite Items"%> <%"Disables netherite items. Fun fact: this will downgrade the netherite ingot from your netherite item all the way down to ancient debris in multiple steps"%> OldCombatSettings DisableNetheriteItems oldcombat:config/subconfig/itemdisable
                 boolean_input <%"Disable Copper Tools & Armor"%> <%"Disables the copper tools and armor added in 1.21.9."%> OldCombatSettings DisableCopper oldcombat:config/subconfig/itemdisable
                 boolean_input <%"Disable Spears"%> <%"Disables the spear weapons added in 1.21.11."%> OldCombatSettings DisableSpears oldcombat:config/subconfig/itemdisable
+                boolean_input <%"Disable Mending"%> <%"Pretty self-explanitory. If used with Drop Crafting Materials For Disabled Items, a mending enchanting book will be returned to the player. Unlike the other item-disabling options, this one only looks for mending in either hand, and in the armor slots, instead of the whole inventory for performance (and maybe laziness) reasons"%> OldCombatSettings DisableMending oldcombat:config/subconfig/itemdisable
                 boolean_input <%"Break Disabled Items"%> <%"Causes some disabled items to \\\"break\\\" (as if their durability was 0). Purely visual."%> OldCombatSettings BreakDisabledTools oldcombat:config/subconfig/itemdisable
                 boolean_input <%"Drop Crafting Materials For Disabled Items"%> <%"Most disabled items will drop the materials from their crafting recipe. Doesn't apply to any items that either don't have a crafting recipe or would create a dupe glitch because multiple of the item are created from the recipe."%> OldCombatSettings ReturnMaterialsOfDisabledItems oldcombat:config/subconfig/itemdisable
-                emptyline 12
+                emptyline 11
             }
         }
         function knockback {
@@ -2240,6 +2245,67 @@ function disable_modern_items {
 
     }
 }
+
+function disable_mending {
+    execute if score DisableMending OldCombatSettings matches 1 as @a unless entity @s[tag=oldcombatignore] at @s run {
+        block { {slot:weapon.mainhand}
+            $execute unless items entity @s $(slot) *[enchantments~[{id:"mending"}]] run return fail
+            title @s actionbar "§4[Old Combat]: Mending is disabled."
+            execute if score ReturnMaterialsOfDisabledItems OldCombatSettings matches 1 anchored eyes positioned ^ ^ ^ positioned ~ ~-0.1 ~ run {
+                tellraw @s "A mending book was dropped on the ground."
+                throw_custom_stack 0.4 80 250 15 40 {id:"minecraft:enchanted_book",count:1b,components:{stored_enchantments:{mending:1}}}
+            }
+            remove_held_component minecraft:enchantments.minecraft:mending
+        }
+        block { {slot:weapon.offhand}
+            $execute unless items entity @s $(slot) *[enchantments~[{id:"mending"}]] run return fail
+            title @s actionbar "§4[Old Combat]: Mending is disabled."
+            execute if score ReturnMaterialsOfDisabledItems OldCombatSettings matches 1 anchored eyes positioned ^ ^ ^ positioned ~ ~-0.1 ~ run {
+                tellraw @s "A mending book was dropped on the ground."
+                throw_custom_stack 0.4 80 250 15 40 {id:"minecraft:enchanted_book",count:1b,components:{stored_enchantments:{mending:1}}}
+            }
+            remove_offheld_component minecraft:enchantments.minecraft:mending
+        }
+        block { {slot:armor.head}
+            $execute unless items entity @s $(slot) *[enchantments~[{id:"mending"}]] run return fail
+            title @s actionbar "§4[Old Combat]: Mending is disabled."
+            execute if score ReturnMaterialsOfDisabledItems OldCombatSettings matches 1 anchored eyes positioned ^ ^ ^ positioned ~ ~-0.1 ~ run {
+                tellraw @s "A mending book was dropped on the ground."
+                throw_custom_stack 0.4 80 250 15 40 {id:"minecraft:enchanted_book",count:1b,components:{stored_enchantments:{mending:1}}}
+            }
+            remove_slot_component armor.head minecraft:enchantments.minecraft:mending
+        }
+        block { {slot:armor.chest}
+            $execute unless items entity @s $(slot) *[enchantments~[{id:"mending"}]] run return fail
+            title @s actionbar "§4[Old Combat]: Mending is disabled."
+            execute if score ReturnMaterialsOfDisabledItems OldCombatSettings matches 1 anchored eyes positioned ^ ^ ^ positioned ~ ~-0.1 ~ run {
+                tellraw @s "A mending book was dropped on the ground."
+                throw_custom_stack 0.4 80 250 15 40 {id:"minecraft:enchanted_book",count:1b,components:{stored_enchantments:{mending:1}}}
+            }
+            remove_slot_component armor.chest minecraft:enchantments.minecraft:mending
+        }
+        block { {slot:armor.legs}
+            $execute unless items entity @s $(slot) *[enchantments~[{id:"mending"}]] run return fail
+            title @s actionbar "§4[Old Combat]: Mending is disabled."
+            execute if score ReturnMaterialsOfDisabledItems OldCombatSettings matches 1 anchored eyes positioned ^ ^ ^ positioned ~ ~-0.1 ~ run {
+                tellraw @s "A mending book was dropped on the ground."
+                throw_custom_stack 0.4 80 250 15 40 {id:"minecraft:enchanted_book",count:1b,components:{stored_enchantments:{mending:1}}}
+            }
+            remove_slot_component armor.legs minecraft:enchantments.minecraft:mending
+        }
+        block { {slot:armor.feet}
+            $execute unless items entity @s $(slot) *[enchantments~[{id:"mending"}]] run return fail
+            title @s actionbar "§4[Old Combat]: Mending is disabled."
+            execute if score ReturnMaterialsOfDisabledItems OldCombatSettings matches 1 anchored eyes positioned ^ ^ ^ positioned ~ ~-0.1 ~ run {
+                tellraw @s "A mending book was dropped on the ground."
+                throw_custom_stack 0.4 80 250 15 40 {id:"minecraft:enchanted_book",count:1b,components:{stored_enchantments:{mending:1}}}
+            }
+            remove_slot_component armor.feet minecraft:enchantments.minecraft:mending
+        }
+
+    }
+}
+
 
 function disable_spears {
     execute if score DisableSpears OldCombatSettings matches 1 as @a unless entity @s[tag=oldcombatignore] at @s run {

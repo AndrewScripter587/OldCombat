@@ -52,6 +52,7 @@ function show {
         @BooleanInput disn score DisableNetheriteItems "Disable netherite"
         @BooleanInput disc score DisableCopper "Disable 1.21.9 Copper Tools & Armor"
         @BooleanInput diss score DisableSpears "Disable 1.21.11 Spear Weapons"
+        @BooleanInput dismnd score DisableMending "Disable Mending"
         @BooleanInput brdis score BreakDisabledTools "Visually \"break\" disabled tools"
         @BooleanInput rmat score ReturnMaterialsOfDisabledItems "Return materials of some disabled items"
         @BooleanInput sn score ShieldNerf "Nerf shields to pre-1.11 protection"
