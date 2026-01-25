@@ -268,7 +268,7 @@ template throw_custom_stack {
 
 template modify_held_components {
     with data:raw {
-        summon armor_stand ~ ~ ~ {ShowArms:1b,Tags:["modify_slot"],Marker:true,Invisible:true,Invulnerable:true}
+        summon armor_stand ~ ~100000 ~ {ShowArms:1b,Tags:["modify_slot"],Marker:true,Invisible:true,Invulnerable:true}
         item replace entity @n[type=armor_stand,tag=modify_slot] weapon.mainhand from entity @s weapon.mainhand
         data merge entity @n[type=armor_stand,tag=modify_slot] {equipment:{mainhand:{components:<%data%>}}}
         item replace entity @s weapon.mainhand from entity @n[type=armor_stand,tag=modify_slot] weapon.mainhand
@@ -279,7 +279,7 @@ template modify_held_components {
 
 template remove_held_component {
     with data:raw {
-        summon armor_stand ~ ~ ~ {ShowArms:1b,Tags:["modify_slot"],Marker:true,Invisible:true,Invulnerable:true}
+        summon armor_stand ~ ~100000 ~ {ShowArms:1b,Tags:["modify_slot"],Marker:true,Invisible:true,Invulnerable:true}
         item replace entity @n[type=armor_stand,tag=modify_slot] weapon.mainhand from entity @s weapon.mainhand
         data remove entity @n[type=armor_stand,tag=modify_slot] equipment.mainhand.components.<%data%>
         item replace entity @s weapon.mainhand from entity @n[type=armor_stand,tag=modify_slot] weapon.mainhand
@@ -290,7 +290,7 @@ template remove_held_component {
 
 template modify_offheld_components {
     with data:raw {
-        summon armor_stand ~ ~ ~ {ShowArms:1b,Tags:["modify_slot"],Marker:true,Invisible:true,Invulnerable:true}
+        summon armor_stand ~ ~100000 ~ {ShowArms:1b,Tags:["modify_slot"],Marker:true,Invisible:true,Invulnerable:true}
         item replace entity @n[type=armor_stand,tag=modify_slot] weapon.offhand from entity @s weapon.offhand
         data merge entity @n[type=armor_stand,tag=modify_slot] {equipment:{offhand:{components:<%data%>}}}
         item replace entity @s weapon.offhand from entity @n[type=armor_stand,tag=modify_slot] weapon.offhand
@@ -301,7 +301,7 @@ template modify_offheld_components {
 
 template remove_offheld_component {
     with data:raw {
-        summon armor_stand ~ ~ ~ {ShowArms:1b,Tags:["modify_slot"],Marker:true,Invisible:true,Invulnerable:true}
+        summon armor_stand ~ ~100000 ~ {ShowArms:1b,Tags:["modify_slot"],Marker:true,Invisible:true,Invulnerable:true}
         item replace entity @n[type=armor_stand,tag=modify_slot] weapon.offhand from entity @s weapon.offhand
         data remove entity @n[type=armor_stand,tag=modify_slot] equipment.offhand.components.<%data%>
         item replace entity @s weapon.offhand from entity @n[type=armor_stand,tag=modify_slot] weapon.offhand
@@ -313,11 +313,10 @@ template remove_offheld_component {
 template modify_slot_components {
     with slot:word data:raw {
         execute unless items entity @s <%slot%> air run {
-        summon armor_stand ~ ~ ~ {ShowArms:1b,Tags:["modify_slot"],Marker:true,Invisible:true,Invulnerable:true}
+        summon armor_stand ~ ~100000 ~ {ShowArms:1b,Tags:["modify_slot"],Marker:true,Invisible:true,Invulnerable:true}
         item replace entity @n[type=armor_stand,tag=modify_slot] weapon.mainhand from entity @s <%slot%>
         data merge entity @n[type=armor_stand,tag=modify_slot] {equipment:{mainhand:{components:<%data%>}}}
         item replace entity @s <%slot%> from entity @n[type=armor_stand,tag=modify_slot] weapon.mainhand
-        execute as @e[type=armor_stand,tag=modify_slot] at @s run tp @s ~ -100000 ~
         kill @e[type=armor_stand,tag=modify_slot]
         }
     }
@@ -325,11 +324,10 @@ template modify_slot_components {
 
 template remove_slot_component {
     with slot:word data:raw {
-        summon armor_stand ~ ~ ~ {ShowArms:1b,Tags:["modify_slot"],Marker:true,Invisible:true,Invulnerable:true}
+        summon armor_stand ~ ~100000 ~ {ShowArms:1b,Tags:["modify_slot"],Marker:true,Invisible:true,Invulnerable:true}
         item replace entity @n[type=armor_stand,tag=modify_slot] weapon.mainhand from entity @s <%slot%>
         data remove entity @n[type=armor_stand,tag=modify_slot] equipment.mainhand.components.<%data%>
         item replace entity @s <%slot%> from entity @n[type=armor_stand,tag=modify_slot] weapon.mainhand
-        execute as @e[type=armor_stand,tag=modify_slot] at @s run tp @s ~ -100000 ~
         kill @e[type=armor_stand,tag=modify_slot]
     }
 }
