@@ -1066,7 +1066,7 @@ IF (!ultralite) {
                 }
             }
             block { with storage oldcombat:temp
-                summon armor_stand ~ ~ ~ {ShowArms:1b,Tags:["modify_slot"],Marker:true,Invisible:true,Invulnerable:true}
+                summon armor_stand ~ ~100000 ~ {ShowArms:1b,Tags:["modify_slot"],Marker:true,Invisible:true,Invulnerable:true}
                 item replace entity @n[type=armor_stand,tag=modify_slot] weapon.mainhand from entity @s <%slot%>
                 $data modify entity @n[type=armor_stand,tag=modify_slot] equipment.mainhand.components merge value <%data%>
                 item replace entity @s <%slot%> from entity @n[type=armor_stand,tag=modify_slot] weapon.mainhand
@@ -1074,7 +1074,7 @@ IF (!ultralite) {
             }
             } else execute run {
                 execute as @a at @s if items entity @s <%id%> *[minecraft:attribute_modifiers~{modifiers:{contains:[{attribute:"attack_damage"}]}}] run {
-                    summon armor_stand ~ ~ ~ {ShowArms:1b,Tags:["modify_slot"],Marker:true,Invisible:true,Invulnerable:true}
+                    summon armor_stand ~ ~100000 ~ {ShowArms:1b,Tags:["modify_slot"],Marker:true,Invisible:true,Invulnerable:true}
                     item replace entity @n[type=armor_stand,tag=modify_slot] weapon.mainhand from entity @s <%slot%>
                     data remove entity @n[type=armor_stand,tag=modify_slot] equipment.mainhand.components."minecraft:lore"
                     data remove entity @n[type=armor_stand,tag=modify_slot] equipment.mainhand.components."minecraft:tooltip_display".hidden_components
@@ -1093,7 +1093,7 @@ IF (!ultralite) {
 
                 execute store result score count OldCombatTemp run data get entity @s <%path%>.count
                 execute if items entity @s <%id%> #oldcombat:consumable run {
-                    summon armor_stand ~ ~ ~ {Tags:["oldfood"],Invisible:1b,Invulnerable:1b,Marker:1b,ShowArms:1b}
+                    summon armor_stand ~ ~100000 ~ {Tags:["oldfood"],Invisible:1b,Invulnerable:1b,Marker:1b,ShowArms:1b}
                     item replace entity @n[type=armor_stand,tag=oldfood] weapon.mainhand from entity @s <%id%>
                     data modify entity @n[type=armor_stand,tag=oldfood] <%version_specific_mainhand%>.components merge value {"minecraft:consumable":{consume_seconds:0.05,animation:none,sound:"minecraft:intentionally_empty",has_consume_particles:false},"minecraft:custom_data":{oldcombat_oldfood:1b},"minecraft:max_stack_size":1}
                     # tellraw @s {"nbt":"<%version_specific_mainhand%>","entity":"@n[tag=oldfood]"}
@@ -1101,14 +1101,14 @@ IF (!ultralite) {
                     kill @e[type=armor_stand,tag=oldfood]
                 }
                 execute if items entity @s <%id%> golden_apple run {
-                    summon armor_stand ~ ~ ~ {Tags:["oldfood"],Invisible:1b,Invulnerable:1b,Marker:1b,ShowArms:1b}
+                    summon armor_stand ~ ~100000 ~ {Tags:["oldfood"],Invisible:1b,Invulnerable:1b,Marker:1b,ShowArms:1b}
                     item replace entity @n[type=armor_stand,tag=oldfood] weapon.mainhand from entity @s <%id%>
                     data modify entity @n[type=armor_stand,tag=oldfood] <%version_specific_mainhand%>.components merge value {"minecraft:consumable":{consume_seconds:0.05,animation:none,sound:"minecraft:intentionally_empty",has_consume_particles:false,on_consume_effects:[{type:apply_effects,effects:[{id:"minecraft:absorption",duration:2400,amplifier:0},{id:"minecraft:regeneration",duration:200,amplifier:1}]}]},"minecraft:custom_data":{oldcombat_oldfood:1b},"minecraft:max_stack_size":1}
                     item replace entity @s <%id%> from entity @n[type=armor_stand,tag=oldfood] weapon.mainhand 
                     kill @e[type=armor_stand,tag=oldfood]
                 }
                 execute if items entity @s <%id%> enchanted_golden_apple run {
-                    summon armor_stand ~ ~ ~ {Tags:["oldfood"],Invisible:1b,Invulnerable:1b,Marker:1b,ShowArms:1b}
+                    summon armor_stand ~ ~100000 ~ {Tags:["oldfood"],Invisible:1b,Invulnerable:1b,Marker:1b,ShowArms:1b}
                     item replace entity @n[type=armor_stand,tag=oldfood] weapon.mainhand from entity @s <%id%>
                     data modify entity @n[type=armor_stand,tag=oldfood] <%version_specific_mainhand%>.components merge value {"minecraft:consumable":{consume_seconds:0.05,animation:none,sound:"minecraft:intentionally_empty",has_consume_particles:false,on_consume_effects:[{type:apply_effects,effects:[{id:"minecraft:absorption",duration:2400,amplifier:3},{id:"minecraft:regeneration",duration:400,amplifier:1},{id:"minecraft:resistance",duration:6000,amplifier:0},{id:"minecraft:fire_resistance",duration:6000,amplifier:0}]}]},"minecraft:custom_data":{oldcombat_oldfood:1b},"minecraft:max_stack_size":1}
                     
@@ -1146,7 +1146,7 @@ IF (!ultralite) {
                     remove_slot_component <%id%> minecraft:enchantments.minecraft:sharpness
                     remove_slot_component <%id%> minecraft:enchantments.oldcombat:old_sharpness
                     remove_slot_component <%id%> minecraft:enchantments.oldcombat:fake_sharpness
-                    summon armor_stand ~ ~ ~ {ShowArms:1b,Tags:["modify_slot"],Marker:true,Invisible:true,Invulnerable:true}
+                    summon armor_stand ~ ~100000 ~ {ShowArms:1b,Tags:["modify_slot"],Marker:true,Invisible:true,Invulnerable:true}
                     item replace entity @n[type=armor_stand,tag=modify_slot] weapon.mainhand from entity @s <%id%>
                     $execute if score CustomSharpness OldCombatSettings matches 1 run data modify entity @n[type=armor_stand,tag=modify_slot] equipment.mainhand.components.minecraft:enchantments.oldcombat:fake_sharpness set value $(sharpness)
                     $execute unless score CustomSharpness OldCombatSettings matches 1 run data modify entity @n[type=armor_stand,tag=modify_slot] equipment.mainhand.components.minecraft:enchantments.oldcombat:old_sharpness set value $(sharpness)
@@ -1164,7 +1164,7 @@ IF (!ultralite) {
                         remove_slot_component <%id%> minecraft:stored_enchantments.minecraft:sharpness
                         remove_slot_component <%id%> minecraft:stored_enchantments.oldcombat:old_sharpness
                         remove_slot_component <%id%> minecraft:stored_enchantments.oldcombat:fake_sharpness
-                        summon armor_stand ~ ~ ~ {ShowArms:1b,Tags:["modify_slot"],Marker:true,Invisible:true,Invulnerable:true}
+                        summon armor_stand ~ ~100000 ~ {ShowArms:1b,Tags:["modify_slot"],Marker:true,Invisible:true,Invulnerable:true}
                         item replace entity @n[type=armor_stand,tag=modify_slot] weapon.mainhand from entity @s <%id%>
                         $execute if score CustomSharpness OldCombatSettings matches 1 run data modify entity @n[type=armor_stand,tag=modify_slot] equipment.mainhand.components.minecraft:stored_enchantments.oldcombat:fake_sharpness set value $(sharpness)
                         $execute unless score CustomSharpness OldCombatSettings matches 1 run data modify entity @n[type=armor_stand,tag=modify_slot] equipment.mainhand.components.minecraft:stored_enchantments.oldcombat:old_sharpness set value $(sharpness)
@@ -1185,7 +1185,7 @@ IF (!ultralite) {
                         remove_slot_component <%id%> minecraft:enchantments.minecraft:sharpness
                         remove_slot_component <%id%> minecraft:enchantments.oldcombat:old_sharpness
                         remove_slot_component <%id%> minecraft:enchantments.oldcombat:fake_sharpness
-                        summon armor_stand ~ ~ ~ {ShowArms:1b,Tags:["modify_slot"],Marker:true,Invisible:true,Invulnerable:true}
+                        summon armor_stand ~ ~100000 ~ {ShowArms:1b,Tags:["modify_slot"],Marker:true,Invisible:true,Invulnerable:true}
                         item replace entity @n[type=armor_stand,tag=modify_slot] weapon.mainhand from entity @s <%id%>
                         $data modify entity @n[type=armor_stand,tag=modify_slot] equipment.mainhand.components.minecraft:enchantments.minecraft:sharpness set value $(sharpness)
                         item replace entity @s <%id%> from entity @n[type=armor_stand,tag=modify_slot] weapon.mainhand
@@ -1201,7 +1201,7 @@ IF (!ultralite) {
                         remove_slot_component <%id%> minecraft:stored_enchantments.minecraft:sharpness
                         remove_slot_component <%id%> minecraft:stored_enchantments.oldcombat:old_sharpness
                         remove_slot_component <%id%> minecraft:stored_enchantments.oldcombat:fake_sharpness
-                        summon armor_stand ~ ~ ~ {ShowArms:1b,Tags:["modify_slot"],Marker:true,Invisible:true,Invulnerable:true}
+                        summon armor_stand ~ ~100000 ~ {ShowArms:1b,Tags:["modify_slot"],Marker:true,Invisible:true,Invulnerable:true}
                         item replace entity @n[type=armor_stand,tag=modify_slot] weapon.mainhand from entity @s <%id%>
                         $data modify entity @n[type=armor_stand,tag=modify_slot] equipment.mainhand.components.minecraft:stored_enchantments.minecraft:sharpness set value $(sharpness)
                         item replace entity @s <%id%> from entity @n[type=armor_stand,tag=modify_slot] weapon.mainhand
@@ -1724,7 +1724,7 @@ IF (!lite_compile) {
                     } else execute as @a if items entity @s weapon.offhand shield[custom_data~{oldcombat_type:compat}] run {
                         data modify storage oldcombat:temp offhand set from entity @s equipment.offhand.components.minecraft:custom_data.original_item
                         execute at @s run {
-                            execute at @s run summon armor_stand ~ ~ ~ {Tags:["compat"],Marker:1b,Invisible:1b,Invulnerable:1b,ShowArms:1b}
+                            execute at @s run summon armor_stand ~ ~100000 ~ {Tags:["compat"],Marker:1b,Invisible:1b,Invulnerable:1b,ShowArms:1b}
                             data modify entity @n[tag=compat] equipment.offhand set from storage oldcombat:temp offhand
                             item replace entity @s weapon.offhand from entity @n[tag=compat] weapon.offhand
                             kill @e[tag=compat]
@@ -3291,8 +3291,12 @@ function air_knockback {
 
 function disable_cooldown {
     execute if score DisableAttackCooldown OldCombatSettings matches 1 as @a unless entity @s[tag=oldcombatignore] run {
-        execute if items entity @s weapon.mainhand #minecraft:spears unless score NoSpearCooldown OldCombatSettings matches 1 run {
-            attribute @s attack_speed modifier remove oldcombat:disable
+        execute unless score NoSpearCooldown OldCombatSettings matches 1 run {
+            execute if items entity @s weapon.mainhand #minecraft:spears run {
+                attribute @s attack_speed modifier remove oldcombat:disable
+            } else execute run {
+                attribute @s attack_speed modifier add oldcombat:disable 1000 add_value
+            }
         } else execute run {
             attribute @s attack_speed modifier add oldcombat:disable 1000 add_value
         }
@@ -3374,8 +3378,8 @@ tag damage_type bypasses_sword_blocking {
 }
 
 
-IF (!beta_compile) {
-    
+IF (!beta_compile && !$1_21_4compile) {
+
 function sword_blocking {
     execute if score SwordBlocking OldCombatSettings matches 1 as @a unless entity @s[tag=oldcombatignore] if items entity @s weapon.mainhand #minecraft:swords unless data entity @s {SelectedItem:{components:{"minecraft:custom_data":{oldcombat_blocking:1b}}}} run {
         modify_held_components {"minecraft:blocks_attacks":{disable_cooldown_scale:0,damage_reductions:[{base:0,factor:0.5,horizontal_blocking_angle:180}],block_sound:"entity.player.hurt",item_damage:{threshold:0f,base:0f,factor:0f},bypassed_by:"#oldcombat:bypasses_sword_blocking"},"minecraft:custom_data":{oldcombat_blocking:1b}}
