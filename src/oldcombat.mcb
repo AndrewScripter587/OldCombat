@@ -24,6 +24,7 @@ import ./utils.mcbt
     version_specific_offhand = $1_21_4compile ? "HandItems[1]" : "equipment.offhand"
     version_specific_offhand_player = $1_21_4compile ? "Inventory[{Slot:-106b}]" : "equipment.offhand"
     vector_names = ["x","y","z"]
+    slowLoopingFunctions = []
 %%>
 
 IF (lite_compile && beta_compile) {
@@ -49,6 +50,10 @@ scoreboard players reset @a OCConfigView
 scoreboard players enable @a OCConfigView
 
 }
+
+
+
+
 
 function configtrigger {
     switch score @s OCConfigView {
@@ -437,10 +442,70 @@ tag items sharpness_compatible {
     #minecraft:axes
 }
 
+function assign_ids_and_data {
+    load {
+        scoreboard objectives add OCPlayerID dummy
+        scoreboard players reset @a OCPlayerID
+        scoreboard players set PlayerCount OldCombatTemp 0
+        data modify storage oldcombat:event_data Inventories set value []
+        data modify storage oldcombat:event_data Head set value []
+        data modify storage oldcombat:event_data Chest set value []
+        data modify storage oldcombat:event_data Legs set value []
+        data modify storage oldcombat:event_data Feet set value []
+        data modify storage oldcombat:event_data Offhand set value []
+        data modify storage oldcombat:event_data SelectedItem set value []
+    }
+    execute as @a unless score @s OCPlayerID matches 0.. run {
+        scoreboard players operation @s OCPlayerID = PlayerCount OldCombatTemp
+        data modify storage oldcombat:event_data Inventories append value null
+        data modify storage oldcombat:event_data Head append value null
+        data modify storage oldcombat:event_data Chest append value null
+        data modify storage oldcombat:event_data Legs append value null
+        data modify storage oldcombat:event_data Feet append value null
+        data modify storage oldcombat:event_data Offhand append value null
+        data modify storage oldcombat:event_data SelectedItem append value null
+        scoreboard players add PlayerCount OldCombatTemp 1
+    }
+}
+
+function events {
+    
+    execute as @a run {
+        execute store result storage oldcombat:eventinfo id int 1 run scoreboard players get @s OCPlayerID
+        block { with storage oldcombat:eventinfo
+            $execute store success storage oldcombat:eventinfo inventory byte 1 run data modify storage oldcombat:event_data Inventories[$(id)] set from entity @s Inventory
+            $execute store success storage oldcombat:eventinfo head byte 1 run data modify storage oldcombat:event_data Head[$(id)] set from entity @s equipment.head
+            $execute if data entity @s equipment.head store success storage oldcombat:eventinfo head byte 1 run data modify storage oldcombat:event_data Head[$(id)] set from entity @s equipment.head
+            $execute unless data entity @s equipment.head store success storage oldcombat:eventinfo head byte 1 run data modify storage oldcombat:event_data Head[$(id)] set value null
+            $execute if data entity @s equipment.chest store success storage oldcombat:eventinfo chest byte 1 run data modify storage oldcombat:event_data Chest[$(id)] set from entity @s equipment.chest
+            $execute unless data entity @s equipment.chest store success storage oldcombat:eventinfo chest byte 1 run data modify storage oldcombat:event_data Chest[$(id)] set value null
+            $execute if data entity @s equipment.legs store success storage oldcombat:eventinfo legs byte 1 run data modify storage oldcombat:event_data Legs[$(id)] set from entity @s equipment.legs
+            $execute unless data entity @s equipment.legs store success storage oldcombat:eventinfo legs byte 1 run data modify storage oldcombat:event_data Legs[$(id)] set value null
+            $execute if data entity @s equipment.feet store success storage oldcombat:eventinfo feet byte 1 run data modify storage oldcombat:event_data Feet[$(id)] set from entity @s equipment.feet
+            $execute unless data entity @s equipment.feet store success storage oldcombat:eventinfo feet byte 1 run data modify storage oldcombat:event_data Feet[$(id)] set value null
+            $execute if data entity @s equipment.offhand store success storage oldcombat:eventinfo offhand byte 1 run data modify storage oldcombat:event_data Offhand[$(id)] set from entity @s equipment.offhand
+            $execute unless data entity @s equipment.offhand store success storage oldcombat:eventinfo offhand byte 1 run data modify storage oldcombat:event_data Offhand[$(id)] set value null
+            $execute if data entity @s SelectedItem store success storage oldcombat:eventinfo selecteditem byte 1 run data modify storage oldcombat:event_data SelectedItem[$(id)] set from entity @s SelectedItem
+            execute if data storage oldcombat:eventinfo {inventory:true} run function #oldcombat:on_inventory_change
+            execute if data storage oldcombat:eventinfo {head:true} run function #oldcombat:on_head_change
+            execute if data storage oldcombat:eventinfo {chest:true} run function #oldcombat:on_chest_change
+            execute if data storage oldcombat:eventinfo {legs:true} run function #oldcombat:on_legs_change
+            execute if data storage oldcombat:eventinfo {feet:true} run function #oldcombat:on_feet_change
+            execute if data storage oldcombat:eventinfo {offhand:true} run function #oldcombat:on_offhand_change
+            execute if data storage oldcombat:eventinfo {selecteditem:true} run function #oldcombat:on_selected_item_change
+            execute unless data storage oldcombat:eventinfo {head:false,chest:false,legs:false,feet:false} run function #oldcombat:on_armor_change
+            execute unless data storage oldcombat:eventinfo {head:false,chest:false,legs:false,feet:false,offhand:false} run function #oldcombat:on_equipment_change
+            execute unless data storage oldcombat:eventinfo {head:false,chest:false,legs:false,feet:false,offhand:false,inventory:false} run function #oldcombat:on_any_slot_change
+            execute unless data storage oldcombat:eventinfo {offhand:false,selecteditem:false} run function #oldcombat:on_hand_change
+        }
+    }
+}
+
 function on_tick minecraft:tick {
     
     execute if score Disable OldCombatSettings matches 1 run return fail
-    
+    function assign_ids_and_data
+    function events
     execute as @e run block check_ground {
         # execute if entity @s[type=!player] store result score @s WasOnGround run data get entity @s OnGround
         execute store result score @s WasOnGround run scoreboard players get @s OnGround
@@ -466,21 +531,21 @@ function on_tick minecraft:tick {
             execute if score Disable OldCombatSettings matches 4 run return 0
             function disable_sprinting
             execute if score Disable OldCombatSettings matches 5 run return 0
-            function old_tool_damages
+            # function old_tool_damages
             execute if score Disable OldCombatSettings matches 6 run return 0
-            function disable_cooldown
+            # execute unless score OptimizeCalls OldCombatSettings matches 1.. run function disable_cooldown
             execute if score Disable OldCombatSettings matches 7 run return 0
-            function block_offhand
+            # execute unless score OptimizeCalls OldCombatSettings matches 1.. run function block_offhand
             execute if score Disable OldCombatSettings matches 8 run return 0
-            function disable_modern_items
+            # execute unless score OptimizeCalls OldCombatSettings matches 1.. run function disable_modern_items
             execute if score Disable OldCombatSettings matches 9 run return 0
-            function disable_netherite_items
+            # execute unless score OptimizeCalls OldCombatSettings matches 1.. run function disable_netherite_items
             execute if score Disable OldCombatSettings matches 10 run return 0
             function disable_experience
             execute if score Disable OldCombatSettings matches 11 run return 0
             function disable_vanilla_sharpness
             execute if score Disable OldCombatSettings matches 12 run return 0
-            function iterate_player_slots
+            # execute unless score OptimizeCalls OldCombatSettings matches 1.. run function iterate_player_slots
             execute if score Disable OldCombatSettings matches 13 run return 0
             function old_sharpness
             execute if score Disable OldCombatSettings matches 14 run return 0
@@ -488,15 +553,15 @@ function on_tick minecraft:tick {
             execute if score Disable OldCombatSettings matches 15 run return 0
             function disable_swimming
             execute if score Disable OldCombatSettings matches 16 run return 0
-            function old_bows_setup
+            # execute unless score OptimizeCalls OldCombatSettings matches 1.. run function old_bows_setup
             execute if score Disable OldCombatSettings matches 17 run return 0
-            function old_bows
+            # function old_bows
             execute if score Disable OldCombatSettings matches 18 run return 0
-            function sword_blocking
+            # execute unless score OptimizeCalls OldCombatSettings matches 1.. run function sword_blocking
             execute if score Disable OldCombatSettings matches 19 run return 0
-            function nerf_shields
+            # execute unless score OptimizeCalls OldCombatSettings matches 1.. run function nerf_shields
             execute if score Disable OldCombatSettings matches 20 run return 0
-            function disable_kb_resist
+            execute unless score OptimizeCalls OldCombatSettings matches 1.. run function disable_kb_resist
             execute if score Disable OldCombatSettings matches 21 run return 0
             function enforce_locked_settings
             execute if score Disable OldCombatSettings matches 22 run return 0
@@ -512,11 +577,11 @@ function on_tick minecraft:tick {
             execute if score Disable OldCombatSettings matches 27 run return 0
             function old_hunger_system
             execute if score Disable OldCombatSettings matches 28 run return 0
-            function old_food
+            # function old_food
             execute if score Disable OldCombatSettings matches 29 run return 0
             function old_mob_ai
             execute if score Disable OldCombatSettings matches 30 run return 0
-            function farsight
+            execute unless score OptimizeCalls OldCombatSettings matches 1.. run function farsight
             execute if score Disable OldCombatSettings matches 31 run return 0
             IF (allow_disable_crits) {
                 function disable_crits
@@ -528,11 +593,11 @@ function on_tick minecraft:tick {
             execute if score Disable OldCombatSettings matches 33 run return 0
             function compatibility
             execute if score Disable OldCombatSettings matches 34 run return 0
-            function disable_copper_tools
+            # execute unless score OptimizeCalls OldCombatSettings matches 1.. run function disable_copper_tools
             execute if score Disable OldCombatSettings matches 35 run return 0
-            function disable_spears
+            # execute unless score OptimizeCalls OldCombatSettings matches 1.. run function disable_spears
             execute if score Disable OldCombatSettings matches 36 run return 0
-            function disable_mending
+            # execute unless score OptimizeCalls OldCombatSettings matches 1.. run function disable_mending
             execute if score Disable OldCombatSettings matches 37 run return 0
 
             scoreboard players reset @a BedrockSneakTime
@@ -558,8 +623,9 @@ function fix_illegal_offhand_stack {
 
 function farsight {
     execute if score MobFarSight OldCombatSettings matches 1 as @e run attribute @s follow_range modifier remove oldcombat:farsight
-    execute if score MobFarSight OldCombatSettings matches 1 as @e run attribute @s follow_range modifier add oldcombat:farsight 3 add_multiplied_total
+    execute if score MobFarSight OldCombatSettings matches 1 as @e run attribute @s follow_range modifier add oldcombat:farsight 4 add_multiplied_total
     execute if score MobFarSight OldCombatSettings matches 0 as @e run attribute @s follow_range modifier remove oldcombat:farsight
+    scheduleLoop 2s
 }
 
 function initialize_players {
@@ -672,24 +738,30 @@ IF (!lite_compile) {
             }
             execute unless entity @n[tag=target] run return fail
             tag @s add this
-            execute if entity @n[tag=target,distance=..8] unless entity @s[type=!skeleton,type=!stray,type=!bogged,type=!pillager,type=!witch] if entity @n[tag=target,tag=!wander] run attribute @s movement_speed modifier add oldcombat:nonormalmove -1 add_multiplied_total
-            execute if entity @n[tag=target,distance=..8] unless entity @s[type=!skeleton,type=!stray,type=!bogged] if entity @n[tag=target,tag=!wander] if items entity @s weapon.mainhand bow run return -1
-            execute if entity @n[tag=target,distance=..8] unless entity @s[type=!piglin] if items entity @s weapon.mainhand crossbow if entity @n[tag=target,tag=!wander] run attribute @s movement_speed modifier add oldcombat:nonormalmove -1 add_multiplied_total
-            execute if entity @n[tag=target,distance=..8] unless entity @s[type=!piglin,type=!pillager] if items entity @s weapon.mainhand crossbow if entity @n[tag=target,tag=!wander] run return -1
-            execute if entity @n[tag=target,distance=..8] unless entity @s[type=!witch] if entity @n[tag=target,tag=!wander] run return -1
+            execute if entity @n[tag=target,distance=..8] if entity @s[type=!wither_skeleton] store result storage oldcombat:temp return int 1 run {
+                execute unless entity @s[type=!#skeletons,type=!pillager,type=!witch] if entity @n[tag=target,tag=!wander] run attribute @s movement_speed modifier add oldcombat:nonormalmove -1 add_multiplied_total
+                execute unless entity @s[type=!#skeletons] if entity @n[tag=target,tag=!wander] if items entity @s weapon.mainhand bow run return -1
+                execute unless entity @s[type=!piglin] if items entity @s weapon.mainhand crossbow if entity @n[tag=target,tag=!wander] run attribute @s movement_speed modifier add oldcombat:nonormalmove -1 add_multiplied_total
+                execute unless entity @s[type=!piglin,type=!pillager] if items entity @s weapon.mainhand crossbow if entity @n[tag=target,tag=!wander] run return -1
+                execute unless entity @s[type=!witch] if entity @n[tag=target,tag=!wander] run return -1
+                return 0
+            }
+            execute if data storage oldcombat:temp {return:-1} run return -1
             execute facing entity @n[tag=target] eyes run function utils/get_walk_forward_vectors
             execute if entity @s[type=creeper] if entity @n[tag=target,distance=..3,tag=!wander] run tag @s add circle
             attribute @s[type=creeper,tag=circle] movement_speed modifier add oldcombat:fast_circle 0 add_multiplied_base
             attribute @s[type=creeper,tag=!circle] movement_speed modifier remove oldcombat:fast_circle
             # execute if entity @s[type=creeper] if entity @n[tag=target,distance=6..] run tag @s remove circle
             execute if entity @s[type=creeper] if entity @n[tag=target,tag=wander] run tag @s remove circle
-            execute if entity @s[type=creeper,tag=circle] facing entity @n[tag=target,distance=..1.5] eyes rotated ~115 ~ run function utils/get_walk_forward_vectors
-            execute if entity @s[type=creeper,tag=circle] facing entity @n[tag=target,distance=1.5..2] eyes rotated ~85 ~ run function utils/get_walk_forward_vectors
-            execute if entity @s[type=creeper,tag=circle] facing entity @n[tag=target,distance=2..4] eyes rotated ~80 ~ run function utils/get_walk_forward_vectors
-            execute if entity @s[type=creeper,tag=circle] facing entity @n[tag=target,distance=4..5] eyes rotated ~60 ~ run function utils/get_walk_forward_vectors
-            execute if entity @s[type=creeper,tag=circle] facing entity @n[tag=target,distance=5..6] eyes rotated ~20 ~ run function utils/get_walk_forward_vectors
-            execute if entity @s[type=creeper,tag=circle] facing entity @n[tag=target,distance=6..7] eyes rotated ~5 ~ run function utils/get_walk_forward_vectors
-            execute if entity @s[type=creeper,tag=circle] facing entity @n[tag=target,distance=8..] eyes rotated ~ ~ run function utils/get_walk_forward_vectors
+            execute if entity @s[type=creeper,tag=circle] run {
+                execute facing entity @n[tag=target,distance=..1.5] eyes rotated ~115 ~ run function utils/get_walk_forward_vectors
+                execute facing entity @n[tag=target,distance=1.5..2] eyes rotated ~85 ~ run function utils/get_walk_forward_vectors
+                execute facing entity @n[tag=target,distance=2..4] eyes rotated ~80 ~ run function utils/get_walk_forward_vectors
+                execute facing entity @n[tag=target,distance=4..5] eyes rotated ~60 ~ run function utils/get_walk_forward_vectors
+                execute facing entity @n[tag=target,distance=5..6] eyes rotated ~20 ~ run function utils/get_walk_forward_vectors
+                execute facing entity @n[tag=target,distance=6..7] eyes rotated ~5 ~ run function utils/get_walk_forward_vectors
+                execute facing entity @n[tag=target,distance=8..] eyes rotated ~ ~ run function utils/get_walk_forward_vectors
+            }
             execute unless data entity @s {HurtTime:0s} run scoreboard players set @s CanAirMove 0
             execute if data entity @s {OnGround:true} run scoreboard players set @s CanAirMove 1
             # scoreboard players set @s CanAirMove 0
@@ -758,7 +830,7 @@ IF (!lite_compile) {
                 scoreboard players operation zv2 OldCombatTemp = VecZ OldCombatTemp
                 scoreboard players set sm1 OldCombatTemp 0
                 execute if score @s JumpTimer matches 1.. run scoreboard players set sm1 OldCombatTemp 16
-                execute unless data entity @s {HurtTime:0s} run scoreboard players set sm1 OldCombatTemp -256
+                execute unless data entity @s {HurtTime:0s} run scoreboard players set sm1 OldCombatTemp 0
                 execute if score @s JumpTimer matches 1.. run scoreboard players set yv2 OldCombatTemp -40
                 execute if score @s JumpTimer matches 1.. run scoreboard players remove @s JumpTimer 1
                 execute if block ~ ~ ~ water run scoreboard players set sm1 OldCombatTemp 32
@@ -1024,13 +1096,13 @@ IF (!beta_compile) {
 
 IF (!ultralite) {
     
-    function iterate_player_slots {
+    function iterate_player_slots on_any_slot_change {
         # This function has code that iterates for all player slots and makes up like 90% or so of the generated files from MC-Build and about 5% of the performance impact the pack causes in-game
 
         REPEAT (player_inventory_slots) as id, path {
     
         # Old Tooltips Iterator
-        execute if score OldTooltips OldCombatSettings matches 1 as @a if items entity @s <%id%> *[minecraft:attribute_modifiers~{modifiers:{contains:[{attribute:"attack_damage"}]}}] run {
+        execute if score OldTooltips OldCombatSettings matches 1 if items entity @s <%id%> *[minecraft:attribute_modifiers~{modifiers:{contains:[{attribute:"attack_damage"}]}}] run {
             <%%
                 slot = id
                 data = '{"minecraft:lore":["",{text:"+$(tooldmg) Attack Damage",italic:false,color:blue}],"minecraft:tooltip_display":{hidden_components:["attribute_modifiers"]}}'
@@ -1089,13 +1161,14 @@ IF (!ultralite) {
         IF (!lite_compile) {
             
             # Old Food Iterator
-            execute if score OldFood OldCombatSettings matches 1 as @a at @s run {
+            execute if score OldFood OldCombatSettings matches 1 at @s run {
 
                 execute store result score count OldCombatTemp run data get entity @s <%path%>.count
                 execute if items entity @s <%id%> #oldcombat:consumable run {
                     summon armor_stand ~ ~100000 ~ {Tags:["oldfood"],Invisible:1b,Invulnerable:1b,Marker:1b,ShowArms:1b}
                     item replace entity @n[type=armor_stand,tag=oldfood] weapon.mainhand from entity @s <%id%>
                     data modify entity @n[type=armor_stand,tag=oldfood] <%version_specific_mainhand%>.components merge value {"minecraft:consumable":{consume_seconds:0.05,animation:none,sound:"minecraft:intentionally_empty",has_consume_particles:false},"minecraft:custom_data":{oldcombat_oldfood:1b},"minecraft:max_stack_size":1}
+                    execute if items entity @s <%id%> cooked_porkchop run data modify entity @n[type=armor_stand,tag=oldfood] <%version_specific_mainhand%>.components merge value {"minecraft:item_model":"minecraft:cooked_beef"}
                     # tellraw @s {"nbt":"<%version_specific_mainhand%>","entity":"@n[tag=oldfood]"}
                     item replace entity @s <%id%> from entity @n[type=armor_stand,tag=oldfood] weapon.mainhand
                     kill @e[type=armor_stand,tag=oldfood]
@@ -1119,7 +1192,7 @@ IF (!ultralite) {
                     # tellraw @s {"nbt":"<%path%>","entity":"@s"}
                     fix_illegal_stack slot <%id%> <%path%>
                 }
-            } else execute as @a run {
+            } else execute run {
                 execute if items entity @s <%id%> #oldcombat:consumable run {
                 remove_slot_component <%id%> "minecraft:custom_data".oldcombat_oldfood
                 remove_slot_component <%id%> "minecraft:max_stack_size"
@@ -1133,7 +1206,7 @@ IF (!ultralite) {
         IF ((!lite_compile || id == "weapon.mainhand") && !beta_compile) {
 
             # Old Sharpness Enchant Replacer
-            execute if score OldSharpness OldCombatSettings matches 1 if score UseOldSharpEnchant OldCombatSettings matches 1 as @a at @s run {
+            execute if score OldSharpness OldCombatSettings matches 1 if score UseOldSharpEnchant OldCombatSettings matches 1 at @s run {
                 execute run {
                 execute unless items entity @s <%id%> enchanted_book run {
                 execute store result score Sharpness OldCombatTemp run data get entity @s <%path%>.components."minecraft:enchantments"."minecraft:sharpness"
@@ -1173,7 +1246,7 @@ IF (!ultralite) {
                     }
                 }
                 }
-            } else execute as @a at @s run {
+            } else execute at @s run {
                 execute unless items entity @s <%id%> enchanted_book run {
                     execute store result score Sharpness OldCombatTemp run data get entity @s <%path%>.components."minecraft:enchantments"."minecraft:sharpness"
                     execute store result score OldSharpness OldCombatTemp run data get entity @s <%path%>.components."minecraft:enchantments"."oldcombat:old_sharpness"
@@ -1212,6 +1285,7 @@ IF (!ultralite) {
         }
 
         }
+        # scheduleLoop 1s
     }
 }
 
@@ -1662,19 +1736,20 @@ function while_using_bow {
     
 }
 
-function old_bows_setup {
-    execute if score OldBows OldCombatSettings matches 1.. as @a run {
+function old_bows_setup on_selected_item_change {
+    execute if score OldBows OldCombatSettings matches 1.. run {
         execute if items entity @s weapon.mainhand bow run {
             item replace entity @s weapon.mainhand with wooden_pickaxe[!tool,!attribute_modifiers,!max_damage,rarity=common,item_name='Bow',item_model=bow,consumable={consume_seconds:0,sound:"minecraft:intentionally_empty",has_consume_particles:false,animation:none},max_stack_size=1,use_remainder={id:wooden_pickaxe,components:{"!tool":{},"!attribute_modifiers":{},"!max_damage":{},item_name:'Bow',custom_data:{used:1b,type:bow},item_model:bow,rarity:common}},custom_data={type:bow}]
         }
-    } else execute as @a if items entity @s weapon.mainhand wooden_pickaxe[custom_data~{type:bow}] run {
+    } else execute if items entity @s weapon.mainhand wooden_pickaxe[custom_data~{type:bow}] run {
         item replace entity @s weapon.mainhand with bow
     }
+    # scheduleLoop 0.25s
 }
 
 
-function old_bows {
-    execute if score OldBows OldCombatSettings matches 1.. as @a if items entity @s weapon.mainhand wooden_pickaxe[custom_data~{used:1b,type:bow}] at @s run {
+function old_bows on_inventory_change {
+    execute if score OldBows OldCombatSettings matches 1.. if items entity @s weapon.mainhand wooden_pickaxe[custom_data~{used:1b,type:bow}] at @s run {
         function utils/get_vectors_from_dir
         execute anchored eyes positioned ^ ^ ^ run {
             execute unless items entity @s weapon.* arrow unless items entity @s hotbar.* arrow unless items entity @s inventory.* arrow run return fail
@@ -1747,8 +1822,8 @@ dir presets {
         scoreboard players set DisableOffhand OldCombatSettings 1
         scoreboard players set AllowOffhandForSomeItems OldCombatSettings 0
         scoreboard players set BuffKB OldCombatSettings 1
-        scoreboard players set BuffKBValue.X OldCombatSettings 110
-        scoreboard players set BuffKBValue.Y OldCombatSettings 115
+        scoreboard players set BuffKBValue.X OldCombatSettings 120
+        scoreboard players set BuffKBValue.Y OldCombatSettings 120
         scoreboard players set DisableAttackCooldown OldCombatSettings 1
         scoreboard players set NoSpearCooldown OldCombatSettings 0
         scoreboard players set SwordBlocking OldCombatSettings 0
@@ -2138,8 +2213,8 @@ function changelog {
 
 }
 
-function disable_modern_items {
-    execute if score DisableModernPVPItems OldCombatSettings matches 1 as @a unless entity @s[tag=oldcombatignore] at @s run {
+function disable_modern_items on_any_slot_change {
+    execute if score DisableModernPVPItems OldCombatSettings matches 1 unless entity @s[tag=oldcombatignore] at @s run {
         block { {item:crossbow}
             $execute unless items entity @s armor.* $(item) unless items entity @s weapon.* $(item) unless items entity @s inventory.* $(item) unless items entity @s hotbar.* $(item) run return fail
             title @s actionbar "§4[Old Combat]: Crossbows are disabled."
@@ -2244,10 +2319,11 @@ function disable_modern_items {
 
 
     }
+    # scheduleLoop 0.5s
 }
 
-function disable_mending {
-    execute if score DisableMending OldCombatSettings matches 1 as @a unless entity @s[tag=oldcombatignore] at @s run {
+function disable_mending on_any_slot_change {
+    execute if score DisableMending OldCombatSettings matches 1 unless entity @s[tag=oldcombatignore] at @s run {
         block { {slot:weapon.mainhand}
             $execute unless items entity @s $(slot) *[enchantments~[{id:"mending"}]] run return fail
             title @s actionbar "§4[Old Combat]: Mending is disabled."
@@ -2304,11 +2380,12 @@ function disable_mending {
         }
 
     }
+    # scheduleLoop 0.25s
 }
 
 
-function disable_spears {
-    execute if score DisableSpears OldCombatSettings matches 1 as @a unless entity @s[tag=oldcombatignore] at @s run {
+function disable_spears on_any_slot_change {
+    execute if score DisableSpears OldCombatSettings matches 1 unless entity @s[tag=oldcombatignore] at @s run {
         block { {item:wooden_spear}
             $execute unless items entity @s armor.* $(item) unless items entity @s weapon.* $(item) unless items entity @s inventory.* $(item) unless items entity @s hotbar.* $(item) run return fail
             title @s actionbar "§4[Old Combat]: Spears are disabled."
@@ -2431,9 +2508,10 @@ function disable_spears {
         }
 
     }
+    # scheduleLoop 0.5s
 }
-function disable_copper_tools {
-    execute if score DisableCopper OldCombatSettings matches 1 as @a unless entity @s[tag=oldcombatignore] at @s run {
+function disable_copper_tools on_any_slot_change {
+    execute if score DisableCopper OldCombatSettings matches 1 unless entity @s[tag=oldcombatignore] at @s run {
         block { {item:copper_sword}
             $execute unless items entity @s armor.* $(item) unless items entity @s weapon.* $(item) unless items entity @s inventory.* $(item) unless items entity @s hotbar.* $(item) run return fail
             title @s actionbar "§4[Old Combat]: Copper tools, weapons, and armor are disabled."
@@ -2632,6 +2710,7 @@ function disable_copper_tools {
         }
 
     }
+    # scheduleLoop 0.5s
 }
 
 dir utils {
@@ -2662,8 +2741,8 @@ dir utils {
 
 }
 
-function disable_netherite_items {
-    execute if score DisableNetheriteItems OldCombatSettings matches 1 as @a unless entity @s[tag=oldcombatignore] at @s run {
+function disable_netherite_items on_any_slot_change {
+    execute if score DisableNetheriteItems OldCombatSettings matches 1 unless entity @s[tag=oldcombatignore] at @s run {
         block { {item:netherite_helmet}
             $execute unless items entity @s armor.* $(item) unless items entity @s weapon.* $(item) unless items entity @s inventory.* $(item) unless items entity @s hotbar.* $(item) run return fail
             title @s actionbar "§4[Old Combat]: Netherite items are disabled."
@@ -2925,6 +3004,7 @@ function disable_netherite_items {
 
 
     }
+    # scheduleLoop 0.25s
 }
 
 function buff_knockback {
@@ -3057,12 +3137,14 @@ function startup minecraft:load {
         scoreboard players set IterateAllSlots OldCombatSettings 1
         scoreboard players operation PreviousDataVersion OldCombatSettings = DataVersion OldCombatSettings
         scoreboard players set DataVersion OldCombatSettings <%data_version%>
+        execute unless score OptimizeCalls OldCombatSettings matches 0..1 run scoreboard players set OptimizeCalls OldCombatSettings 1
         IF (beta_compile) {   
             function presets/b1.7.3
         }
     } else execute run {
         execute if score DataVersion OldCombatSettings > PackVersion OldCombatTemp run tellraw @a "§4The config was saved in a newer version of Old Combat Datapack, this may cause some issues!"
     }
+    schedule function start_loops 2s append
     schedule function info 3s append
 }
 
@@ -3289,8 +3371,8 @@ function air_knockback {
     tag @s remove tempIgnoreAirKB
 }
 
-function disable_cooldown {
-    execute if score DisableAttackCooldown OldCombatSettings matches 1 as @a unless entity @s[tag=oldcombatignore] run {
+function disable_cooldown on_selected_item_change {
+    execute if score DisableAttackCooldown OldCombatSettings matches 1 unless entity @s[tag=oldcombatignore] run {
         execute unless score NoSpearCooldown OldCombatSettings matches 1 run {
             execute if items entity @s weapon.mainhand #minecraft:spears run {
                 attribute @s attack_speed modifier remove oldcombat:disable
@@ -3303,6 +3385,7 @@ function disable_cooldown {
     } else execute as @a run {
         attribute @s attack_speed modifier remove oldcombat:disable
     }
+    # scheduleLoop 1s
 }
 
 IF (!lite_compile) {
@@ -3336,10 +3419,11 @@ function disable_kb_resist {
     } else execute run {
         execute as @e run attribute @s knockback_resistance modifier remove oldcombat:nokbresist
     }
+    scheduleLoop 0.5s
 }
 
-function old_tool_damages {
-    execute if score OldToolDamage OldCombatSettings matches 1 as @a unless entity @s[tag=oldcombatignore] if items entity @s weapon.mainhand *[minecraft:attribute_modifiers~{modifiers:{contains:[{attribute:"attack_damage"}]}}] run {
+function old_tool_damages on_selected_item_change {
+    execute if score OldToolDamage OldCombatSettings matches 1 unless entity @s[tag=oldcombatignore] if items entity @s weapon.mainhand *[minecraft:attribute_modifiers~{modifiers:{contains:[{attribute:"attack_damage"}]}}] run {
         attribute @s attack_damage modifier remove base_attack_damage
         data modify storage oldcombat:temp toolid set from entity @s SelectedItem.id
         execute store result storage oldcombat:temp tooldmg double 0.01 run { with storage oldcombat:temp        
@@ -3377,33 +3461,41 @@ tag damage_type bypasses_sword_blocking {
     minecraft:freeze
 }
 
+# function debug_log_output on_any_slot_change {
+#     textline "A slot changed!"
+# }
+# function debug_log_output_2 on_offhand_change {
+#     textline "offhand changed!"
+# }
+
 
 IF (!beta_compile && !$1_21_4compile) {
 
-function sword_blocking {
+function sword_blocking on_selected_item_change {
     execute if score SwordBlocking OldCombatSettings matches 1 as @a unless entity @s[tag=oldcombatignore] if items entity @s weapon.mainhand #minecraft:swords unless data entity @s {SelectedItem:{components:{"minecraft:custom_data":{oldcombat_blocking:1b}}}} run {
         modify_held_components {"minecraft:blocks_attacks":{disable_cooldown_scale:0,damage_reductions:[{base:0,factor:0.5,horizontal_blocking_angle:180}],block_sound:"entity.player.hurt",item_damage:{threshold:0f,base:0f,factor:0f},bypassed_by:"#oldcombat:bypasses_sword_blocking"},"minecraft:custom_data":{oldcombat_blocking:1b}}
     } else execute if score SwordBlocking OldCombatSettings matches 0 as @a if items entity @s weapon.mainhand #minecraft:swords if data entity @s {SelectedItem:{components:{"minecraft:custom_data":{oldcombat_blocking:1b}}}} run {
         remove_held_component "minecraft:blocks_attacks"
         remove_held_component "minecraft:custom_data".oldcombat_blocking
     }
+    # scheduleLoop 1s
 }
 
-function nerf_shields {
+function nerf_shields on_hand_change {
     
-    execute if score ShieldNerf OldCombatSettings matches 1 as @a unless entity @s[tag=oldcombatignore] if items entity @s weapon.mainhand shield unless data entity @s {SelectedItem:{components:{"minecraft:custom_data":{oldcombat_blocking:1b}}}} run {
+    execute if score ShieldNerf OldCombatSettings matches 1 unless entity @s[tag=oldcombatignore] if items entity @s weapon.mainhand shield unless data entity @s {SelectedItem:{components:{"minecraft:custom_data":{oldcombat_blocking:1b}}}} run {
         modify_held_components {"minecraft:blocks_attacks":{disable_cooldown_scale:1,damage_reductions:[{base:0,factor:0.66,horizontal_blocking_angle:90},{base:0,factor:1,horizontal_blocking_angle:90,type:"#minecraft:is_projectile"}],block_sound:"item.shield.block",item_damage:{threshold:0f,base:0f,factor:0f},block_delay_seconds:0.25,bypassed_by:"#bypasses_shield"},"minecraft:custom_data":{oldcombat_blocking:1b}}
     } else execute if score ShieldNerf OldCombatSettings matches 0 as @a if items entity @s weapon.mainhand shield if data entity @s {SelectedItem:{components:{"minecraft:custom_data":{oldcombat_blocking:1b}}}} run {
         remove_held_component "minecraft:blocks_attacks"
         remove_held_component "minecraft:custom_data".oldcombat_blocking
     }
-    execute if score ShieldNerf OldCombatSettings matches 1 as @a unless entity @s[tag=oldcombatignore] if items entity @s weapon.offhand shield unless items entity @s weapon.offhand shield[custom_data~{oldcombat_type:compat}] unless data entity @s {equipment:{offhand:{components:{"minecraft:custom_data":{oldcombat_blocking:1b}}}}} run {
+    execute if score ShieldNerf OldCombatSettings matches 1 unless entity @s[tag=oldcombatignore] if items entity @s weapon.offhand shield unless items entity @s weapon.offhand shield[custom_data~{oldcombat_type:compat}] unless data entity @s {equipment:{offhand:{components:{"minecraft:custom_data":{oldcombat_blocking:1b}}}}} run {
         modify_offheld_components {"minecraft:blocks_attacks":{disable_cooldown_scale:1,damage_reductions:[{base:0,factor:0.66,horizontal_blocking_angle:90},{base:0,factor:1,horizontal_blocking_angle:90,type:"#minecraft:is_projectile"}],block_sound:"item.shield.block",item_damage:{threshold:0f,base:0f,factor:0f},block_delay_seconds:0.25,bypassed_by:"#bypasses_shield"},"minecraft:custom_data":{oldcombat_blocking:1b}}
     } else execute if score ShieldNerf OldCombatSettings matches 0 as @a if items entity @s weapon.offhand shield if data entity @s {equipment:{offhand:{components:{"minecraft:custom_data":{oldcombat_blocking:1b}}}}} run {
         remove_offheld_component "minecraft:blocks_attacks"
         remove_offheld_component "minecraft:custom_data".oldcombat_blocking
     }
-
+    # scheduleLoop 1s
 }
 
 }
@@ -3418,7 +3510,7 @@ tag items acceptable_offhand {
     minecraft:filled_map
 }
 
-function block_offhand {
+function block_offhand on_offhand_change {
     execute if score DisableOffhand OldCombatSettings matches 1 as @a unless entity @s[tag=oldcombatignore] run {
         execute if items entity @s weapon.offhand *[custom_data~{oldcombat_type:compat}] run return 0
         execute if score AllowOffhandForSomeItems OldCombatSettings matches 1 run {
@@ -3435,6 +3527,7 @@ function block_offhand {
             }
         }
     }
+    # scheduleLoop 0.25s
 }
 
 function throw_offhand {
@@ -3540,6 +3633,22 @@ IF (!beta_compile) {
         }
     }
 
+}
+
+function start_loops {
+    
+    execute if score OptimizeCalls OldCombatSettings matches 1.. run {
+        <%%
+            index = 0
+            // console.log(slowLoopingFunctions)
+        %%>
+        REPEAT (slowLoopingFunctions) as value {
+            schedule function <%value%> <%index%>t append
+            <%%
+                index++
+            %%>
+        }
+    }
 }
 
 <%%

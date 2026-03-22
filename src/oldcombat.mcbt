@@ -569,3 +569,12 @@ template case {
         }
     }
 }
+
+template scheduleLoop {
+    with time:word {
+        <%%
+            slowLoopingFunctions.push(context.functions[0])
+        %%>
+        execute if score OptimizeCalls OldCombatSettings matches 1.. run schedule function <%context.functions[0]%> <%time%> append
+    }
+}
